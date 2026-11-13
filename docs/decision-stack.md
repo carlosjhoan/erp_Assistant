@@ -155,11 +155,10 @@ Las tres razones que pesan:
 ```
 infra/llm/
   provider.ts    interface LlmProvider { complete(...); object(...) }
-  ai-sdk.ts      implementación con Vercel AI SDK   ← la que arranca
-  litellm.ts     contra el proxy, si algún día hace falta
+  ai-sdk.ts      implementación con Vercel AI SDK
 ```
 
-El brief (§3) ya exige que el LLM viva detrás de una interfaz de proveedor. Con esa interfaz, **LiteLLM es un archivo más, no una migración**: se levanta el proxy y se cambia `LLM_PROVIDER=litellm`, sin tocar `domain/` ni `services/`.
+La interfaz la exige el brief (§3). **No se escribe un segundo driver** hasta que haga falta: un `litellm.ts` vacío sería código muerto, y no sabemos cómo se comporta ese proxy en este proyecto. Cuando se justifique, se agrega ese archivo y nada más — el contrato ya está definido.
 
 **Salida estructurada:**
 
@@ -203,7 +202,7 @@ const { output } = await generateText({
 | **Postgres desde el día uno** | Infraestructura para un usuario. Se puede adoptar después sin reescribir el dominio. |
 | **`node:sqlite`** | Sin `db.transaction()`; el brief exige atomicidad. |
 | **Prisma** | Válido, pero oculta el SQL que el brief quiere versionado y auditable. |
-| **LiteLLM** | Es Python: desde TS solo se usa su *proxy*, un servicio extra que contradice la razón por la que se eligió Node. Queda como implementación alternativa detrás de `LlmProvider`. |
+| **LiteLLM** | Es Python: desde TS solo se usa su *proxy*, un servicio extra que contradice la razón por la que se eligió Node. Si algún día se necesita, se escribe el driver entonces. |
 
 ---
 
@@ -232,7 +231,7 @@ const { output } = await generateText({
 | Base de datos | **SQLite** con `better-sqlite3` |
 | Acceso a datos | **Drizzle** (migraciones SQL versionadas) |
 | MCP | **SDK oficial v2** (`@modelcontextprotocol/server`) |
-| Capa de LLM | **Vercel AI SDK** detrás de `LlmProvider`; LiteLLM queda como alternativa |
+| Capa de LLM | **Vercel AI SDK** detrás de `LlmProvider` |
 | Validación de salida | **Zod 4** + reintento con el error devuelto al modelo |
 | Registro de gasto | tabla `agent_run` (sin gateway) |
 
