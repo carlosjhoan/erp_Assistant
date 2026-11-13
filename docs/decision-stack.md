@@ -234,8 +234,27 @@ const { output } = await generateText({
 | Capa de LLM | **Vercel AI SDK** detrás de `LlmProvider` |
 | Validación de salida | **Zod 4** + reintento con el error devuelto al modelo |
 | Registro de gasto | tabla `agent_run` (sin gateway) |
+| Reparto de modelos | **DeepSeek genera · Jev verifica** |
 
-## 9. Pendiente
+## 9. Cómo trabajan los dos modelos
 
-- **Proveedor de LLM para producción.** El prototipo ya usa DeepSeek (generación) y Jev (verificación). ¿Se mantiene ese par para redactar la rúbrica y auditar las citas?
-- **Proveedor de correo.** El prototipo tiene ACS configurado; para el ERP se puede reutilizar o usar SMTP simple.
+**DeepSeek** redacta los ítems de la rúbrica con salida estructurada (Zod). Cada ítem trae `source_excerpt`: la cita del apunte de la que sale.
+
+**Jev** no redacta: **decide**. Sobre cada ítem se le hacen preguntas binarias (`noul`) y devuelve una confianza por pregunta:
+
+| Pregunta | Qué mide |
+|---|---|
+| ¿La cita aparece en el apunte? | Existencia literal o equivalente de `source_excerpt` |
+| ¿El ítem responde a lo que se habló? | Pertinencia respecto del apunte |
+| ¿El criterio de aceptación es verificable? | Que se pueda comprobar, no una intención |
+
+Reglas:
+
+- Si la cita **no** aparece en el apunte, el ítem se marca `needs_review`. No se descarta en silencio.
+- El umbral es configurable por entorno; por debajo, el ítem no entra al borrador aprobable.
+- La verificación de la cita **también** se hace por coincidencia de texto (exacta o difusa). Jev es la segunda opinión, no la única: si Jev dice que sí y el texto dice que no, gana el texto.
+- Ambas llamadas se registran en `agent_run` con su costo.
+
+## 10. Pendiente
+
+- **Proveedor de correo.** El prototipo tiene ACS configurado; para el ERP se puede reutilizar o usar SMTP simple. Se decide en la Fase 6.
