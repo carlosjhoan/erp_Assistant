@@ -1,0 +1,139 @@
+===============================================================================
+ my_erp — COMANDOS
+ Última actualización: 2026-11-14  ·  Fase 3 cerrada
+===============================================================================
+
+Todos los comandos se corren desde la carpeta del proyecto:
+
+    D:\MIR\Control Projects\Steel_And_Glass\Proyectos\my_erp
+
+
+-------------------------------------------------------------------------------
+ 1. PREPARACIÓN (una sola vez, o cuando cambie el esquema)
+-------------------------------------------------------------------------------
+
+npm install
+    Instala las dependencias del proyecto.
+    Para qué: dejarte el entorno listo. Si borrás node_modules o clonás el
+    repo en otra máquina, este es el primer comando.
+
+npm run db:generate
+    Genera un archivo SQL nuevo en drizzle/ a partir de src/infra/db/schema.ts.
+    Para qué: cada vez que agregás o cambiás una tabla, este comando produce la
+    migración. El SQL resultante es legible y se versiona en git.
+    Cuándo: después de editar el esquema, nunca antes.
+    Ojo: no aplica los cambios, solo los escribe.
+
+npm run db:migrate
+    Aplica las migraciones pendientes a la base indicada en DATABASE_PATH.
+    Para qué: crear o poner al día las 9 tablas.
+    Cuándo: después de db:generate, o al empezar en una base nueva.
+    Ojo: es seguro correrlo varias veces; no repite lo ya aplicado.
+
+
+-------------------------------------------------------------------------------
+ 2. GRANOLA (traer las notas al ERP)
+-------------------------------------------------------------------------------
+
+npm run auth:granola
+    Autoriza el ERP contra Granola con su PROPIA credencial (OAuth).
+    Para qué: darle permiso al ERP para leer tus notas. Abre el navegador, te
+    pide aceptar y guarda el token en data/granola-oauth.json.
+    Cuándo: una sola vez. Después se refresca solo.
+    Ojo: si el archivo se borra o el permiso se revoca, se vuelve a correr.
+    Al terminar imprime las herramientas disponibles y guarda su esquema en
+    data/granola-tools.json.
+
+npm run ingest
+    Busca en Granola las notas recién generadas y las persiste en la base.
+    Para qué: es el paso que hace el trabajo. Trae el listado, pide el detalle
+    de cada reunión y lo guarda.
+    Cuándo: después de cada reunión, cuando ya generaste las notas en Granola.
+    Ojo: por defecto solo trae la nota cuyo título contenga
+    "Landing page activation plan" (variable INGEST_TITLE_MATCH en .env).
+    Es idempotente: correrlo de nuevo no duplica nada. Si la nota cambió,
+    actualiza la misma fila.
+
+    Variantes:
+
+    npm run ingest -- --all
+        Trae todas las notas disponibles, sin filtro de título.
+        Para qué: ver qué hay en Granola cuando el filtro no encuentra nada.
+
+    npm run ingest -- --title "otro título"
+        Filtra por otro título, sin tocar el .env.
+        Para qué: probar con otra nota sin cambiar la configuración.
+
+    npm run ingest -- --since 2026-11-06
+        Pide solo las notas modificadas después de esa fecha.
+        Para qué: sincronización incremental. Más rápido y más preciso que
+        volver a traer todo el rango.
+
+npm run meetings
+    Lista lo que hay guardado en la base.
+    Para qué: confirmar qué se importó y en qué estado.
+    Muestra: fecha, título, tamaño del summary y del transcript, si hay notas
+    privadas, y los primeros 8 caracteres del hash de contenido.
+    Cuándo: después de cada ingest, para verificar que llegó lo esperado.
+
+
+-------------------------------------------------------------------------------
+ 3. CALIDAD (antes de dar algo por terminado)
+-------------------------------------------------------------------------------
+
+npm test
+    Corre los 51 tests del proyecto.
+    Para qué: verificar que el dominio, el esquema, el parser de Granola y la
+    idempotencia siguen funcionando.
+    Cuándo: después de cualquier cambio. Si algo se rompe, acá se ve.
+    Ojo: los tests de esquema trabajan en memoria; no tocan data/my_erp.db.
+
+npm run build
+    Verifica los tipos con TypeScript, sin generar archivos.
+    Para qué: detectar errores de tipos antes de ejecutar nada.
+    Cuándo: junto con npm test, antes de un commit.
+
+
+-------------------------------------------------------------------------------
+ 4. FLUJO TÍPICO DESPUÉS DE UNA REUNIÓN
+-------------------------------------------------------------------------------
+
+    1. Terminás la reunión y Granola genera la nota.
+    2. npm run ingest          → la trae y la guarda.
+    3. npm run meetings        → confirmás que está, con su summary.
+
+
+-------------------------------------------------------------------------------
+ 5. VARIABLES DE ENTORNO (.env)
+-------------------------------------------------------------------------------
+
+DATABASE_PATH
+    Dónde vive la base SQLite. Por defecto ./data/my_erp.db
+
+INGEST_TITLE_MATCH
+    Texto que debe contener el título para que la nota se importe.
+    Por defecto: "Landing page activation plan"
+    Vacío = importa todas.
+
+GRANOLA_OAUTH_PORT
+    Puerto local que usa la autorización de Granola. Por defecto 19876.
+    Cambialo solo si ese puerto está ocupado.
+
+DEEPSEEK_API_KEY / DEEPSEEK_MODEL
+    Modelo que compone la rúbrica. Todavía sin uso (Fase 4).
+
+TYPESAFE_API_KEY / TYPESAFE_MODEL / JEV_THRESHOLD
+    Verificador que aprueba o rechaza los ítems. Todavía sin uso (Fase 4/5).
+
+DRY_RUN / MAIL_*
+    Envío de correo. DRY_RUN=1 escribe el .eml en vez de enviarlo. Sin uso aún.
+
+
+-------------------------------------------------------------------------------
+ 6. ARCHIVOS QUE NO SE VERSIONAN (carpeta data/)
+-------------------------------------------------------------------------------
+
+data/granola-oauth.json   Credencial de Granola. Nunca va a git.
+data/my_erp.db            La base. Nunca va a git.
+data/granola-tools.json   Esquema de las herramientas, generado al autorizar.
+===============================================================================
