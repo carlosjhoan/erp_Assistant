@@ -26,6 +26,10 @@ export const meeting = sqliteTable(
     occurredAt: integer("occurred_at", { mode: "timestamp_ms" }).notNull(),
     participants: text("participants", { mode: "json" }).$type<string[]>().notNull().default([]),
 
+    // Identidad estable = externalId. Cuando la nota cambia (Granola regenera el
+    // summary), cambia el hash y la fila se actualiza en vez de duplicarse.
+    contentHash: text("content_hash").notNull(),
+
     // Los tres bloques que entrega Granola, guardados por separado.
     summary: text("summary"),
     privateNotes: text("private_notes"),

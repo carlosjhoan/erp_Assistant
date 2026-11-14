@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "80fa28ce-ad02-43a4-b228-0adff38facf8",
+  "id": "5fe6676f-8cd4-4abe-89d7-64b3aaa4dc35",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "agent_run": {
@@ -235,6 +235,13 @@
           "notNull": true,
           "autoincrement": false,
           "default": "'[]'"
+        },
+        "content_hash": {
+          "name": "content_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         },
         "summary": {
           "name": "summary",

@@ -33,6 +33,7 @@ CREATE TABLE `meeting` (
 	`title` text NOT NULL,
 	`occurred_at` integer NOT NULL,
 	`participants` text DEFAULT '[]' NOT NULL,
+	`content_hash` text NOT NULL,
 	`summary` text,
 	`private_notes` text,
 	`transcript` text,

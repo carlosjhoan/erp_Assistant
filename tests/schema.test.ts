@@ -44,6 +44,7 @@ test("una reunión no se duplica al reimportar", () => {
     externalId: ext,
     title,
     occurredAt: new Date(),
+    contentHash: "hash_x",
   });
 
   ins(meeting, fila("primera importación"));
