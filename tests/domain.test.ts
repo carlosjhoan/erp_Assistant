@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { canTransitionItem, canTransitionRubric, nextItemStatuses } from "../src/domain/status.ts";
+import { canTransitionItem, canTransitionRubric, nextItemStatuses , canTransitionTopic, nextTopicStatuses } from "../src/domain/status.ts";
 import { isAllowed, actorCanApprove } from "../src/domain/permissions.ts";
 import { assertItemTransition } from "../src/domain/item.ts";
 import { statusFromEvents, detectDrift } from "../src/domain/rebuild.ts";
@@ -203,4 +203,34 @@ test("se detecta el drift entre columna y log", () => {
   const eventos = [evento("status_change", "in_progress", 1)];
   assert.deepEqual(detectDrift("pending", eventos), { drifted: true, expected: "in_progress" });
   assert.deepEqual(detectDrift("in_progress", eventos), { drifted: false, expected: "in_progress" });
+});
+
+/* ---------- temas ---------- */
+
+test("un tema propuesto puede elegirse, aparcarse o descartarse", () => {
+  assert.equal(canTransitionTopic("proposed", "selected"), true);
+  assert.equal(canTransitionTopic("proposed", "parked"), true);
+  assert.equal(canTransitionTopic("proposed", "discarded"), true);
+});
+
+test("un tema elegido se puede aparcar o descartar, no volver a propuesto", () => {
+  assert.equal(canTransitionTopic("selected", "parked"), true);
+  assert.equal(canTransitionTopic("selected", "discarded"), true);
+  assert.equal(canTransitionTopic("selected", "proposed"), false);
+});
+
+test("un descarte solo se deshace volviendo a propuesto", () => {
+  assert.equal(canTransitionTopic("discarded", "proposed"), true);
+  assert.equal(canTransitionTopic("discarded", "selected"), false);
+  assert.equal(canTransitionTopic("discarded", "parked"), false);
+});
+
+test("una idea aparcada se puede promover o descartar", () => {
+  assert.equal(canTransitionTopic("parked", "selected"), true);
+  assert.equal(canTransitionTopic("parked", "discarded"), true);
+  assert.equal(canTransitionTopic("parked", "proposed"), false);
+});
+
+test("desde proposed se ofrecen las tres salidas", () => {
+  assert.deepEqual([...nextTopicStatuses("proposed")].sort(), ["discarded", "parked", "selected"]);
 });

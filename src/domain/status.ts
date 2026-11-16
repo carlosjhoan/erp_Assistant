@@ -13,6 +13,21 @@ export const ITEM_STATUSES = [
 ] as const;
 export type ItemStatus = (typeof ITEM_STATUSES)[number];
 
+export const TOPIC_STATUSES = ["proposed", "selected", "parked", "discarded"] as const;
+export type TopicStatus = (typeof TOPIC_STATUSES)[number];
+
+/**
+ * Un tema propuesto se decide una vez. Elegir, aparcar y descartar son
+ * reversibles; lo único definitivo es que el descarte vuelve a 'proposed',
+ * nunca directo a 'selected'.
+ */
+const TOPIC_NEXT: Record<TopicStatus, readonly TopicStatus[]> = {
+  proposed: ["selected", "parked", "discarded"],
+  selected: ["parked", "discarded"],
+  parked: ["selected", "discarded"],
+  discarded: ["proposed"],
+};
+
 /** Una rúbrica aprobada sólo puede cerrarse; cambiarla es crear otra versión. */
 const RUBRIC_NEXT: Record<RubricStatus, readonly RubricStatus[]> = {
   draft: ["in_review"],
@@ -35,6 +50,10 @@ export const canTransitionRubric = (from: RubricStatus, to: RubricStatus): boole
 
 export const canTransitionItem = (from: ItemStatus, to: ItemStatus): boolean =>
   ITEM_NEXT[from].includes(to);
+
+export const canTransitionTopic = (from: TopicStatus, to: TopicStatus): boolean => TOPIC_NEXT[from].includes(to);
+
+export const nextTopicStatuses = (from: TopicStatus): readonly TopicStatus[] => TOPIC_NEXT[from];
 
 export const nextRubricStatuses = (from: RubricStatus): readonly RubricStatus[] => RUBRIC_NEXT[from];
 export const nextItemStatuses = (from: ItemStatus): readonly ItemStatus[] => ITEM_NEXT[from];

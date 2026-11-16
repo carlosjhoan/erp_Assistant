@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { openDatabase } from "../src/infra/db/client.ts";
-import { meeting, rubric, rubricItem, itemEvent } from "../src/infra/db/schema.ts";
+import { meeting, rubric, rubricItem, itemEvent, topic } from "../src/infra/db/schema.ts";
 
 function baseMigrada() {
   const { sqlite, db } = openDatabase(":memory:");
@@ -15,7 +15,7 @@ function baseMigrada() {
 
 const id = (p: string) => `${p}_${Math.random().toString(36).slice(2, 10)}`;
 
-test("la migración crea las nueve tablas", () => {
+test("la migración crea las diez tablas", () => {
   const { sqlite } = baseMigrada();
   const tablas = (sqlite.prepare("select name from sqlite_master where type='table' order by name").all() as { name: string }[])
     .map((r) => r.name)
@@ -31,6 +31,7 @@ test("la migración crea las nueve tablas", () => {
     "rubric",
     "rubric_item",
     "rubric_source_meeting",
+    "topic",
   ]);
 });
 
@@ -120,4 +121,54 @@ test("los estados por defecto son los esperados", () => {
   assert.equal(rubrica?.status, "draft");
   assert.equal(item?.status, "pending");
   assert.equal(item?.verifyStatus, "pending");
+});
+
+test("existe la tabla topic y un tema manual no necesita reunión", () => {
+  const { sqlite, ins } = baseMigrada();
+  const tablas = (sqlite.prepare("select name from sqlite_master where type='table'").all() as { name: string }[]).map(
+    (r) => r.name
+  );
+  assert.ok(tablas.includes("topic"), "falta la tabla topic");
+
+  ins(topic, { id: id("t"), title: "Tema a mano", origin: "manual" });
+
+  const fila = sqlite.prepare("select * from topic").get() as { status: string; needs_review: number; meeting_id: string | null };
+  assert.equal(fila.status, "proposed");
+  assert.equal(fila.needs_review, 0);
+  assert.equal(fila.meeting_id, null);
+});
+
+test("un tema fusionado apunta al destino y no se borra", () => {
+  const { db, ins } = baseMigrada();
+  const destino = id("t");
+  const absorbido = id("t");
+  ins(topic, { id: destino, title: "Destino", origin: "manual" });
+  ins(topic, { id: absorbido, title: "Absorbido", origin: "manual", status: "discarded", mergedIntoTopicId: destino });
+
+  const filas = db.select().from(topic).all();
+  assert.equal(filas.length, 2);
+  assert.equal(filas.find((f) => f.id === absorbido)?.mergedIntoTopicId, destino);
+});
+
+test("la rúbrica acepta deadline y el ítem guarda topic_id y human_edited", () => {
+  const { db, ins } = baseMigrada();
+  const r = id("r");
+  const t = id("t");
+
+  ins(rubric, { id: r, weekStart: "2026-11-16", version: 1, deadline: "2026-11-20" });
+  ins(topic, { id: t, title: "Tema", origin: "manual", status: "selected", rubricId: r });
+  ins(rubricItem, {
+    id: id("i"),
+    rubricId: r,
+    topicId: t,
+    title: "x",
+    acceptanceCriteria: "y",
+    type: "code",
+    origin: "agent",
+  });
+
+  assert.equal(db.select().from(rubric).all()[0]?.deadline, "2026-11-20");
+  const item = db.select().from(rubricItem).all()[0];
+  assert.equal(item?.topicId, t);
+  assert.equal(item?.humanEdited, false);
 });

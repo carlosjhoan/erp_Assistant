@@ -49,7 +49,9 @@ export const rubric = sqliteTable(
   "rubric",
   {
     id: text("id").primaryKey(),
-    weekStart: text("week_start").notNull(), // YYYY-MM-DD
+    weekStart: text("week_start").notNull(), // YYYY-MM-DD, ancla de la versión
+    // Fecha previsible de entrega. A diferencia de weekStart, esta sí se ajusta.
+    deadline: text("deadline"), // YYYY-MM-DD
     version: integer("version").notNull().default(1),
     status: text("status", { enum: ["draft", "in_review", "approved", "closed"] }).notNull().default("draft"),
     approvedAt: integer("approved_at", { mode: "timestamp_ms" }),
@@ -73,6 +75,40 @@ export const rubricSourceMeeting = sqliteTable(
   (t) => [primaryKey({ columns: [t.rubricId, t.meetingId] })]
 );
 
+/* ---------- temas (candidatos a alcance de la semana) ---------- */
+
+/**
+ * Un tema sale de un apunte y espera el triaje humano. Solo lo que se marca
+ * `selected` entra a una rúbrica y se desglosa en ítems. Un tema manual puede
+ * no tener reunión ni cita.
+ */
+export const topic = sqliteTable(
+  "topic",
+  {
+    id: text("id").primaryKey(),
+    meetingId: text("meeting_id").references(() => meeting.id),
+    title: text("title").notNull(),
+    description: text("description"),
+    sourceExcerpt: text("source_excerpt"),
+    // Sugerencia del agente: alcance probable o contexto de idea.
+    scopeSignal: text("scope_signal", { enum: ["likely_scope", "idea_context"] }),
+    scopeReason: text("scope_reason"),
+    openQuestions: text("open_questions", { mode: "json" }).$type<string[]>(),
+    // La cita no se encontró en el texto: se ve, no se descarta en silencio.
+    needsReview: integer("needs_review", { mode: "boolean" }).notNull().default(false),
+    status: text("status", { enum: ["proposed", "selected", "parked", "discarded"] })
+      .notNull()
+      .default("proposed"),
+    origin: text("origin", { enum: ["agent", "manual"] }).notNull(),
+    rubricId: text("rubric_id").references(() => rubric.id),
+    mergedIntoTopicId: text("merged_into_topic_id").references((): AnySQLiteColumn => topic.id),
+    decidedAt: integer("decided_at", { mode: "timestamp_ms" }),
+    decidedBy: text("decided_by"),
+    createdAt: now(),
+  },
+  (t) => [index("topic_status").on(t.status), index("topic_rubric").on(t.rubricId), index("topic_meeting").on(t.meetingId)]
+);
+
 export const rubricItem = sqliteTable(
   "rubric_item",
   {
@@ -80,6 +116,10 @@ export const rubricItem = sqliteTable(
     rubricId: text("rubric_id")
       .notNull()
       .references(() => rubric.id),
+    // Tema del que sale el ítem. Nulo cuando el ítem se crea a mano sin tema.
+    topicId: text("topic_id").references((): AnySQLiteColumn => topic.id),
+    // Si lo editaste vos, regenerar los ítems del agente no lo puede pisar.
+    humanEdited: integer("human_edited", { mode: "boolean" }).notNull().default(false),
     title: text("title").notNull(),
     description: text("description"),
     acceptanceCriteria: text("acceptance_criteria").notNull(),
