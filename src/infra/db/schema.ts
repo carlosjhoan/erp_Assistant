@@ -94,7 +94,9 @@ export const topic = sqliteTable(
     scopeSignal: text("scope_signal", { enum: ["likely_scope", "idea_context"] }),
     scopeReason: text("scope_reason"),
     openQuestions: text("open_questions", { mode: "json" }).$type<string[]>(),
-    // La cita no se encontró en el texto: se ve, no se descarta en silencio.
+    // Veredicto de Jev sobre si la reunión trató realmente este tema.
+    // Se guarda para poder medir su confiabilidad después.
+    verifyScore: real("verify_score"),
     needsReview: integer("needs_review", { mode: "boolean" }).notNull().default(false),
     status: text("status", { enum: ["proposed", "selected", "parked", "discarded"] })
       .notNull()

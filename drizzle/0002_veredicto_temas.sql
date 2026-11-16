@@ -1,0 +1,1 @@
+ALTER TABLE `topic` ADD `verify_score` real;

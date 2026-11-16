@@ -26,6 +26,30 @@ export class SalidaInvalida extends LlmError {
 }
 
 /**
+ * El error del SDK es genérico ("response did not match schema"): acá se arma
+ * con la cadena de causas y los primeros campos que fallaron, para que el
+ * mensaje sirva para algo.
+ */
+function describirError(e: unknown): string {
+  const partes: string[] = [];
+  let actual: unknown = e;
+
+  for (let i = 0; i < 4 && actual; i++) {
+    if (actual instanceof Error && actual.message) partes.push(actual.message);
+    const issues = (actual as { issues?: { path?: unknown[]; message?: string }[] }).issues;
+    if (Array.isArray(issues) && issues.length > 0) {
+      for (const issue of issues.slice(0, 4)) {
+        partes.push(`${(issue.path ?? []).join(".") || "(raíz)"}: ${issue.message}`);
+      }
+      break;
+    }
+    actual = (actual as { cause?: unknown }).cause;
+  }
+
+  return [...new Set(partes)].join(" — ") || "error desconocido";
+}
+
+/**
  * Un solo reintento: se le devuelve al modelo su salida anterior y el error.
  * Si vuelve a fallar, se aborta con el motivo. Nunca se "arregla" la salida
  * a mano: una salida inventada es peor que un error visible.
@@ -40,7 +64,7 @@ export async function conReintento<T>(
     try {
       return { value: await intentar(prompt), retries: attempt };
     } catch (e) {
-      ultimoError = e instanceof Error ? e.message : String(e);
+      ultimoError = describirError(e);
       if (attempt === 1) break;
 
       const salida = e instanceof SalidaInvalida ? e.salida : undefined;
@@ -103,10 +127,7 @@ export function createDeepSeekProvider(cfg: DeepSeekConfig): LlmProvider {
                 ? e.cause
                 : undefined;
 
-          throw new SalidaInvalida(
-            e instanceof Error ? e.message : String(e),
-            generado?.text ?? undefined
-          );
+          throw new SalidaInvalida(describirError(e), generado?.text ?? undefined);
         }
       });
 

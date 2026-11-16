@@ -30,6 +30,17 @@ export const TemaPropuesto = z.object({
 export const ExtraccionTemas = z.object({
   // Cero temas es un caso válido: la reunión no tenía nada accionable.
   topics: z.array(TemaPropuesto).max(10),
+  // Solo se llenan cuando topics está vacío. El CLI arma el mensaje con esto.
+  emptyReason: z
+    .string()
+    .max(300)
+    .optional()
+    .describe("Solo si no hay temas: en una frase, por qué no hay nada accionable"),
+  conversationTopics: z
+    .array(z.string().max(80))
+    .max(10)
+    .optional()
+    .describe("Solo si no hay temas: de qué se habló, en etiquetas cortas"),
 });
 
 export type TemaPropuesto = z.infer<typeof TemaPropuesto>;
