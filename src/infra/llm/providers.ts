@@ -21,6 +21,7 @@ export function providersFromEnv(): Providers {
       model: process.env.DEEPSEEK_MODEL?.trim() || "deepseek-flash",
       ...(process.env.DEEPSEEK_BASE_URL ? { baseURL: process.env.DEEPSEEK_BASE_URL } : {}),
       thinking: process.env.DEEPSEEK_THINKING === "enabled" ? "enabled" : "disabled",
+      maxAttempts: Number(process.env.LLM_MAX_ATTEMPTS ?? 3) || 3,
     }),
     decision: createJevProvider({
       apiKey: requerido("TYPESAFE_API_KEY"),

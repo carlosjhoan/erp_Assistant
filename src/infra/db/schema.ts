@@ -229,6 +229,11 @@ export const agentRun = sqliteTable(
     tokens: integer("tokens"),
     cost: real("cost"),
     durationMs: integer("duration_ms"),
+    // Trazabilidad de fallos: cuantos intentos, si termino bien y por que no.
+    attempts: integer("attempts"),
+    outcome: text("outcome", { enum: ["ok", "failed"] }),
+    errorKind: text("error_kind"),
+    errorDetail: text("error_detail"),
     createdAt: now(),
   },
   (t) => [index("run_created").on(t.createdAt)]

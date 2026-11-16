@@ -22,6 +22,13 @@
       "when": 1794864349977,
       "tag": "0002_veredicto_temas",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1794865602818,
+      "tag": "0003_trazas_llm",
+      "breakpoints": true
     }
   ]
 }

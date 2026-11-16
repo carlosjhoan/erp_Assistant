@@ -1,15 +1,19 @@
 import { createDeepSeek } from "@ai-sdk/deepseek";
 import { generateText, NoObjectGeneratedError, Output } from "ai";
 import type { z } from "zod";
-import { LlmError, type GenerateResult, type LlmProvider } from "./types.ts";
+import { clasificarError, type ErrorKind } from "./errors.ts";
+import { LlmError, type GenerateResult, type IntentoFallido, type LlmProvider } from "./types.ts";
 
 export interface DeepSeekConfig {
   apiKey: string;
   model: string;
   baseURL?: string;
-  /** `disabled` para salida estructurada predecible. */
   thinking?: "enabled" | "disabled";
+  /** Intentos totales. 3 = el original + 2 correcciones. */
+  maxAttempts?: number;
 }
+
+export const INTENTOS_POR_DEFECTO = 3;
 
 /**
  * Error de salida que conserva lo que el modelo escribió. Devolverle su propia
@@ -27,10 +31,9 @@ export class SalidaInvalida extends LlmError {
 
 /**
  * El error del SDK es genérico ("response did not match schema"): acá se arma
- * con la cadena de causas y los primeros campos que fallaron, para que el
- * mensaje sirva para algo.
+ * con la cadena de causas y los primeros campos que fallaron.
  */
-function describirError(e: unknown): string {
+export function describirError(e: unknown): string {
   const partes: string[] = [];
   let actual: unknown = e;
 
@@ -50,42 +53,47 @@ function describirError(e: unknown): string {
 }
 
 /**
- * Un solo reintento: se le devuelve al modelo su salida anterior y el error.
- * Si vuelve a fallar, se aborta con el motivo. Nunca se "arregla" la salida
- * a mano: una salida inventada es peor que un error visible.
+ * Reintenta solo lo que se puede arreglar. Un fallo de autenticación o de
+ * presupuesto aborta de una: reintentarlo gasta dos veces sin chance.
+ *
+ * Cuando el fallo es de esquema se le devuelve al modelo su salida anterior.
  */
 export async function conReintento<T>(
   prompt: string,
-  intentar: (prompt: string) => Promise<T>
-): Promise<{ value: T; retries: number }> {
-  let ultimoError = "";
+  intentar: (prompt: string) => Promise<T>,
+  maxAttempts = INTENTOS_POR_DEFECTO
+): Promise<{ value: T; intentos: number; fallos: IntentoFallido[] }> {
+  const fallos: IntentoFallido[] = [];
+  let promptActual = prompt;
 
-  for (let attempt = 0; attempt <= 1; attempt++) {
+  for (let intento = 1; intento <= maxAttempts; intento++) {
     try {
-      return { value: await intentar(prompt), retries: attempt };
+      return { value: await intentar(promptActual), intentos: intento, fallos };
     } catch (e) {
-      ultimoError = describirError(e);
-      if (attempt === 1) break;
+      const { kind, retriable, status } = clasificarError(e);
+      const mensaje = describirError(e);
+      fallos.push({ intento, kind, retriable, mensaje });
+
+      if (!retriable || intento === maxAttempts) break;
 
       const salida = e instanceof SalidaInvalida ? e.salida : undefined;
-      prompt = [
-        prompt,
+      promptActual = [
+        promptActual,
         "",
         ...(salida ? ["Tu respuesta anterior fue:", salida.slice(0, 4000), ""] : []),
-        "No cumplió el esquema. Error:",
-        ultimoError,
+        `No cumplió el esquema (intento ${intento} de ${maxAttempts}). Error:`,
+        status ? `[HTTP ${status}] ${mensaje}` : mensaje,
         "Devolvé la salida corregida.",
       ].join("\n");
     }
   }
 
-  throw new LlmError(`La salida del modelo no validó tras un reintento: ${ultimoError}`);
+  const ultimo = fallos[fallos.length - 1];
+  throw new LlmError(
+    `Falló tras ${fallos.length} intento(s) [${ultimo?.kind ?? "unknown"}]: ${ultimo?.mensaje ?? ""}`
+  );
 }
 
-/**
- * Modelo generativo detrás del wrapper del AI SDK: cambiar de proveedor es
- * cambiar este archivo, no los servicios.
- */
 export function createDeepSeekProvider(cfg: DeepSeekConfig): LlmProvider {
   const client = createDeepSeek({
     apiKey: cfg.apiKey,
@@ -102,36 +110,39 @@ export function createDeepSeekProvider(cfg: DeepSeekConfig): LlmProvider {
     }): Promise<GenerateResult<T>> {
       const started = Date.now();
 
-      const { value, retries } = await conReintento(opts.prompt, async (prompt) => {
-        try {
-          const { output, usage, response } = await generateText({
-            model: client(cfg.model),
-            system: opts.system,
-            prompt,
-            output: Output.object({ schema: opts.schema, name: opts.schemaName }),
-            providerOptions: {
-              deepseek: { thinking: { type: cfg.thinking ?? "disabled" } },
-            },
-          });
-          return {
-            data: output as T,
-            model: response.modelId ?? cfg.model,
-            tokens: usage.totalTokens ?? 0,
-          };
-        } catch (e) {
-          // El SDK puede envolver el error: se busca en el cause también.
-          const generado =
-            e instanceof NoObjectGeneratedError
-              ? e
-              : e instanceof Error && e.cause instanceof NoObjectGeneratedError
-                ? e.cause
-                : undefined;
+      const { value, intentos, fallos } = await conReintento(
+        opts.prompt,
+        async (prompt) => {
+          try {
+            const { output, usage, response } = await generateText({
+              model: client(cfg.model),
+              system: opts.system,
+              prompt,
+              output: Output.object({ schema: opts.schema, name: opts.schemaName }),
+              providerOptions: {
+                deepseek: { thinking: { type: cfg.thinking ?? "disabled" } },
+              },
+            });
+            return {
+              data: output as T,
+              model: response.modelId ?? cfg.model,
+              tokens: usage.totalTokens ?? 0,
+            };
+          } catch (e) {
+            const generado =
+              e instanceof NoObjectGeneratedError
+                ? e
+                : e instanceof Error && e.cause instanceof NoObjectGeneratedError
+                  ? e.cause
+                  : undefined;
 
-          throw new SalidaInvalida(describirError(e), generado?.text ?? undefined);
-        }
-      });
+            throw new SalidaInvalida(describirError(e), generado?.text ?? undefined);
+          }
+        },
+        cfg.maxAttempts ?? INTENTOS_POR_DEFECTO
+      );
 
-      return { ...value, durationMs: Date.now() - started, retries };
+      return { ...value, durationMs: Date.now() - started, intentos, fallos };
     },
   };
 }

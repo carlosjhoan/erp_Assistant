@@ -40,14 +40,15 @@ function entorno(respuesta: Partial<ExtraccionTemas> = {}, scores: Record<string
 
   let llamadas = 0;
   const llm: LlmProvider = {
-    async generate<T>(): Promise<{ data: T; model: string; tokens: number; durationMs: number; retries: number }> {
+    async generate<T>(): Promise<{ data: T; model: string; tokens: number; durationMs: number; intentos: number; fallos: [] }> {
       llamadas++;
       return {
         data: { topics: [], ...respuesta } as unknown as T,
         model: "deepseek-flash",
         tokens: 1200,
         durationMs: 8000,
-        retries: 0,
+        intentos: 1,
+        fallos: [],
       };
     },
   };

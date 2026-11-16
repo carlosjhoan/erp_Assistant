@@ -21,7 +21,7 @@ export interface ExtractTopicsResult {
   model: string;
   tokens: number;
   durationMs: number;
-  retries: number;
+  intentos: number;
   topics: { id: string; title: string; scopeSignal?: string; needsReview: boolean; score: number }[];
 }
 
@@ -74,6 +74,9 @@ export async function extractTopics(
     model: resultado.model,
     tokens: resultado.tokens,
     durationMs: resultado.durationMs,
+    intentos: resultado.intentos,
+    fallos: resultado.fallos,
+    outcome: "ok",
   });
 
   const temas = sinDuplicados(resultado.data.topics);
@@ -98,7 +101,7 @@ export async function extractTopics(
       model: resultado.model,
       tokens: resultado.tokens,
       durationMs: resultado.durationMs,
-      retries: resultado.retries,
+      intentos: resultado.intentos,
       topics: [],
     };
   }
@@ -116,7 +119,7 @@ export async function extractTopics(
     model: resultado.model,
     tokens: resultado.tokens,
     durationMs: resultado.durationMs,
-    retries: resultado.retries,
+    intentos: resultado.intentos,
     topics: verificados.map((v, i) => ({
       id: ids[i] ?? "",
       title: v.tema.title,

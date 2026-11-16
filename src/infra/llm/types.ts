@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import type { ErrorKind } from "./errors.ts";
 
 /** Lo que el dominio necesita de un modelo generativo. */
 export interface LlmProvider {
@@ -12,13 +13,22 @@ export interface LlmProvider {
   }): Promise<GenerateResult<T>>;
 }
 
+export interface IntentoFallido {
+  intento: number;
+  kind: ErrorKind;
+  retriable: boolean;
+  mensaje: string;
+}
+
 export interface GenerateResult<T> {
   data: T;
   model: string;
   tokens: number;
   durationMs: number;
-  /** Cuántas veces hubo que reintentar por salida inválida. */
-  retries: number;
+  /** Cuántos intentos hicieron falta (1 = salió a la primera). */
+  intentos: number;
+  /** Detalle de cada intento fallido, para diagnosticar sin adivinar. */
+  fallos: IntentoFallido[];
 }
 
 /** Una pregunta binaria para Jev. */

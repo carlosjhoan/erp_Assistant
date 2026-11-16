@@ -51,7 +51,7 @@ async function main() {
   if (r.needsReview > 0) {
     console.log(`⚠ ${r.needsReview} para revisión (Jev por debajo de ${umbralJev()})`);
   }
-  console.log(`  ${r.model} · ${r.tokens} tokens · ${(r.durationMs / 1000).toFixed(1)} s · ${r.retries} reintento(s)\n`);
+  console.log(`  ${r.model} · ${r.tokens} tokens · ${(r.durationMs / 1000).toFixed(1)} s · ${r.intentos} intento(s)\n`);
 
   for (const t of r.topics) {
     const marca = t.needsReview ? "⚠" : "✓";
