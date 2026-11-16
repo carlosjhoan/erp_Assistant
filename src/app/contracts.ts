@@ -1,0 +1,58 @@
+/**
+ * Contratos de salida del modelo. Nada de texto libre: si no valida, se
+ * reintenta una vez devolviéndole el error, y si vuelve a fallar, se aborta.
+ */
+import { z } from "zod";
+
+const ReglasComunes = {
+  sourceExcerpt: z
+    .string()
+    .min(10)
+    .max(500)
+    .describe("Cita literal del apunte que respalda esto. Sin parafrasear."),
+};
+
+/* ---------- extracción de temas ---------- */
+
+export const TemaPropuesto = z.object({
+  title: z.string().min(5).max(80).describe("Título corto del tema"),
+  description: z.string().min(20).max(600).describe("De 2 a 4 frases"),
+  ...ReglasComunes,
+  scopeSignal: z
+    .enum(["likely_scope", "idea_context"])
+    .describe(
+      "likely_scope solo con señal clara: compromiso explícito, fecha, entregable nombrado o algo asignado a mí. Si no, idea_context."
+    ),
+  scopeReason: z.string().max(200).describe("Una frase que justifica la señal"),
+  openQuestions: z.array(z.string().max(200)).max(5).optional().describe("Lo que quedó ambiguo"),
+});
+
+export const ExtraccionTemas = z.object({
+  // Cero temas es un caso válido: la reunión no tenía nada accionable.
+  topics: z.array(TemaPropuesto).max(10),
+});
+
+export type TemaPropuesto = z.infer<typeof TemaPropuesto>;
+export type ExtraccionTemas = z.infer<typeof ExtraccionTemas>;
+
+/* ---------- desglose en ítems ---------- */
+
+export const ItemPropuesto = z.object({
+  title: z.string().min(8).max(120).describe("Verbo + objeto concreto"),
+  description: z.string().max(600).optional(),
+  acceptanceCriteria: z
+    .string()
+    .min(15)
+    .max(400)
+    .describe("Cómo se comprueba que está hecho, mirando un artefacto. Nunca una intención."),
+  suggestedType: z.enum(["code", "contact", "research", "other"]),
+  ...ReglasComunes,
+});
+
+export const DesgloseTema = z.object({
+  // Sin mínimo forzado: si el tema se resuelve en dos tareas, son dos.
+  items: z.array(ItemPropuesto).min(1).max(12),
+});
+
+export type ItemPropuesto = z.infer<typeof ItemPropuesto>;
+export type DesgloseTema = z.infer<typeof DesgloseTema>;

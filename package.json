@@ -8,12 +8,12 @@
   },
   "scripts": {
     "build": "tsc --noEmit",
-    "test": "node --import tsx --test tests/domain.test.ts tests/schema.test.ts tests/granola-parse.test.ts tests/granola-source.test.ts tests/meeting-repo.test.ts",
+    "test": "node --env-file-if-exists=.env --import tsx --test tests/domain.test.ts tests/schema.test.ts tests/granola-parse.test.ts tests/granola-source.test.ts tests/meeting-repo.test.ts tests/citation.test.ts tests/contracts.test.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "node --import tsx scripts/migrate.ts",
-    "auth:granola": "node --import tsx src/cli/auth-granola.ts",
-    "ingest": "node --import tsx src/cli/ingest.ts",
-    "meetings": "node --import tsx src/cli/meetings.ts"
+    "db:migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate.ts",
+    "auth:granola": "node --env-file-if-exists=.env --import tsx src/cli/auth-granola.ts",
+    "ingest": "node --env-file-if-exists=.env --import tsx src/cli/ingest.ts",
+    "meetings": "node --env-file-if-exists=.env --import tsx src/cli/meetings.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/client": "^2.4.0",
