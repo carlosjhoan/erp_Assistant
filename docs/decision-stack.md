@@ -258,3 +258,76 @@ Reglas:
 ## 10. Pendiente
 
 - **Proveedor de correo.** El prototipo tiene ACS configurado; para el ERP se puede reutilizar o usar SMTP simple. Se decide en la Fase 6.
+
+## 11. Contratos de API verificados (2026-11-14)
+
+Corrige y completa el §9. Ambos endpoints se probaron con las claves reales.
+
+### DeepSeek
+
+| Dato | Valor |
+|---|---|
+| Endpoint | `POST https://api.deepseek.com/chat/completions` (formato OpenAI) |
+| Modelo vigente | `deepseek-flash` → DeepSeek-V4.1-Flash-1017 |
+| Contexto | 1M tokens de entrada, 384K de salida |
+| Alternativa | `deepseek-v4-pro` |
+| Obsoleto | `deepseek-chat` (nombre heredado) |
+
+**Gotcha medido:** el modo razonamiento viene **activado por defecto** con
+`reasoning_effort: high`. Con `max_tokens: 8` la respuesta volvió **vacía** porque
+los 8 tokens se consumieron razonando. Para salida estructurada se manda
+`{"thinking": {"type": "disabled"}}` (expuesto como `DEEPSEEK_THINKING`).
+En modo razonamiento no se aceptan `temperature`, `presence_penalty` ni
+`frequency_penalty`.
+
+### Jev (TypeSafe)
+
+| Dato | Valor |
+|---|---|
+| Endpoint | `POST https://api.typesafe.ai/v1/systemone` |
+| Modelo | `jev-latest` → `jev-1.14.0` |
+| Contexto | 64k por request / 32k por pregunta |
+| Precio | $42 por Btok de entrada; salida gratis |
+
+**No es compatible con OpenAI.** No acepta `messages`; recibe un `state` y un
+mapa de preguntas tipadas:
+
+```json
+{
+  "model": "jev-latest",
+  "state": "<texto del apunte>",
+  "questions": {
+    "cita_presente": {
+      "type": "noul",
+      "instructions": "¿El apunte menciona medir los vanos del nivel 3?"
+    }
+  }
+}
+```
+
+Respuesta:
+
+```json
+{
+  "model": "jev-1.14.0",
+  "answers": { "cita_presente": { "type": "noul", "noul": 0.93 } },
+  "usage": { "input_tokens": 321, "output_tokens": 43 }
+}
+```
+
+Tipos de pregunta: `noul` (sí/no con confianza), `choice`, `score` y `box`
+(solo 1.14).
+
+**Prueba real:** sobre el apunte de la landing, `noul` devolvió **0.93** para una
+cita que existe y **0.03** para una inventada. La separación alcanza para el
+umbral de 0.6.
+
+### Consecuencia de diseño
+
+El §4.1 asumía que **todo** pasaba por el Vercel AI SDK. No es así: el AI SDK
+habla protocolo de chat y Jev no lo es. Quedan **dos adaptadores**:
+
+- `LlmProvider.generate()` → DeepSeek, vía AI SDK, con salida estructurada y reintento.
+- `DecisionProvider.decide()` → Jev, HTTP directo, sin SDK de chat.
+
+La interfaz que los envuelve sigue siendo una sola para el dominio.
