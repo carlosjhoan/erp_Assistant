@@ -271,7 +271,8 @@ Corrige y completa el §9. Ambos endpoints se probaron con las claves reales.
 | Modelo vigente | `deepseek-flash` → DeepSeek-V4.1-Flash-1017 |
 | Contexto | 1M tokens de entrada, 384K de salida |
 | Alternativa | `deepseek-v4-pro` |
-| Obsoleto | `deepseek-chat` (nombre heredado) |
+| Retirado | `deepseek-chat` y `deepseek-reasoner` — **devuelven error desde el 2026-07-24, 15:59 UTC** |
+| Nombres heredados que aún resuelven | `deepseek-v4-flash` y `deepseek-v4-flash-vision-exp` → enrutan a V4.1-Flash |
 
 **Gotcha medido:** el modo razonamiento viene **activado por defecto** con
 `reasoning_effort: high`. Con `max_tokens: 8` la respuesta volvió **vacía** porque
@@ -331,3 +332,12 @@ habla protocolo de chat y Jev no lo es. Quedan **dos adaptadores**:
 - `DecisionProvider.decide()` → Jev, HTTP directo, sin SDK de chat.
 
 La interfaz que los envuelve sigue siendo una sola para el dominio.
+
+### Verificación cruzada
+
+Tres fuentes independientes coinciden con la prueba en vivo:
+
+1. Docs oficiales de DeepSeek (Models & Pricing, Thinking Mode) y de TypeSafe (Models, POST System One).
+2. Búsqueda Tavily: guías de migración confirman el retiro de `deepseek-chat` el 2026-07-24 a las 15:59 UTC y que el modo razonamiento pasó a estar activo por defecto.
+3. Búsqueda y scrape de Firecrawl sobre `docs.typesafe.ai/models`: tabla de alias confirma `jev-latest` → `jev-1.14.0` (y `jev-preview` apunta al mismo).
+4. Prueba directa con las claves del proyecto: DeepSeek 200 con modelo `deepseek-flash`; Jev 200 con `noul` 0.93 / 0.03.
