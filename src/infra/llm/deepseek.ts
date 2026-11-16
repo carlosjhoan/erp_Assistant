@@ -1,5 +1,5 @@
 import { createDeepSeek } from "@ai-sdk/deepseek";
-import { generateText, Output } from "ai";
+import { generateText, NoObjectGeneratedError, Output } from "ai";
 import type { z } from "zod";
 import { LlmError, type GenerateResult, type LlmProvider } from "./types.ts";
 
@@ -12,7 +12,21 @@ export interface DeepSeekConfig {
 }
 
 /**
- * Un solo reintento: se le devuelve el error al modelo para que corrija.
+ * Error de salida que conserva lo que el modelo escribió. Devolverle su propia
+ * respuesta inválida, además del mensaje de error, es lo que hace que corrija
+ * rápido: sin eso, el modelo adivina qué falló.
+ */
+export class SalidaInvalida extends LlmError {
+  constructor(
+    message: string,
+    readonly salida?: string
+  ) {
+    super(message);
+  }
+}
+
+/**
+ * Un solo reintento: se le devuelve al modelo su salida anterior y el error.
  * Si vuelve a fallar, se aborta con el motivo. Nunca se "arregla" la salida
  * a mano: una salida inventada es peor que un error visible.
  */
@@ -28,10 +42,13 @@ export async function conReintento<T>(
     } catch (e) {
       ultimoError = e instanceof Error ? e.message : String(e);
       if (attempt === 1) break;
+
+      const salida = e instanceof SalidaInvalida ? e.salida : undefined;
       prompt = [
         prompt,
         "",
-        "Tu respuesta anterior no cumplió el esquema. Error:",
+        ...(salida ? ["Tu respuesta anterior fue:", salida.slice(0, 4000), ""] : []),
+        "No cumplió el esquema. Error:",
         ultimoError,
         "Devolvé la salida corregida.",
       ].join("\n");
@@ -62,20 +79,35 @@ export function createDeepSeekProvider(cfg: DeepSeekConfig): LlmProvider {
       const started = Date.now();
 
       const { value, retries } = await conReintento(opts.prompt, async (prompt) => {
-        const { output, usage, response } = await generateText({
-          model: client(cfg.model),
-          system: opts.system,
-          prompt,
-          output: Output.object({ schema: opts.schema, name: opts.schemaName }),
-          providerOptions: {
-            deepseek: { thinking: { type: cfg.thinking ?? "disabled" } },
-          },
-        });
-        return {
-          data: output as T,
-          model: response.modelId ?? cfg.model,
-          tokens: usage.totalTokens ?? 0,
-        };
+        try {
+          const { output, usage, response } = await generateText({
+            model: client(cfg.model),
+            system: opts.system,
+            prompt,
+            output: Output.object({ schema: opts.schema, name: opts.schemaName }),
+            providerOptions: {
+              deepseek: { thinking: { type: cfg.thinking ?? "disabled" } },
+            },
+          });
+          return {
+            data: output as T,
+            model: response.modelId ?? cfg.model,
+            tokens: usage.totalTokens ?? 0,
+          };
+        } catch (e) {
+          // El SDK puede envolver el error: se busca en el cause también.
+          const generado =
+            e instanceof NoObjectGeneratedError
+              ? e
+              : e instanceof Error && e.cause instanceof NoObjectGeneratedError
+                ? e.cause
+                : undefined;
+
+          throw new SalidaInvalida(
+            e instanceof Error ? e.message : String(e),
+            generado?.text ?? undefined
+          );
+        }
       });
 
       return { ...value, durationMs: Date.now() - started, retries };

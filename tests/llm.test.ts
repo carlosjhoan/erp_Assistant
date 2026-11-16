@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { conReintento } from "../src/infra/llm/deepseek.ts";
+import { conReintento, SalidaInvalida } from "../src/infra/llm/deepseek.ts";
 import { construirPeticion, leerRespuesta } from "../src/infra/llm/jev.ts";
 
 /* ---------- reintento del generativo ---------- */
@@ -104,4 +104,31 @@ test("si el servidor no manda modelo, se usa el pedido", () => {
   const r = leerRespuesta({ answers: {} }, [], "jev-latest");
   assert.equal(r.model, "jev-latest");
   assert.equal(r.tokens, 0);
+});
+
+test("el reintento le devuelve al modelo su propia salida inválida", async () => {
+  const prompts: string[] = [];
+  await conReintento("base", async (p) => {
+    prompts.push(p);
+    if (prompts.length === 1) {
+      throw new SalidaInvalida("expected object, received array", '[{"title":"x"}]');
+    }
+    return 1;
+  });
+
+  assert.match(prompts[1] ?? "", /Tu respuesta anterior fue:/);
+  assert.match(prompts[1] ?? "", /received array/);
+  assert.match(prompts[1] ?? "", /"title":"x"/);
+});
+
+test("si el error no trae salida, el reintento solo lleva el mensaje", async () => {
+  const prompts: string[] = [];
+  await conReintento("base", async (p) => {
+    prompts.push(p);
+    if (prompts.length === 1) throw new Error("timeout del proveedor");
+    return 1;
+  });
+
+  assert.doesNotMatch(prompts[1] ?? "", /Tu respuesta anterior fue:/);
+  assert.match(prompts[1] ?? "", /timeout del proveedor/);
 });
