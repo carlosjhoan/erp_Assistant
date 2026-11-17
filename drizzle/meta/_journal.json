@@ -29,6 +29,13 @@
       "when": 1794865602818,
       "tag": "0003_trazas_llm",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1794878843735,
+      "tag": "0004_trazas_por_llamada",
+      "breakpoints": true
     }
   ]
 }

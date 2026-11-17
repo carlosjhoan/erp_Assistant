@@ -238,3 +238,32 @@ export const agentRun = sqliteTable(
   },
   (t) => [index("run_created").on(t.createdAt)]
 );
+
+/* ---------- trazas por llamada ---------- */
+
+/**
+ * Una fila por cada llamada HTTP a un modelo, sea generativo o de decisión.
+ * Guarda el prompt y la respuesta para poder reconstruir qué pasó sin adivinar.
+ */
+export const llmCall = sqliteTable(
+  "llm_call",
+  {
+    id: text("id").primaryKey(),
+    runId: text("run_id")
+      .notNull()
+      .references(() => agentRun.id),
+    provider: text("provider", { enum: ["deepseek", "jev"] }).notNull(),
+    model: text("model"),
+    attempt: integer("attempt").notNull().default(1),
+    status: text("status", { enum: ["ok", "failed"] }).notNull(),
+    errorKind: text("error_kind"),
+    errorDetail: text("error_detail"),
+    inputTokens: integer("input_tokens"),
+    outputTokens: integer("output_tokens"),
+    durationMs: integer("duration_ms"),
+    prompt: text("prompt"),
+    response: text("response"),
+    createdAt: now(),
+  },
+  (t) => [index("call_run").on(t.runId), index("call_created").on(t.createdAt)]
+);

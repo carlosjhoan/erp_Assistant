@@ -1,7 +1,8 @@
 import { createDeepSeek } from "@ai-sdk/deepseek";
 import { generateText, NoObjectGeneratedError, Output } from "ai";
 import type { z } from "zod";
-import { clasificarError, type ErrorKind } from "./errors.ts";
+import { clasificarError } from "./errors.ts";
+import type { TraceFn } from "./trace.ts";
 import { LlmError, type GenerateResult, type IntentoFallido, type LlmProvider } from "./types.ts";
 
 export interface DeepSeekConfig {
@@ -11,6 +12,8 @@ export interface DeepSeekConfig {
   thinking?: "enabled" | "disabled";
   /** Intentos totales. 3 = el original + 2 correcciones. */
   maxAttempts?: number;
+  /** Se llama una vez por intento, haya salido bien o mal. */
+  trace?: TraceFn;
 }
 
 export const INTENTOS_POR_DEFECTO = 3;
@@ -109,10 +112,14 @@ export function createDeepSeekProvider(cfg: DeepSeekConfig): LlmProvider {
       schema: z.ZodType<T>;
     }): Promise<GenerateResult<T>> {
       const started = Date.now();
+      let intentoActual = 0;
 
       const { value, intentos, fallos } = await conReintento(
         opts.prompt,
         async (prompt) => {
+          intentoActual++;
+          const t0 = Date.now();
+
           try {
             const { output, usage, response } = await generateText({
               model: client(cfg.model),
@@ -123,6 +130,19 @@ export function createDeepSeekProvider(cfg: DeepSeekConfig): LlmProvider {
                 deepseek: { thinking: { type: cfg.thinking ?? "disabled" } },
               },
             });
+
+            cfg.trace?.({
+              provider: "deepseek",
+              model: response.modelId ?? cfg.model,
+              attempt: intentoActual,
+              status: "ok",
+              inputTokens: usage.inputTokens ?? 0,
+              outputTokens: usage.outputTokens ?? 0,
+              durationMs: Date.now() - t0,
+              prompt,
+              response: JSON.stringify(output),
+            });
+
             return {
               data: output as T,
               model: response.modelId ?? cfg.model,
@@ -135,6 +155,19 @@ export function createDeepSeekProvider(cfg: DeepSeekConfig): LlmProvider {
                 : e instanceof Error && e.cause instanceof NoObjectGeneratedError
                   ? e.cause
                   : undefined;
+
+            const diagnostico = clasificarError(e);
+            cfg.trace?.({
+              provider: "deepseek",
+              model: cfg.model,
+              attempt: intentoActual,
+              status: "failed",
+              errorKind: diagnostico.kind,
+              errorDetail: describirError(e),
+              durationMs: Date.now() - t0,
+              prompt,
+              ...(generado?.text ? { response: generado.text } : {}),
+            });
 
             throw new SalidaInvalida(describirError(e), generado?.text ?? undefined);
           }

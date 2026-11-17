@@ -31,7 +31,7 @@ async function main() {
 
   console.log(`Extrayendo temas de "${reunion.title}"…\n`);
 
-  const r = await extractTopics({ db, ...providersFromEnv() }, reunion.id);
+  const r = await extractTopics({ db, ...providersFromEnv(db) }, reunion.id);
 
   if (r.empty) {
     console.log("No se detectó ningún tema sobre el cual trabajar en esta reunión.\n");

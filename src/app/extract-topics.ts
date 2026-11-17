@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { meeting } from "../infra/db/schema.ts";
 import { createTopicRepo } from "../infra/db/topic-repo.ts";
-import { recordRun } from "../infra/llm/agent-run.ts";
+import { finishRun, startRun } from "../infra/llm/trace.ts";
 import { LlmError, type DecisionProvider, type LlmProvider } from "../infra/llm/types.ts";
 import { ExtraccionTemas, type TemaPropuesto } from "./contracts.ts";
 import { promptExtraccion, SYSTEM_EXTRACCION } from "./prompts.ts";
@@ -43,7 +43,7 @@ function sinDuplicados(temas: TemaPropuesto[]): TemaPropuesto[] {
  * (selected / parked / discarded) sobrevive con su id y su historia.
  */
 export async function extractTopics(
-  deps: { db: DB; llm: LlmProvider; decision: DecisionProvider },
+  deps: { db: DB; llm: LlmProvider; decision: DecisionProvider; setRun?: (id: string | undefined) => void },
   meetingId: string
 ): Promise<ExtractTopicsResult> {
   const { db, llm, decision } = deps;
@@ -54,7 +54,13 @@ export async function extractTopics(
     throw new LlmError(`La reunión "${reunion.title}" no tiene summary: no hay de dónde extraer temas.`);
   }
 
-  const resultado = await llm.generate({
+  // La operación se abre antes de llamar: las llamadas se cuelgan de ella.
+  const runId = startRun(db, { kind: "interpret", tool: "extract_topics", input: reunion.summary });
+  deps.setRun?.(runId);
+
+  let resultado;
+  try {
+    resultado = await llm.generate({
     kind: "compose",
     schemaName: "extraccion_temas",
     system: SYSTEM_EXTRACCION,
@@ -64,14 +70,14 @@ export async function extractTopics(
       participantes: reunion.participants,
       summary: reunion.summary,
     }),
-    schema: ExtraccionTemas,
-  });
+      schema: ExtraccionTemas,
+    });
+  } catch (e) {
+    deps.setRun?.(undefined);
+    throw e;
+  }
 
-  recordRun(db, {
-    kind: "interpret",
-    tool: "extract_topics",
-    input: reunion.summary,
-    model: resultado.model,
+  finishRun(db, runId, {
     tokens: resultado.tokens,
     durationMs: resultado.durationMs,
     intentos: resultado.intentos,
@@ -86,6 +92,7 @@ export async function extractTopics(
   if (temas.length === 0) {
     // Aunque no haya temas nuevos, los propuestos viejos se van: si no,
     // quedan fantasmas de una corrida anterior.
+    deps.setRun?.(undefined);
     const { borrados } = repo.reemplazarPropuestos(meetingId, []);
 
     return {
@@ -106,7 +113,12 @@ export async function extractTopics(
     };
   }
 
-  const verificados = await verificarTemas(decision, reunion.summary, temas);
+  let verificados: Awaited<ReturnType<typeof verificarTemas>>;
+  try {
+    verificados = await verificarTemas(decision, reunion.summary, temas);
+  } finally {
+    deps.setRun?.(undefined);
+  }
   const { borrados, ids } = repo.reemplazarPropuestos(meetingId, verificados);
   const guardados = repo.porIds(ids);
 

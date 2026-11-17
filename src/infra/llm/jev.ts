@@ -1,10 +1,14 @@
 import { LlmError, type DecisionProvider, type DecisionQuestion, type DecisionResult } from "./types.ts";
+import type { TraceFn } from "./trace.ts";
+import { clasificarError } from "./errors.ts";
 
 export interface JevConfig {
   apiKey: string;
   model: string;
   baseURL?: string;
   timeoutMs?: number;
+  /** Se llama una vez por consulta, haya salido bien o mal. */
+  trace?: TraceFn;
 }
 
 /** Cuerpo exacto que espera POST /v1/systemone. */
@@ -67,26 +71,63 @@ export function createJevProvider(cfg: JevConfig): DecisionProvider {
       const timer = setTimeout(() => controller.abort(), cfg.timeoutMs ?? 30_000);
 
       try {
+        const cuerpo = construirPeticion(cfg.model, state, questions);
         const res = await fetch(`${baseURL}/v1/systemone`, {
           method: "POST",
           headers: { "content-type": "application/json", authorization: `Bearer ${cfg.apiKey}` },
           signal: controller.signal,
-          body: JSON.stringify(construirPeticion(cfg.model, state, questions)),
+          body: JSON.stringify(cuerpo),
         });
 
         if (!res.ok) {
           const texto = await res.text().catch(() => "");
+          cfg.trace?.({
+            provider: "jev",
+            model: cfg.model,
+            attempt: 1,
+            status: "failed",
+            errorKind: res.status === 401 || res.status === 403 ? "auth" : res.status === 429 ? "rate_limit" : "server",
+            errorDetail: `HTTP ${res.status}: ${texto.slice(0, 300)}`,
+            durationMs: Date.now() - started,
+            prompt: JSON.stringify(cuerpo),
+          });
           throw new LlmError(`Jev devolvió ${res.status}: ${texto.slice(0, 300)}`);
         }
 
         const body = (await res.json()) as RespuestaJev;
         const leida = leerRespuesta(body, questions, cfg.model);
 
+        cfg.trace?.({
+          provider: "jev",
+          model: leida.model,
+          attempt: 1,
+          status: "ok",
+          inputTokens: leida.tokens,
+          durationMs: Date.now() - started,
+          prompt: JSON.stringify(cuerpo),
+          response: JSON.stringify(body),
+        });
+
         if (leida.faltantes.length > 0) {
           throw new LlmError(`Jev no respondió: ${leida.faltantes.join(", ")}`);
         }
 
         return { ...leida, durationMs: Date.now() - started };
+      } catch (e) {
+        // Los fallos de red no tienen status: se trazan si no se trazaron ya.
+        if (!(e instanceof LlmError)) {
+          cfg.trace?.({
+            provider: "jev",
+            model: cfg.model,
+            attempt: 1,
+            status: "failed",
+            errorKind: clasificarError(e).kind,
+            errorDetail: e instanceof Error ? e.message : String(e),
+            durationMs: Date.now() - started,
+            prompt: JSON.stringify(construirPeticion(cfg.model, state, questions)),
+          });
+        }
+        throw e;
       } finally {
         clearTimeout(timer);
       }
