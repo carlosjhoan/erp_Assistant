@@ -236,74 +236,217 @@ toque puede chocar; todo lo demás es independiente.
 ```json
 {
   "projects": [
-    { "name": "Comercial", "path": "D:/MIR/Control Projects/Steel_And_Glass/Proyectos/Comercial" },
-    { "name": "Gerancial-Brain", "path": "D:/MIR/Control Projects/Steel_And_Glass/Proyectos/Gerancial-Brain" },
-    { "name": "Landing", "path": "D:/MIR/Control Projects/Steel_And_Glass/Proyectos/Landing" }
+    {
+      "name": "Comercial",
+      "path": "D:/MIR/Control Projects/Steel_And_Glass/Proyectos/Comercial"
+    },
+    {
+      "name": "Gerancial-Brain",
+      "path": "D:/MIR/Control Projects/Steel_And_Glass/Proyectos/Gerancial-Brain"
+    },
+    {
+      "name": "Landing",
+      "path": "D:/MIR/Control Projects/Steel_And_Glass/Proyectos/Landing"
+    }
   ],
   "repos": [
     {
       "project": "Comercial",
       "name": "Cotizador_Backend",
       "path": "D:/MIR/Control Projects/Steel_And_Glass/Proyectos/Comercial/backend/Cotizador_Backend",
-      "keywords": ["backend", "api", "precotizacion", "prequote", "price", "rango de precio", "medidas", "documento", "job", "catalogo", "submission", "experience"],
-      "exposes": ["api:/api/public/experience-submissions", "api:/api/requirements", "api:/api/technical-proposals", "api:/api/prequotes", "api:/api/pricing"],
-      "consumes": ["Cotizador_AI2"]
+      "keywords": [
+        "backend",
+        "api",
+        "precotizacion",
+        "prequote",
+        "price",
+        "rango de precio",
+        "medidas",
+        "documento",
+        "job",
+        "catalogo",
+        "submission",
+        "experience"
+      ],
+      "exposes": [
+        "api:/api/public/experience-submissions",
+        "api:/api/requirements",
+        "api:/api/technical-proposals",
+        "api:/api/prequotes",
+        "api:/api/pricing"
+      ],
+      "consumes": [
+        "Cotizador_AI2"
+      ],
+      "description": "API y dominio de la precotizacion documental. Autoridad de persistencia, autorizacion y calculo monetario; recibe los envios publicos de la landing."
     },
     {
       "project": "Comercial",
       "name": "Cotizador_AI2",
       "path": "D:/MIR/Control Projects/Steel_And_Glass/Proyectos/Comercial/cotizador/Cotizador_AI2",
-      "keywords": ["ia", "gemini", "extraccion", "documento", "plano", "similitud", "chat", "interpretacion"],
-      "exposes": ["api:/requirements/extract", "api:/similarity/evaluate", "api:/similarity/evaluate-batch", "api:/chat/respond", "api:/chat/actions/interpret"],
-      "consumes": []
+      "keywords": [
+        "ia",
+        "gemini",
+        "extraccion",
+        "documento",
+        "plano",
+        "similitud",
+        "chat",
+        "interpretacion"
+      ],
+      "exposes": [
+        "api:/requirements/extract",
+        "api:/similarity/evaluate",
+        "api:/similarity/evaluate-batch",
+        "api:/chat/respond",
+        "api:/chat/actions/interpret"
+      ],
+      "consumes": [],
+      "description": "Motor de IA que interpreta documentos y evalua similitud contra el corpus historico. Stateless: no guarda ni emite precios."
     },
     {
       "project": "Comercial",
       "name": "SnG_Consulter",
       "path": "D:/MIR/Control Projects/Steel_And_Glass/Proyectos/Comercial/cotizador/SnG_Consulter",
-      "keywords": ["consulter", "pdf", "plano", "preparacion documental", "coverage", "identity", "herramienta interna"],
-      "exposes": ["ui:/review"],
-      "consumes": []
+      "keywords": [
+        "consulter",
+        "pdf",
+        "plano",
+        "preparacion documental",
+        "coverage",
+        "identity",
+        "herramienta interna"
+      ],
+      "exposes": [
+        "ui:/review"
+      ],
+      "consumes": [],
+      "description": "Herramienta interna de preparacion documental de planos, operada a mano por CLI o UI. Ningun otro repo la consume."
     },
     {
       "project": "Comercial",
       "name": "Cotizador_Frontend",
       "path": "D:/MIR/Control Projects/Steel_And_Glass/Proyectos/Comercial/panel/Cotizador_Frontend",
-      "keywords": ["panel", "frontend", "comercial", "clientes", "proyectos", "catalogos", "admin", "propuesta"],
-      "exposes": ["ui:/"],
-      "consumes": ["Cotizador_Backend"]
+      "keywords": [
+        "panel",
+        "frontend",
+        "comercial",
+        "clientes",
+        "proyectos",
+        "catalogos",
+        "admin",
+        "propuesta"
+      ],
+      "exposes": [
+        "ui:/"
+      ],
+      "consumes": [
+        "Cotizador_Backend"
+      ],
+      "description": "Panel interno del equipo comercial: clientes, proyectos, documentos y precotizacion. Llama la API de .NET directo, sin BFF."
     },
     {
       "project": "Gerancial-Brain",
       "name": "SnG-Control-Backend",
       "path": "D:/MIR/Control Projects/Steel_And_Glass/Proyectos/Gerancial-Brain/Backend/SnG-Control-Backend",
-      "keywords": ["gerencial", "operacion", "post-venta", "cotizacion", "anticipo", "medidas", "vano", "acta", "radicacion", "op", "tarea", "proyecto"],
-      "exposes": ["api:/api/clients", "api:/api/projects", "api:/api/measurements", "api:/api/opening-records", "api:/api/management"],
-      "consumes": []
+      "keywords": [
+        "gerencial",
+        "operacion",
+        "post-venta",
+        "cotizacion",
+        "anticipo",
+        "medidas",
+        "vano",
+        "acta",
+        "radicacion",
+        "op",
+        "tarea",
+        "proyecto"
+      ],
+      "exposes": [
+        "api:/api/clients",
+        "api:/api/projects",
+        "api:/api/measurements",
+        "api:/api/opening-records",
+        "api:/api/management"
+      ],
+      "consumes": [],
+      "description": "Sistema de registro de la operacion post-venta: cotizacion, anticipo, medidas, Acta de Vanos, radicacion y OP. Unica fuente de verdad operacional."
     },
     {
       "project": "Gerancial-Brain",
       "name": "SnG-Control-Frontend",
       "path": "D:/MIR/Control Projects/Steel_And_Glass/Proyectos/Gerancial-Brain/Front/SnG-Control-Frontend",
-      "keywords": ["frontend", "bff", "dashboard", "roles", "asesor", "presupuestos", "contabilidad", "instalacion", "ingenieria", "gerencia"],
-      "exposes": ["ui:/", "api:/api/backend/[...path]", "api:/api/intelligence/[...path]"],
-      "consumes": ["SnG-Control-Backend", "SnG_Intelligence"]
+      "keywords": [
+        "frontend",
+        "bff",
+        "dashboard",
+        "roles",
+        "asesor",
+        "presupuestos",
+        "contabilidad",
+        "instalacion",
+        "ingenieria",
+        "gerencia"
+      ],
+      "exposes": [
+        "ui:/",
+        "api:/api/backend/[...path]",
+        "api:/api/intelligence/[...path]"
+      ],
+      "consumes": [
+        "SnG-Control-Backend",
+        "SnG_Intelligence"
+      ],
+      "description": "BFF y UI por rol del sistema gerencial. Reenvia al backend .NET y a Intelligence; unica puerta del navegador."
     },
     {
       "project": "Gerancial-Brain",
       "name": "SnG_Intelligence",
       "path": "D:/MIR/Control Projects/Steel_And_Glass/Proyectos/Gerancial-Brain/Intelligence/SnG_Intelligence",
-      "keywords": ["intelligence", "chat", "voz", "consulta", "gerencia", "conversacional", "read-only"],
-      "exposes": ["api:/api/intelligence/chat", "api:/api/intelligence/voice", "api:/api/intelligence/live"],
-      "consumes": ["SnG-Control-Backend"]
+      "keywords": [
+        "intelligence",
+        "chat",
+        "voz",
+        "consulta",
+        "gerencia",
+        "conversacional",
+        "read-only"
+      ],
+      "exposes": [
+        "api:/api/intelligence/chat",
+        "api:/api/intelligence/voice",
+        "api:/api/intelligence/live"
+      ],
+      "consumes": [
+        "SnG-Control-Backend"
+      ],
+      "description": "Capa conversacional de solo lectura para gerencia, con voz. Nunca escribe en el negocio."
     },
     {
       "project": "Landing",
       "name": "SnG-Experience-Frontend",
       "path": "D:/MIR/Control Projects/Steel_And_Glass/Proyectos/Landing/SnG-Experience-Frontend",
-      "keywords": ["landing", "sitio publico", "experiencia", "leads", "formulario", "agenda", "reserva", "seo", "cms"],
-      "exposes": ["ui:/", "ui:/experiencia", "api:/api/scheduling"],
-      "consumes": ["Cotizador_Backend"]
+      "keywords": [
+        "landing",
+        "sitio publico",
+        "experiencia",
+        "leads",
+        "formulario",
+        "agenda",
+        "reserva",
+        "seo",
+        "cms"
+      ],
+      "exposes": [
+        "ui:/",
+        "ui:/experiencia",
+        "api:/api/scheduling"
+      ],
+      "consumes": [
+        "Cotizador_Backend"
+      ],
+      "description": "Sitio publico y experiencia guiada que captura el proyecto del visitante y lo envia al cotizador."
     }
   ]
 }

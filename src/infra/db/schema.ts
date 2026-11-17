@@ -267,3 +267,39 @@ export const llmCall = sqliteTable(
   },
   (t) => [index("call_run").on(t.runId), index("call_created").on(t.createdAt)]
 );
+
+/* ---------- proyectos y repos ---------- */
+
+/**
+ * Un proyecto agrupa varios repos. Un repo es la unidad de codigo a la que se
+ * le manda un alcance; no requiere ser un repo git, alcanza con una carpeta.
+ */
+export const project = sqliteTable("project", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  path: text("path").notNull(),
+  createdAt: now(),
+});
+
+export const repo = sqliteTable(
+  "repo",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => project.id),
+    name: text("name").notNull(),
+    path: text("path").notNull(),
+    /** Que es y para que sirve. Es lo que usa la deteccion para elegir repos. */
+    description: text("description"),
+    keywords: text("keywords", { mode: "json" }).$type<string[]>().notNull().default([]),
+    /** Superficies que ofrece a otros repos. */
+    exposes: text("exposes", { mode: "json" }).$type<string[]>().notNull().default([]),
+    /** Repos de los que depende. */
+    consumes: text("consumes", { mode: "json" }).$type<string[]>().notNull().default([]),
+    /** Sesion de OpenCode reusada para este repo. Se descarta si se cuelga. */
+    opencodeSessionId: text("opencode_session_id"),
+    createdAt: now(),
+  },
+  (t) => [uniqueIndex("repo_project_name").on(t.projectId, t.name), index("repo_project").on(t.projectId)]
+);
