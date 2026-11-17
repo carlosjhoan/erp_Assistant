@@ -17,7 +17,14 @@ export function construirPeticion(model: string, state: string, questions: Decis
     model,
     state,
     questions: Object.fromEntries(
-      questions.map((q) => [q.name, { type: "noul" as const, instructions: q.instructions }])
+      questions.map((q) => [
+        q.name,
+        {
+          type: "noul" as const,
+          instructions: q.instructions,
+          ...(q.criteria ? { criteria: q.criteria } : {}),
+        },
+      ])
     ),
   };
 }

@@ -35,6 +35,8 @@ export interface GenerateResult<T> {
 export interface DecisionQuestion {
   name: string;
   instructions: string;
+  /** Qué cuenta como sí y qué como no. Afina la respuesta del modelo. */
+  criteria?: { true: string; false: string };
 }
 
 export interface DecisionResult {
