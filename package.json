@@ -8,14 +8,15 @@
   },
   "scripts": {
     "build": "tsc --noEmit",
-    "test": "node --env-file-if-exists=.env --import tsx --test tests/domain.test.ts tests/schema.test.ts tests/granola-parse.test.ts tests/granola-source.test.ts tests/meeting-repo.test.ts tests/citation.test.ts tests/contracts.test.ts tests/llm.test.ts tests/extract-topics.test.ts",
+    "test": "node --env-file-if-exists=.env --import tsx --test tests/domain.test.ts tests/schema.test.ts tests/granola-parse.test.ts tests/granola-source.test.ts tests/meeting-repo.test.ts tests/citation.test.ts tests/contracts.test.ts tests/llm.test.ts tests/extract-topics.test.ts tests/triage.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate.ts",
     "auth:granola": "node --env-file-if-exists=.env --import tsx src/cli/auth-granola.ts",
     "ingest": "node --env-file-if-exists=.env --import tsx src/cli/ingest.ts",
     "meetings": "node --env-file-if-exists=.env --import tsx src/cli/meetings.ts",
     "topics:extract": "node --env-file-if-exists=.env --import tsx src/cli/extract-topics.ts",
-    "traces": "node --env-file-if-exists=.env --import tsx src/cli/traces.ts"
+    "traces": "node --env-file-if-exists=.env --import tsx src/cli/traces.ts",
+    "topics": "node --env-file-if-exists=.env --import tsx src/cli/topics.ts"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^3.0.87",
