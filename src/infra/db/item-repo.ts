@@ -19,6 +19,7 @@ export interface ItemParaInsertar {
   verifyStatus: "verified" | "needs_review";
   verifyScore: number;
   verifyDetail?: Record<string, number>;
+  repoId?: string | null;
 }
 
 export function createItemRepo(db: DB) {
@@ -56,6 +57,7 @@ export function createItemRepo(db: DB) {
             verifyStatus: i.verifyStatus,
             verifyScore: i.verifyScore,
             verifyDetail: i.verifyDetail ?? null,
+            repoId: i.repoId ?? null,
           })
           .run();
       }

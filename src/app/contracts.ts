@@ -50,11 +50,11 @@ export type ExtraccionTemas = z.infer<typeof ExtraccionTemas>;
 
 export const ItemPropuesto = z.object({
   title: z.string().min(8).max(120).describe("Verbo + objeto concreto"),
-  description: z.string().max(600).optional(),
+  description: z.string().max(900).optional(),
   acceptanceCriteria: z
     .string()
     .min(15)
-    .max(400)
+    .max(700)
     .describe("Cómo se comprueba que está hecho, mirando un artefacto. Nunca una intención."),
   suggestedType: z.enum(["code", "contact", "research", "other"]),
   ...ReglasComunes,
@@ -93,3 +93,37 @@ export const DeteccionRepos = z.object({
 
 export type RepoElegido = z.infer<typeof RepoElegido>;
 export type DeteccionRepos = z.infer<typeof DeteccionRepos>;
+
+/* ---------- respuesta de un repo ---------- */
+
+export const PasoRepo = z.object({
+  title: z.string().min(8).max(120).describe("Verbo + objeto concreto"),
+  description: z.string().max(600).optional(),
+  acceptanceCriteria: z
+    .string()
+    .min(15)
+    .max(400)
+    .describe("Cómo se comprueba que está hecho, mirando un artefacto. Nunca una intención."),
+  surfaces: z
+    .array(z.string().max(160))
+    .max(8)
+    .default([])
+    .describe("Superficies que toca este paso: api:/ruta, schema:nombre, db:tabla"),
+});
+
+export const RespuestaRepo = z
+  .object({
+    needed: z.boolean().describe("¿Este alcance requiere trabajo en este repo?"),
+    reason: z.string().max(2000).describe("Si needed=false, por qué este repo no interviene"),
+    approach: z.string().max(3000).optional().describe("Cómo lo encararía, en 2 a 4 frases"),
+    surfaces: z.array(z.string().max(160)).max(12).default([]).describe("Superficies compartidas que toca el alcance"),
+    steps: z.array(PasoRepo).max(8).default([]),
+    risks: z.array(z.string().max(600)).max(10).default([]),
+  })
+  .refine((v) => !v.needed || v.steps.length > 0, {
+    message: "Si needed=true tiene que haber al menos un paso",
+    path: ["steps"],
+  });
+
+export type PasoRepo = z.infer<typeof PasoRepo>;
+export type RespuestaRepo = z.infer<typeof RespuestaRepo>;

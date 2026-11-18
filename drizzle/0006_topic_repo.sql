@@ -1,0 +1,1 @@
+ALTER TABLE `rubric_item` ADD `repo_id` text REFERENCES repo(id);

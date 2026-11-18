@@ -120,6 +120,8 @@ export const rubricItem = sqliteTable(
       .references(() => rubric.id),
     // Tema del que sale el ítem. Nulo cuando el ítem se crea a mano sin tema.
     topicId: text("topic_id").references((): AnySQLiteColumn => topic.id),
+    // Repo al que pertenece el ítem cuando lo propuso OpenCode.
+    repoId: text("repo_id").references(() => repo.id),
     // Si lo editaste vos, regenerar los ítems del agente no lo puede pisar.
     humanEdited: integer("human_edited", { mode: "boolean" }).notNull().default(false),
     title: text("title").notNull(),
@@ -302,4 +304,49 @@ export const repo = sqliteTable(
     createdAt: now(),
   },
   (t) => [uniqueIndex("repo_project_name").on(t.projectId, t.name), index("repo_project").on(t.projectId)]
+);
+
+/* ---------- propuestas de los repos ---------- */
+
+export interface PasoPropuestoJson {
+  title: string;
+  description?: string | undefined;
+  acceptanceCriteria: string;
+  surfaces: string[];
+}
+
+/**
+ * Lo que cada repo respondió sobre un tema. Es la instancia de aprobación:
+ * acá queda la propuesta completa y recién al aprobar se materializa en
+ * `rubric_item`.
+ */
+export const topicRepo = sqliteTable(
+  "topic_repo",
+  {
+    id: text("id").primaryKey(),
+    topicId: text("topic_id")
+      .notNull()
+      .references(() => topic.id),
+    repoId: text("repo_id")
+      .notNull()
+      .references(() => repo.id),
+    papel: text("papel", { enum: ["principal", "dependiente"] }).notNull(),
+    status: text("status", { enum: ["pendiente", "involucrado", "excluido", "fallido"] })
+      .notNull()
+      .default("pendiente"),
+    reason: text("reason"),
+    approach: text("approach"),
+    surfaces: text("surfaces", { mode: "json" }).$type<string[]>().notNull().default([]),
+    steps: text("steps", { mode: "json" }).$type<PasoPropuestoJson[]>().notNull().default([]),
+    risks: text("risks", { mode: "json" }).$type<string[]>().notNull().default([]),
+    sessionId: text("session_id"),
+    model: text("model"),
+    tokens: integer("tokens"),
+    durationMs: integer("duration_ms"),
+    contaminated: integer("contaminated", { mode: "boolean" }).notNull().default(false),
+    error: text("error"),
+    approvedAt: integer("approved_at", { mode: "timestamp_ms" }),
+    evaluatedAt: integer("evaluated_at", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => [uniqueIndex("topic_repo_unique").on(t.topicId, t.repoId), index("topic_repo_status").on(t.status)]
 );
