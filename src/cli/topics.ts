@@ -15,9 +15,11 @@
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { eq } from "drizzle-orm";
 import { openDatabase } from "../infra/db/client.ts";
-import { rubric, topic } from "../infra/db/schema.ts";
+import { rubric, topic, meeting as meetingTable } from "../infra/db/schema.ts";
 import { createTopicRepo } from "../infra/db/topic-repo.ts";
-import { cambiarEstado, crear, editar, fusionar, pendientesDeTriaje } from "../app/triage.ts";
+import { providersFromEnv } from "../infra/llm/providers.ts";
+import { clasificarSolo } from "../app/classify-topic.ts";
+import { asignarOwner, cambiarEstado, crear, editar, fusionar, pendientesDeTriaje } from "../app/triage.ts";
 
 const { db } = openDatabase(process.env.DATABASE_PATH ?? "./data/my_erp.db");
 migrate(db, { migrationsFolder: "./drizzle" });
@@ -59,9 +61,10 @@ function listar() {
     }
 
     const señal = f.scopeSignal === "likely_scope" ? "alcance" : "idea   ";
+    const dueno = f.owner === "opencode" ? "código" : f.owner === "me" ? "mío   " : "¿?    ";
     const jev = f.verifyScore != null ? `jev ${f.verifyScore.toFixed(2)}` : "jev  —  ";
     const aviso = f.needsReview ? " ⚠" : "";
-    console.log(`  [${corto(f.id)}] ${señal}  ${jev}${aviso}  ${f.title}`);
+    console.log(`  [${corto(f.id)}] ${señal} ${dueno} ${jev}${aviso}  ${f.title}`);
     if (f.description) console.log(`              ${f.description.slice(0, 120)}`);
     if (f.needsReview) console.log(`              ⚠ Jev duda de que esto se haya hablado`);
   }
@@ -98,13 +101,54 @@ function promover(prefijo: string | undefined, rubricId: string | undefined) {
   console.log(`Promovido a la rúbrica ${r.weekStart}: ${t[0]!.title}`);
 }
 
-function main() {
+async function main() {
   const ctx = { db };
 
   switch (accion) {
     case "list":
       listar();
       return;
+
+    case "classify": {
+      const sinDueno = db.select().from(topic).all().filter((t) => !t.owner);
+      if (sinDueno.length === 0) {
+        console.log("Todos los temas ya tienen dueño.");
+        return;
+      }
+
+      const providers = providersFromEnv(db);
+      let hechos = 0;
+
+      for (const t of sinDueno) {
+        const reunion = t.meetingId
+          ? db.select().from(meetingTable).where(eq(meetingTable.id, t.meetingId)).get()
+          : undefined;
+
+        const [c] = await clasificarSolo(providers.decision, reunion?.summary ?? t.title, [t]);
+        if (!c) continue;
+
+        db.update(topic)
+          .set({ owner: c.owner, ownerScore: c.score, ownerDetail: c.detalle })
+          .where(eq(topic.id, t.id))
+          .run();
+
+        const marca = c.owner === "opencode" ? "código" : "mío   ";
+        console.log(`${marca} ${c.score.toFixed(2)}  ${t.title.slice(0, 60)}`);
+        hechos++;
+      }
+
+      console.log(`\n${hechos} tema(s) clasificados.`);
+      return;
+    }
+
+    case "mine":
+    case "code": {
+      const id = resto[0];
+      if (!id) throw new Error(`Falta el id. Ej: npm run topics -- ${accion} a1b2`);
+      const r = asignarOwner(ctx, id, accion === "code" ? "opencode" : "me");
+      console.log(`${r.title}: dueño → ${r.owner === "opencode" ? "código (va a repos)" : "mío (entregable)"}`);
+      return;
+    }
 
     case "select":
     case "park":
@@ -162,13 +206,13 @@ function main() {
       return;
 
     default:
-      console.log(`Acción desconocida: "${accion}". Opciones: list, select, park, discard, undo, edit, merge, new, ideas, promote.`);
+      console.log(`Acción desconocida: "${accion}". Opciones: list, select, park, discard, undo, mine, code, edit, merge, new, ideas, promote.`);
       process.exit(1);
   }
 }
 
 try {
-  main();
+  await main();
 } catch (e) {
   console.error(`\n${e instanceof Error ? e.message : e}`);
   process.exit(1);

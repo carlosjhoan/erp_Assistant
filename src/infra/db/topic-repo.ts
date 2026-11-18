@@ -30,6 +30,9 @@ export function createTopicRepo(db: DB) {
           openQuestions: v.tema.openQuestions ?? null,
           verifyScore: v.score,
           needsReview: v.needsReview,
+          owner: v.clasificacion.owner,
+          ownerScore: v.clasificacion.score,
+          ownerDetail: v.clasificacion.detalle,
           status: "proposed",
           origin: "agent",
         })
@@ -104,6 +107,7 @@ export function createTopicRepo(db: DB) {
         title: topic.title,
         description: topic.description,
         scopeSignal: topic.scopeSignal,
+        owner: topic.owner,
         scopeReason: topic.scopeReason,
         needsReview: topic.needsReview,
         verifyScore: topic.verifyScore,

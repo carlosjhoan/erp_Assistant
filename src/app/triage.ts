@@ -78,6 +78,23 @@ function transiciones(desde: EstadoTema): string {
   return mapa[desde].join(", ");
 }
 
+/**
+ * A quién le corresponde el tema. Es decisión humana: la clasificación de Jev
+ * solo sugiere, y esto la sobrescribe.
+ */
+export function asignarOwner(ctx: TriageCtx, prefijo: string, owner: "me" | "opencode") {
+  const t = resolver(ctx, prefijo);
+  assertEditable(ctx, t.id);
+
+  ctx.db
+    .update(topic)
+    .set({ owner, decidedAt: new Date(), decidedBy: ctx.actor ?? "yo" })
+    .where(eq(topic.id, t.id))
+    .run();
+
+  return { id: t.id, title: t.title, owner };
+}
+
 export function editar(ctx: TriageCtx, prefijo: string, campos: { title?: string; description?: string }) {
   const t = resolver(ctx, prefijo);
   assertEditable(ctx, t.id);

@@ -162,6 +162,14 @@ export async function broadcast(deps: BroadcastDeps, topicId: string): Promise<B
   const tema = db.select().from(topic).where(eq(topic.id, topicId)).get();
   if (!tema) throw new Error(`No existe el tema ${topicId}.`);
 
+  if (tema.owner !== "opencode") {
+    throw new Error(
+      tema.owner === "me"
+        ? "Este tema es un entregable de gestión, no un cambio de código. No se difunde a repos. Si te equivocaste: npm run topics -- code " + tema.id.slice(0, 8)
+        : "El tema no está clasificado. Marcá si es tuyo o de código: npm run topics -- mine|code " + tema.id.slice(0, 8)
+    );
+  }
+
   const reunion = tema.meetingId ? db.select().from(meeting).where(eq(meeting.id, tema.meetingId)).get() : undefined;
 
   // Cada difusión parte de cero: se borran las propuestas viejas no aprobadas,

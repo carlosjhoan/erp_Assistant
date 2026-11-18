@@ -93,7 +93,9 @@ test("Jev recibe una pregunta por tema, en una sola llamada", async () => {
     { tema_0: 0.9, tema_1: 0.9, tema_2: 0.9 }
   );
   await extractTopics(e, "m1");
-  assert.deepEqual(e.preguntas(), ["tema_0", "tema_1", "tema_2"]);
+  // grounding + tres preguntas de dueño por tema
+  assert.equal(e.preguntas().filter((p) => p.startsWith("tema_")).length, 3);
+  assert.equal(e.preguntas().length, 12);
 });
 
 test("un tema que la reunión no trató queda en revisión, pero se guarda", async () => {

@@ -94,6 +94,11 @@ export const topic = sqliteTable(
     scopeSignal: text("scope_signal", { enum: ["likely_scope", "idea_context"] }),
     scopeReason: text("scope_reason"),
     openQuestions: text("open_questions", { mode: "json" }).$type<string[]>(),
+    // A quién le corresponde: a mí (entregable) o a un repo (cambio de código).
+    owner: text("owner", { enum: ["me", "opencode"] }),
+    ownerScore: real("owner_score"),
+    ownerDetail: text("owner_detail", { mode: "json" }).$type<Record<string, number> | null>(),
+
     // Veredicto de Jev sobre si la reunión trató realmente este tema.
     // Se guarda para poder medir su confiabilidad después.
     verifyScore: real("verify_score"),
