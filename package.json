@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsc --noEmit",
-    "test": "node --env-file-if-exists=.env --import tsx --test tests/domain.test.ts tests/schema.test.ts tests/granola-parse.test.ts tests/granola-source.test.ts tests/meeting-repo.test.ts tests/citation.test.ts tests/contracts.test.ts tests/llm.test.ts tests/extract-topics.test.ts tests/triage.test.ts tests/rubric.test.ts tests/repos.test.ts",
+    "test": "node --env-file-if-exists=.env --import tsx --test tests/domain.test.ts tests/schema.test.ts tests/granola-parse.test.ts tests/granola-source.test.ts tests/meeting-repo.test.ts tests/citation.test.ts tests/contracts.test.ts tests/llm.test.ts tests/extract-topics.test.ts tests/triage.test.ts tests/rubric.test.ts tests/repos.test.ts tests/detect-repos.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate.ts",
     "auth:granola": "node --env-file-if-exists=.env --import tsx src/cli/auth-granola.ts",
@@ -20,7 +20,8 @@
     "rubric": "node --env-file-if-exists=.env --import tsx src/cli/rubric.ts",
     "items": "node --env-file-if-exists=.env --import tsx src/cli/items.ts",
     "repos": "node --env-file-if-exists=.env --import tsx src/cli/repos.ts",
-    "repos:seed": "node --env-file-if-exists=.env --import tsx scripts/seed-repos.ts"
+    "repos:seed": "node --env-file-if-exists=.env --import tsx scripts/seed-repos.ts",
+    "plan": "node --env-file-if-exists=.env --import tsx src/cli/plan.ts"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^3.0.87",

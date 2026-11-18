@@ -67,3 +67,29 @@ export const DesgloseTema = z.object({
 
 export type ItemPropuesto = z.infer<typeof ItemPropuesto>;
 export type DesgloseTema = z.infer<typeof DesgloseTema>;
+
+/* ---------- detección de repos ---------- */
+
+export const RepoElegido = z.object({
+  repoId: z.string().length(8).describe("El id de 8 caracteres del catálogo, nunca el nombre"),
+  papel: z
+    .enum(["principal", "dependiente"])
+    .describe("principal si el cambio nace ahí; dependiente si solo hay que ajustarlo porque otro cambió"),
+  motivo: z.string().max(200).describe("Por qué este repo queda involucrado, en una frase"),
+});
+
+export const DeteccionRepos = z.object({
+  repos: z.array(RepoElegido).max(8),
+  excluidos: z
+    .array(z.object({ repoId: z.string().length(8), motivo: z.string().max(160) }))
+    .optional()
+    .describe("Los que evaluaste y descartaste, con el motivo. Silencio no es lo mismo que 'no aplica'."),
+  duda: z
+    .string()
+    .max(300)
+    .optional()
+    .describe("Solo si el alcance es ambiguo y no podés decidir a quién corresponde sin preguntarme"),
+});
+
+export type RepoElegido = z.infer<typeof RepoElegido>;
+export type DeteccionRepos = z.infer<typeof DeteccionRepos>;
