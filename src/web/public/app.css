@@ -1042,7 +1042,11 @@ dialog.modal-desc .markdown p { font-size: 13.5px; line-height: 1.7; }
 
 /* ---------- jerarquía de la tarjeta de tema ---------- */
 
-.tema-card { padding: 14px 16px 12px; }
+/* La tarjeta NO usa la grilla de .fila: su contenido se apila. */
+.tema-card {
+  display: block;
+  padding: 16px 18px 14px;
+}
 
 .tema-head { display: block; }
 .tema-head .marca { margin-bottom: 8px; }
@@ -1057,6 +1061,8 @@ dialog.modal-desc .markdown p { font-size: 13.5px; line-height: 1.7; }
 
 /* Descripción en sans normal: la itálica es para citas, no para cuerpo. */
 .tema-desc {
+  font-family: inherit;
+  font-style: normal;
   font-size: 12.5px;
   line-height: 1.55;
   color: var(--stone);
