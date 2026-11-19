@@ -401,3 +401,35 @@ function ajustarContadores(contenedor, destino) {
     contenedor.innerHTML = '<div class="vacio-mini">No queda nada sin calificar.</div>';
   }
 }
+
+/* ---------- progresividad: dueño y proyecto solo al seleccionar ---------- */
+
+document.querySelectorAll(".tema-card").forEach(function (card) {
+  const selectEstado = card.querySelector('select[data-campo="estado"]');
+  const extra = card.querySelector(".extra");
+  if (!selectEstado || !extra) return;
+
+  function sincronizarClase() {
+    card.classList.remove("estado-proposed", "estado-selected", "estado-parked", "estado-discarded");
+    card.classList.add("estado-" + selectEstado.value);
+    extra.hidden = selectEstado.value !== "selected";
+  }
+
+  selectEstado.addEventListener("change", sincronizarClase);
+  sincronizarClase();
+});
+
+/* la descripción se abre con clic o Enter */
+document.querySelectorAll(".recortada[data-abrir-modal]").forEach(function (el) {
+  function abrir() {
+    const dialogo = document.getElementById(el.dataset.abrirModal);
+    if (dialogo && dialogo.showModal) dialogo.showModal();
+  }
+  el.addEventListener("click", abrir);
+  el.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      abrir();
+    }
+  });
+});

@@ -624,3 +624,67 @@ dialog.modal .cerrar {
   text-align: center;
   margin: 6px 0;
 }
+
+/* ---------- glassmorphism por estado ---------- */
+
+:root {
+  --glass-selected: linear-gradient(135deg, rgba(90, 160, 120, 0.16), rgba(90, 160, 120, 0.05));
+  --glass-parked: linear-gradient(135deg, rgba(110, 150, 200, 0.18), rgba(110, 150, 200, 0.05));
+  --glass-discarded: linear-gradient(135deg, rgba(190, 110, 100, 0.16), rgba(190, 110, 100, 0.05));
+  --glass-border-selected: rgba(90, 160, 120, 0.45);
+  --glass-border-parked: rgba(110, 150, 200, 0.45);
+  --glass-border-discarded: rgba(190, 110, 100, 0.42);
+}
+
+.tema-card {
+  backdrop-filter: blur(8px);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.tema-card.estado-selected {
+  background: var(--glass-selected);
+  border-color: var(--glass-border-selected);
+}
+.tema-card.estado-parked {
+  background: var(--glass-parked);
+  border-color: var(--glass-border-parked);
+}
+.tema-card.estado-discarded {
+  background: var(--glass-discarded);
+  border-color: var(--glass-border-discarded);
+}
+
+/* pestañas con el mismo código de color, suaves */
+.pestana.estado-selected { border-color: var(--glass-border-selected); background: var(--glass-selected); }
+.pestana.estado-parked { border-color: var(--glass-border-parked); background: var(--glass-parked); }
+.pestana.estado-discarded { border-color: var(--glass-border-discarded); background: var(--glass-discarded); }
+
+.pestana.estado-selected.activa { background: #e6f2ea; color: var(--ok); border-color: var(--ok); }
+.pestana.estado-parked.activa { background: #e8eef7; color: #3d5a80; border-color: #6e96c8; }
+.pestana.estado-discarded.activa { background: #f7ebe8; color: var(--bad); border-color: var(--bad); }
+
+/* confianza */
+.confianza {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--olive);
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 5px;
+  padding: 1px 7px;
+}
+.confianza.baja { color: var(--warn); background: #fbf1e2; }
+
+/* descripción recortada a tres renglones, clicable */
+.recortada {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  cursor: pointer;
+}
+.recortada:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+
+/* el bloque que aparece solo al seleccionar */
+.extra { display: flex; gap: 14px; align-items: flex-end; }
+.extra[hidden] { display: none; }
+
+dialog.modal-desc .markdown p { font-size: 13.5px; line-height: 1.7; }

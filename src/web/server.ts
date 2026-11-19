@@ -502,33 +502,56 @@ function filaTema(t: {
   projectId: string | null;
   status: string;
 }): string {
-  const score = t.verifyScore;
-  const claseScore = score != null && score < 0.6 ? "bajo" : "";
+  const confianza = t.verifyScore != null ? Math.round(t.verifyScore * 100) : null;
+  const claseConfianza = confianza != null && confianza < 60 ? "baja" : "";
+  const esAlcance = t.scopeSignal === "likely_scope";
+  const idModal = `desc-${t.id.slice(0, 8)}`;
+  const seleccionado = t.status === "selected";
 
-  return `<article class="fila" data-id="${t.id}">
+  const dialog = t.description
+    ? `<dialog id="${idModal}" class="modal modal-desc">
+  <header>
+    <h2>${esc(t.title)}</h2>
+    <button class="cerrar" data-cerrar-modal="${idModal}" aria-label="Cerrar">✕</button>
+  </header>
+  <div class="markdown"><p>${esc(t.description)}</p></div>
+</dialog>`
+    : "";
+
+  return `<article class="fila tema-card estado-${t.status}" data-id="${t.id}">
   <div class="titulos">
     <div class="etiquetas">
-      <span class="etiqueta ${t.scopeSignal === "likely_scope" ? "alcance" : "idea"}">${t.scopeSignal === "likely_scope" ? "alcance" : "idea"}</span>
-      <span class="score ${claseScore}">jev ${score != null ? score.toFixed(2) : "—"}</span>
+      <span class="etiqueta ${esAlcance ? "alcance" : "idea"}">${esAlcance ? "ALCANCE" : "IDEA"}</span>
+      ${
+        confianza != null
+          ? `<span class="confianza ${claseConfianza}" title="Confianza de Jev en que esto se habló en la reunión">${confianza}%</span>`
+          : ""
+      }
+      ${t.needsReview ? `<span class="confianza baja" title="Jev duda de que se haya hablado">a revisar</span>` : ""}
     </div>
     <h3><a class="enlace-tema" href="/tema/${t.id}">${esc(t.title)}</a></h3>
-    ${t.description ? `<p class="cita">${esc(t.description)}</p>` : ""}
-    ${t.needsReview ? `<div class="aviso">⚠ Jev duda de que esto se haya hablado</div>` : ""}
+    ${
+      t.description
+        ? `<p class="cita recortada" data-abrir-modal="${idModal}" role="button" tabindex="0">${esc(t.description)}</p>`
+        : ""
+    }
   </div>
   <div class="controles">
     <label>Decisión
       <select data-campo="estado">${opciones(ESTADOS, t.status)}</select>
     </label>
-    <label>Dueño
-      <select data-campo="owner">${opciones(DUENOS, t.owner ?? "")}</select>
-    </label>
-    <label>Proyecto
-      <select data-campo="proyecto">${opcionesProyecto(t.projectId)}</select>
-    </label>
+    <div class="extra"${seleccionado ? "" : " hidden"}>
+      <label>Responsable
+        <select data-campo="owner">${opciones(DUENOS, t.owner ?? "")}</select>
+      </label>
+      <label>Proyecto
+        <select data-campo="proyecto">${opcionesProyecto(t.projectId)}</select>
+      </label>
+    </div>
   </div>
-</article>`;
+</article>
+${dialog}`;
 }
-
 function vistaReunion(id: string, tab?: string): Pagina {
   const m = db.select().from(meeting).where(eq(meeting.id, id)).get();
   if (!m) return { titulo: "Reunión", seccion: "reuniones", cuerpo: `<div class="vacio"><h2>No existe</h2></div>` };
@@ -549,17 +572,17 @@ function vistaReunion(id: string, tab?: string): Pagina {
   const activa = tab ?? (cuenta.proposed > 0 ? "proposed" : "todas");
 
   const pestañas: { id: string; texto: string; n: number }[] = [
-    { id: "proposed", texto: "Sin calificar", n: cuenta.proposed },
     { id: "todas", texto: "Todas", n: cuenta.todas },
     { id: "selected", texto: "Seleccionadas", n: cuenta.selected },
     { id: "parked", texto: "Postergadas", n: cuenta.parked },
     { id: "discarded", texto: "Descartadas", n: cuenta.discarded },
+    { id: "proposed", texto: "Sin calificar", n: cuenta.proposed },
   ];
 
   const navegacion = pestañas
     .map(
       (p) =>
-        `<a class="pestana${activa === p.id ? " activa" : ""}" href="/reunion/${m.id}?tab=${p.id}" data-conteo="${p.id}">${p.texto} <b>${p.n}</b></a>`
+        `<a class="pestana estado-${p.id}${activa === p.id ? " activa" : ""}" href="/reunion/${m.id}?tab=${p.id}" data-conteo="${p.id}">${p.texto} <b>${p.n}</b></a>`
     )
     .join("");
 
@@ -586,10 +609,6 @@ function vistaReunion(id: string, tab?: string): Pagina {
 </dialog>`
     : "";
 
-  const avisoCorridas =
-    corridas > 1
-      ? `<span class="nota" title="Cada corrida reemplaza solo los temas sin calificar">reextraer ya se hizo ${corridas} veces</span>`
-      : "";
 
   return {
     titulo: m.title,
@@ -615,8 +634,7 @@ function vistaReunion(id: string, tab?: string): Pagina {
 
   <div class="cabecera-seccion">
     <h3>Temas de esta reunión</h3>
-    ${corridas > 0 ? `<span class="chip">${corridas} ${corridas === 1 ? "extracción" : "extracciones"}</span>` : ""}
-    ${avisoCorridas}
+    ${corridas > 0 ? `<span class="chip"><b>${corridas}</b> ${corridas === 1 ? "vez extraída" : "veces extraídas"}</span>` : ""}
     <span class="der">
       <button class="boton secundario" data-detectar-temas="${m.id}">Detectar temas</button>
       <span class="cargando" hidden>extrayendo… puede tardar</span>
