@@ -536,8 +536,6 @@ function filaTema(
     { valor: "discarded", texto: "Descartar" },
   ];
 
-  // Radios nativos disfrazados de segmentos: el navegador maneja el estado,
-  // no nuestro JavaScript. Es lo que hace que siempre responda.
   const control = editable
     ? `<div class="segmentado" role="radiogroup" aria-label="Decisión del tema">${segmentos
         .map(
@@ -564,6 +562,11 @@ function filaTema(
   </footer>
 </dialog>`;
 
+  const nombres = proyectosDeTema({ db }, t.id)
+    .map((id) => db.select().from(project).all().find((p) => p.id === id)?.name)
+    .filter(Boolean)
+    .join(", ");
+
   return `<article class="fila tema-card estado-${t.status}${editable ? "" : " solo-lectura"}" data-id="${t.id}">
   <header class="tema-head">
     <div class="tema-marcas">
@@ -578,45 +581,41 @@ function filaTema(
     </div>
 
     <h3>${esc(t.title)}</h3>
-
     ${t.description ? `<p class="tema-desc">${esc(t.description)}</p>` : ""}
     <button type="button" class="ver-mas" data-abrir-modal="${idModal}">ver más</button>
   </header>
 
-  ${editable ? `<div class="tema-decision">
-    <span class="campo-label">Decisión</span>
-    ${control}
-  </div>` : ""}
+  <footer class="tema-foot">
+    ${
+      editable
+        ? `<div class="campo campo-decision">
+      <span class="campo-label">Decisión</span>
+      ${control}
+    </div>`
+        : ""
+    }
 
-  ${editable && seleccionado
-    ? `<div class="extra">
-    <div class="campo">
+    ${
+      seleccionado
+        ? `<div class="campo">
       <span class="campo-label">Responsable</span>
-      <select data-campo="owner">${opciones(DUENOS, t.owner ?? "")}</select>
+      ${
+        editable
+          ? `<select data-campo="owner">${opciones(DUENOS, t.owner ?? "")}</select>`
+          : `<span class="valor">${t.owner === "opencode" ? "Código" : t.owner === "me" ? "Mío" : "Sin asignar"}</span>`
+      }
     </div>
     <div class="campo">
       <span class="campo-label">Proyectos</span>
-      ${multiProyectos(t.id, proyectosDeTema({ db }, t.id))}
-    </div>
-  </div>`
-    : ""}
-
-  ${!editable && seleccionado
-    ? `<div class="extra estatico">
-    <div class="campo"><span class="campo-label">Responsable</span><span class="valor">${t.owner === "opencode" ? "Código" : t.owner === "me" ? "Mío" : "Sin asignar"}</span></div>
-    <div class="campo"><span class="campo-label">Proyectos</span><span class="valor">${
-      proyectosDeTema({ db }, t.id)
-        .map((id) => db.select().from(project).all().find((p) => p.id === id)?.name)
-        .filter(Boolean)
-        .join(", ") || "Sin proyecto"
-    }</span></div>
-  </div>`
-    : ""}
+      ${editable ? multiProyectos(t.id, proyectosDeTema({ db }, t.id)) : `<span class="valor">${nombres || "Sin proyecto"}</span>`}
+    </div>`
+        : ""
+    }
+  </footer>
 </article>
 ${dialog}`;
 }
 
-/** Lo que esta reunión aportó a alguna rúbrica, agrupado por semana y tema. */
 function bloqueRubricaReunion(meetingId: string): string {
   const temas = db.select().from(topic).where(eq(topic.meetingId, meetingId)).all();
   const ids = temas.map((t) => t.id);
@@ -760,11 +759,6 @@ function vistaReunion(id: string, tab?: string, vista: "temas" | "rubrica" = "te
     ${cuenta.proposed > 0 ? `<span>· ${cuenta.proposed} sin calificar</span>` : `<span>· todo calificado</span>`}
   </p>
 
-  <nav class="vistas">
-    <a class="vista${vista === "temas" ? " activa" : ""}" href="/reunion/${m.id}?vista=temas">Temas</a>
-    <a class="vista${vista === "rubrica" ? " activa" : ""}" href="/reunion/${m.id}?vista=rubrica">Rúbrica</a>
-  </nav>
-
   <h3>Notas</h3>
   ${
     notas
@@ -774,6 +768,11 @@ function vistaReunion(id: string, tab?: string, vista: "temas" | "rubrica" = "te
   </div>`
       : `<p class="nota">Sin notas guardadas.</p>`
   }
+
+  <nav class="vistas">
+    <a class="vista${vista === "temas" ? " activa" : ""}" href="/reunion/${m.id}?vista=temas">Temas</a>
+    <a class="vista${vista === "rubrica" ? " activa" : ""}" href="/reunion/${m.id}?vista=rubrica">Rúbrica</a>
+  </nav>
 
   ${
     vista === "rubrica"

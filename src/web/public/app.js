@@ -336,23 +336,38 @@ document.querySelectorAll("dialog.modal").forEach(function (dialogo) {
   });
 });
 
-/* ---------- triaje con radios nativos ---------- */
+/* ---------- triaje: el clic sobre el segmento es la accion ---------- */
 
-document.addEventListener("change", async function (e) {
-  const radio = e.target.closest("input[data-estado-radio]");
-  if (!radio) return;
+// No dependemos del evento change del radio: escuchamos el clic en la
+// etiqueta y aplicamos el cambio nosotros, marcando el input a mano.
+let aplicando = false;
 
-  const card = radio.closest(".tema-card");
-  const grupo = radio.closest(".segmentado");
+document.addEventListener("click", async function (e) {
+  const etiqueta = e.target.closest("label.seg");
+  if (!etiqueta || aplicando) return;
+
+  const input = etiqueta.querySelector("input[data-estado-radio]");
+  if (!input || input.disabled) return;
+
+  const card = etiqueta.closest(".tema-card");
+  const grupo = etiqueta.closest(".segmentado");
   if (!card || !grupo) return;
 
-  const temaId = radio.dataset.estadoRadio;
-  const valor = radio.value;
-  const anterior = grupo.querySelector("label.activo input");
+  const temaId = input.dataset.estadoRadio;
+  const valor = input.value;
+  const anterior = grupo.querySelector("input:checked");
   const valorAnterior = anterior ? anterior.value : "proposed";
 
-  grupo.querySelectorAll("input").forEach(function (i) { i.disabled = true; });
-  grupo.querySelectorAll("label").forEach(function (l) { l.classList.toggle("activo", l.contains(radio)); });
+  if (valorAnterior === valor) return;
+
+  aplicando = true;
+  e.preventDefault();
+
+  // Marca inmediata: el usuario ve el cambio antes de que responda el servidor.
+  input.checked = true;
+  grupo.querySelectorAll("label").forEach(function (l) {
+    l.classList.toggle("activo", l === etiqueta);
+  });
 
   try {
     await pedir("/accion/" + temaId + "/estado/" + valor);
@@ -360,7 +375,7 @@ document.addEventListener("change", async function (e) {
     card.classList.remove("estado-proposed", "estado-selected", "estado-parked", "estado-discarded");
     card.classList.add("estado-" + valor);
 
-    // Responsable y Proyectos solo tienen sentido al elegir.
+    // Al elegir hace falta mostrar Responsable y Proyectos.
     if (valor === "selected" && !card.querySelector(".extra")) {
       location.reload();
       return;
@@ -368,15 +383,17 @@ document.addEventListener("change", async function (e) {
     const extra = card.querySelector(".extra");
     if (extra) extra.hidden = valor !== "selected";
 
-    toast("Movido a " + radio.parentElement.querySelector("span").textContent, temaId, valorAnterior);
+    toast("Movido a " + etiqueta.textContent.trim(), temaId, valorAnterior);
   } catch (err) {
     if (anterior) {
       anterior.checked = true;
-      grupo.querySelectorAll("label").forEach(function (l) { l.classList.toggle("activo", l.contains(anterior)); });
+      grupo.querySelectorAll("label").forEach(function (l) {
+        l.classList.toggle("activo", l.contains(anterior));
+      });
     }
     fallar(err);
   } finally {
-    grupo.querySelectorAll("input").forEach(function (i) { i.disabled = false; });
+    aplicando = false;
   }
 });
 

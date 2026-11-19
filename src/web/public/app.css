@@ -1371,3 +1371,30 @@ label.inline {
 }
 
 .rubrica-reunion { padding-top: 6px; }
+
+/* ---------- pie de la tarjeta: una sola fila alineada arriba ---------- */
+
+.tema-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--soft);
+}
+
+.tema-foot:empty { display: none; }
+
+.tema-foot .campo { min-width: 0; }
+.campo-decision { flex: 0 0 auto; }
+.campo-decision .segmentado { margin-top: 0; }
+
+.campo .valor {
+  font-size: 12.5px;
+  color: var(--stone);
+  padding: 6px 0;
+}
+
+/* la vista activa, un poco más baja para no competir con Notas */
+.vistas { margin: 20px 0 4px; }
