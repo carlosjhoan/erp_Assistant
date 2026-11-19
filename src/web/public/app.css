@@ -522,3 +522,71 @@ details summary { font-size: 12px; color: var(--olive); cursor: pointer; margin:
 
 .repos-lista { margin: 10px 0 0; display: flex; gap: 6px; flex-wrap: wrap; }
 .repos-lista code { font-size: 10.5px; background: var(--soft); padding: 2px 7px; border-radius: 5px; color: var(--olive); }
+
+/* ---------- notas: vistazo y modal ---------- */
+
+.vistazo {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.vistazo p {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--stone);
+  margin: 0 0 12px;
+}
+
+dialog.modal {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0;
+  width: min(760px, 92vw);
+  max-height: 84vh;
+  box-shadow: 0 24px 60px rgba(25, 35, 62, 0.22);
+  color: var(--ink);
+  background: #fff;
+}
+dialog.modal::backdrop { background: rgba(25, 35, 62, 0.35); }
+
+dialog.modal header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--soft);
+  position: sticky;
+  top: 0;
+  background: #fff;
+}
+dialog.modal header h2 { font-size: 14px; margin: 0; }
+dialog.modal .cerrar {
+  margin-left: auto;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  color: var(--stone);
+}
+
+.markdown {
+  padding: 18px 24px 28px;
+  overflow-y: auto;
+  max-height: calc(84vh - 60px);
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--stone);
+}
+.markdown h2 { font-size: 15px; color: var(--ink); margin: 20px 0 8px; }
+.markdown h3 { font-size: 13.5px; color: var(--ink); margin: 16px 0 6px; text-transform: none; letter-spacing: 0; }
+.markdown h4 { font-size: 12.5px; color: var(--ink); margin: 14px 0 4px; }
+.markdown p { margin: 0 0 10px; }
+.markdown ul, .markdown ol { margin: 0 0 12px; padding-left: 22px; }
+.markdown li { margin: 3px 0; }
+.markdown strong { color: var(--ink); }
+.markdown code { background: var(--soft); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+.markdown hr { border: 0; border-top: 1px solid var(--soft); margin: 16px 0; }

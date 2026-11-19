@@ -312,3 +312,26 @@
     });
   });
 })();
+
+/* ---------- modal de notas ---------- */
+
+document.querySelectorAll("[data-abrir-modal]").forEach(function (boton) {
+  boton.addEventListener("click", function () {
+    const dialogo = document.getElementById(boton.dataset.abrirModal);
+    if (dialogo && dialogo.showModal) dialogo.showModal();
+  });
+});
+
+document.querySelectorAll("[data-cerrar-modal]").forEach(function (boton) {
+  boton.addEventListener("click", function () {
+    const dialogo = document.getElementById(boton.dataset.cerrarModal);
+    if (dialogo && dialogo.close) dialogo.close();
+  });
+});
+
+document.querySelectorAll("dialog.modal").forEach(function (dialogo) {
+  // Cerrar al hacer clic fuera del contenido.
+  dialogo.addEventListener("click", function (e) {
+    if (e.target === dialogo) dialogo.close();
+  });
+});

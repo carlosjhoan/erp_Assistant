@@ -8,6 +8,7 @@ import { openDatabase } from "../infra/db/client.ts";
 import { agentRun, llmCall, meeting, project, projectRepository, repo as repoTable, rubric, rubricItem, topic } from "../infra/db/schema.ts";
 import { createTopicRepo } from "../infra/db/topic-repo.ts";
 import { esc, pagina, type Pagina } from "./render.ts";
+import { renderMarkdown, vistaPrevia } from "./markdown.ts";
 import { asignarOwner, asignarProyecto, cambiarEstado, deshacerDecision, quitarOwner, guardarContexto } from "../app/triage.ts";
 import { aprobarRubrica, crearRubricaWeb, temasDeRubrica } from "../app/create-rubric.ts";
 import { detectarRepos } from "../app/detect-repos.ts";
@@ -490,24 +491,63 @@ ${filas || `<div class="vacio"><h2>Sin reuniones</h2><p>Importá una desde Grano
   };
 }
 
+function filaTema(t: {
+  id: string;
+  title: string;
+  description: string | null;
+  scopeSignal: string | null;
+  verifyScore: number | null;
+  needsReview: boolean;
+  owner: string | null;
+  projectId: string | null;
+  status: string;
+}): string {
+  const score = t.verifyScore;
+  const claseScore = score != null && score < 0.6 ? "bajo" : "";
+
+  return `<article class="fila" data-id="${t.id}">
+  <div class="titulos">
+    <div class="etiquetas">
+      <span class="etiqueta ${t.scopeSignal === "likely_scope" ? "alcance" : "idea"}">${t.scopeSignal === "likely_scope" ? "alcance" : "idea"}</span>
+      <span class="score ${claseScore}">jev ${score != null ? score.toFixed(2) : "—"}</span>
+    </div>
+    <h3><a class="enlace-tema" href="/tema/${t.id}">${esc(t.title)}</a></h3>
+    ${t.description ? `<p class="cita">${esc(t.description)}</p>` : ""}
+    ${t.needsReview ? `<div class="aviso">⚠ Jev duda de que esto se haya hablado</div>` : ""}
+  </div>
+  <div class="controles">
+    <label>Decisión
+      <select data-campo="estado">${opciones(ESTADOS, t.status)}</select>
+    </label>
+    <label>Dueño
+      <select data-campo="owner">${opciones(DUENOS, t.owner ?? "")}</select>
+    </label>
+    <label>Proyecto
+      <select data-campo="proyecto">${opcionesProyecto(t.projectId)}</select>
+    </label>
+  </div>
+</article>`;
+}
+
 function vistaReunion(id: string): Pagina {
   const m = db.select().from(meeting).where(eq(meeting.id, id)).get();
   if (!m) return { titulo: "Reunión", seccion: "reuniones", cuerpo: `<div class="vacio"><h2>No existe</h2></div>` };
 
   const temas = db.select().from(topic).where(eq(topic.meetingId, m.id)).all();
-  const orden = ["proposed", "selected", "parked", "discarded"] as const;
-  const nombre: Record<string, string> = {
-    proposed: "Sin calificar",
-    selected: "Seleccionados",
-    parked: "Postergados",
-    discarded: "Descartados",
-  };
+  const pendientes = temas.filter((t) => t.status === "proposed").length;
+  const notas = m.summary ?? "";
 
-  const bloqueTemas = orden
+  const triaje =
+    pendientes > 0
+      ? `<div class="grupo-fecha">Sin calificar (${pendientes})</div>${temas.filter((t) => t.status === "proposed").map(filaTema).join("\n")}`
+      : "";
+
+  const otras = (["selected", "parked", "discarded"] as const)
     .map((s) => {
       const lista = temas.filter((t) => t.status === s);
       if (lista.length === 0) return "";
-      const items = lista
+      const nombre = { selected: "Seleccionados", parked: "Postergados", discarded: "Descartados" }[s];
+      const filas = lista
         .map(
           (t) => `<article class="fila compacta">
   <div class="titulos"><h3><a class="enlace-tema" href="/tema/${t.id}">${esc(t.title)}</a></h3></div>
@@ -515,9 +555,19 @@ function vistaReunion(id: string): Pagina {
 </article>`
         )
         .join("\n");
-      return `<div class="grupo-fecha">${nombre[s]} (${lista.length})</div>${items}`;
+      return `<div class="grupo-fecha">${nombre} (${lista.length})</div>${filas}`;
     })
     .join("\n");
+
+  const modal = notas
+    ? `<dialog id="modal-notas" class="modal">
+  <header>
+    <h2>${esc(m.title)}</h2>
+    <button class="cerrar" data-cerrar-modal="modal-notas" aria-label="Cerrar">✕</button>
+  </header>
+  <div class="markdown">${renderMarkdown(notas)}</div>
+</dialog>`
+    : "";
 
   return {
     titulo: m.title,
@@ -529,21 +579,32 @@ function vistaReunion(id: string): Pagina {
   <div class="etiquetas">
     <span class="etiqueta alcance">${m.status}</span>
     <span class="score">${m.occurredAt ? new Date(m.occurredAt).toLocaleString("es-CO", { dateStyle: "long" }) : ""}</span>
-    <span class="score">${temas.length} tema(s)</span>
+    <span class="score">${temas.length} tema(s)${pendientes > 0 ? ` · ${pendientes} sin calificar` : ""}</span>
   </div>
 
   <h3>Notas</h3>
-  ${m.summary ? `<div class="notas">${esc(m.summary)}</div>` : `<p class="nota">Sin notas guardadas.</p>`}
-
-  ${m.transcriptAvailable ? `<h3>Transcripción</h3><details><summary>${(m.transcript ?? "").length} caracteres</summary><div class="notas">${esc(m.transcript ?? "")}</div></details>` : `<p class="nota">Esta reunión no tiene transcripción.</p>`}
+  ${
+    notas
+      ? `<div class="vistazo">
+    <p>${esc(vistaPrevia(notas, 4))}</p>
+    <button class="boton secundario" data-abrir-modal="modal-notas">Ver notas completas</button>
+  </div>`
+      : `<p class="nota">Sin notas guardadas.</p>`
+  }
 
   <h3>Temas de esta reunión</h3>
-  <div class="acciones-linea"><button class="boton secundario" data-detectar-temas="${m.id}">Detectar temas</button><span class="cargando" hidden>extrayendo… puede tardar</span></div>
-  ${bloqueTemas || `<p class="nota">Todavía no se extrajeron temas. Corré <code>npm run topics:extract</code>.</p>`}
-</div>`,
+  <div class="acciones-linea">
+    <button class="boton secundario" data-detectar-temas="${m.id}">Detectar temas</button>
+    <span class="cargando" hidden>extrayendo… puede tardar</span>
+  </div>
+
+  ${triaje}
+  ${otras}
+  ${temas.length === 0 ? `<p class="nota">Todavía no se extrajeron temas.</p>` : ""}
+</div>
+${modal}`,
   };
 }
-
 function vistaNuevaReunion(): Pagina {
   return {
     titulo: "Nueva reunión",
