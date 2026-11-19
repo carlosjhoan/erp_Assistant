@@ -1147,3 +1147,81 @@ label.inline {
   text-transform: uppercase;
   color: var(--olive);
 }
+
+/* ---------- estructura de la tarjeta (reemplaza la vieja) ---------- */
+
+.tema-marcas { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+
+.jev {
+  font-family: ui-monospace, monospace;
+  font-size: 10.5px;
+  color: var(--olive);
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+.jev.baja { color: var(--warn); border-color: #e6cd9f; background: #fbf3e4; }
+
+.revisar { font-size: 10.5px; color: var(--warn); }
+
+.tema-decision { margin-top: 14px; }
+.tema-decision .campo-label { display: block; margin-bottom: 5px; }
+
+.tema-card .extra {
+  display: grid;
+  grid-template-columns: minmax(140px, 190px) 1fr;
+  gap: 18px;
+  align-items: start;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--soft);
+}
+.tema-card .extra[hidden] { display: none; }
+
+.campo { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.campo select {
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 26px 6px 9px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%235a6a8c' stroke-width='1.5'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+}
+
+/* ---------- toast con deshacer ---------- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #19233e;
+  color: #fff;
+  font-size: 12.5px;
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 10px 30px rgba(25, 35, 62, 0.28);
+  z-index: 100;
+}
+.toast button {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 7px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.toast button:hover { background: rgba(255, 255, 255, 0.14); }

@@ -526,9 +526,6 @@ function filaTema(t: {
   const idModal = `desc-${t.id.slice(0, 8)}`;
   const seleccionado = t.status === "selected";
 
-  // El badge y la confianza son una sola unidad de lectura.
-  const marca = `${esAlcance ? "ALCANCE" : "IDEA"}${confianza != null ? ` · ${confianza}%` : ""}`;
-
   const segmentos: { valor: string; texto: string }[] = [
     { valor: "proposed", texto: "Por calificar" },
     { valor: "selected", texto: "Elegir" },
@@ -555,7 +552,15 @@ function filaTema(t: {
 
   return `<article class="fila tema-card estado-${t.status}" data-id="${t.id}">
   <header class="tema-head">
-    <span class="marca ${esAlcance ? "alcance" : "idea"}${baja ? " dudosa" : ""}"${t.needsReview ? ' title="Jev duda de que se haya hablado"' : ""}>${marca}</span>
+    <div class="tema-marcas">
+      <span class="marca ${esAlcance ? "alcance" : "idea"}">${esAlcance ? "ALCANCE" : "IDEA"}</span>
+      ${
+        confianza != null
+          ? `<span class="jev${baja ? " baja" : ""}" title="Qué tan seguro está Jev de que este tema se habló en la reunión">Jev ${confianza}%</span>`
+          : `<span class="jev" title="Jev no pudo evaluar este tema">Jev sin dato</span>`
+      }
+      ${t.needsReview ? `<span class="revisar" title="Jev duda de que se haya hablado">a revisar</span>` : ""}
+    </div>
     <h3><a class="enlace-tema" href="/tema/${t.id}">${esc(t.title)}</a></h3>
     ${
       t.description
@@ -564,13 +569,17 @@ function filaTema(t: {
     }
   </header>
 
-  <div class="segmentado" role="radiogroup" aria-label="Decisión del tema">${control}</div>
+  <div class="tema-decision">
+    <span class="campo-label">Decisión</span>
+    <div class="segmentado" role="radiogroup" aria-label="Decisión del tema">${control}</div>
+  </div>
 
   <div class="extra"${seleccionado ? "" : " hidden"}>
-    <label class="inline">Responsable
+    <div class="campo">
+      <span class="campo-label">Responsable</span>
       <select data-campo="owner">${opciones(DUENOS, t.owner ?? "")}</select>
-    </label>
-    <div class="campo-proyectos">
+    </div>
+    <div class="campo">
       <span class="campo-label">Proyectos</span>
       ${multiProyectos(t.id, proyectosDeTema({ db }, t.id))}
     </div>

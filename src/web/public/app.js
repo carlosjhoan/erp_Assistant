@@ -336,48 +336,82 @@ document.querySelectorAll("dialog.modal").forEach(function (dialogo) {
   });
 });
 
-/* ---------- triaje dentro de la reunión: control segmentado ---------- */
+/* ---------- triaje: control segmentado con delegacion de eventos ---------- */
 
-document.querySelectorAll("[data-estado-seg]").forEach(function (boton) {
-  boton.addEventListener("click", async function () {
-    const card = boton.closest(".tema-card");
-    const id = boton.dataset.tema;
-    const valor = boton.dataset.estadoSeg;
-    const anterior = card.classList.contains("estado-selected") ? "selected" : card.classList.contains("estado-parked") ? "parked" : card.classList.contains("estado-discarded") ? "discarded" : "proposed";
+// Delegacion: funciona aunque las tarjetas se re-rendericen.
+document.addEventListener("click", async function (e) {
+  const boton = e.target.closest("[data-estado-seg]");
+  if (!boton) return;
 
-    if (valor === anterior) return;
+  e.preventDefault();
 
-    boton.closest(".segmentado").querySelectorAll("button").forEach(function (b) { b.disabled = true; });
+  const card = boton.closest(".tema-card");
+  const id = boton.dataset.tema;
+  const valor = boton.dataset.estadoSeg;
+  const grupo = boton.closest(".segmentado");
+  if (!card || !grupo) return;
 
+  const anterior = grupo.querySelector("button.activo");
+  if (anterior === boton) return;
+
+  grupo.querySelectorAll("button").forEach(function (b) { b.disabled = true; });
+
+  try {
+    await pedir("/accion/" + id + "/estado/" + valor);
+
+    card.classList.remove("estado-proposed", "estado-selected", "estado-parked", "estado-discarded");
+    card.classList.add("estado-" + valor);
+
+    grupo.querySelectorAll("button").forEach(function (b) {
+      b.classList.toggle("activo", b === boton);
+      b.setAttribute("aria-checked", String(b === boton));
+    });
+
+    const extra = card.querySelector(".extra");
+    if (extra) extra.hidden = valor !== "selected";
+
+    const contenedor = card.closest("[data-tab]");
+    if (contenedor && contenedor.dataset.tab === "proposed" && valor !== "proposed") {
+      card.classList.add("saliendo");
+      const texto = boton.textContent;
+      setTimeout(function () {
+        card.remove();
+        ajustarContadores(contenedor, valor);
+        toast("Movido a " + texto, id, "proposed");
+      }, 200);
+    }
+  } catch (err) {
+    fallar(err);
+  } finally {
+    if (document.body.contains(grupo)) {
+      grupo.querySelectorAll("button").forEach(function (b) { b.disabled = false; });
+    }
+  }
+});
+
+/** Aviso corto con opcion de deshacer. */
+function toast(mensaje, temaId, volverA) {
+  const caja = document.createElement("div");
+  caja.className = "toast";
+  const texto = document.createElement("span");
+  texto.textContent = mensaje;
+  const deshacer = document.createElement("button");
+  deshacer.type = "button";
+  deshacer.textContent = "Deshacer";
+  caja.append(texto, deshacer);
+
+  deshacer.addEventListener("click", async function () {
     try {
-      await pedir("/accion/" + id + "/estado/" + valor);
-
-      // Actualiza el estado visual sin recargar.
-      card.classList.remove("estado-proposed", "estado-selected", "estado-parked", "estado-discarded");
-      card.classList.add("estado-" + valor);
-      boton.closest(".segmentado").querySelectorAll("button").forEach(function (b) {
-        b.classList.toggle("activo", b === boton);
-        b.setAttribute("aria-checked", String(b === boton));
-      });
-
-      const extra = card.querySelector(".extra");
-      if (extra) extra.hidden = valor !== "selected";
-
-      const contenedor = card.closest("[data-tab]");
-      if (contenedor && contenedor.dataset.tab === "proposed" && valor !== "proposed") {
-        card.classList.add("saliendo");
-        setTimeout(function () {
-          card.remove();
-          ajustarContadores(contenedor, valor);
-        }, 200);
-      }
+      await pedir("/accion/" + temaId + "/estado/" + volverA);
+      location.reload();
     } catch (e) {
       fallar(e);
-    } finally {
-      boton.closest(".segmentado").querySelectorAll("button").forEach(function (b) { b.disabled = false; });
     }
   });
-});
+
+  document.body.appendChild(caja);
+  setTimeout(function () { caja.remove(); }, 8000);
+}
 
 function ajustarContadores(contenedor, destino) {
   const leer = function (id) {
