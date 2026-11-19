@@ -526,6 +526,23 @@ function filaTema(t: {
   const idModal = `desc-${t.id.slice(0, 8)}`;
   const seleccionado = t.status === "selected";
 
+  // El badge y la confianza son una sola unidad de lectura.
+  const marca = `${esAlcance ? "ALCANCE" : "IDEA"}${confianza != null ? ` · ${confianza}%` : ""}`;
+
+  const segmentos: { valor: string; texto: string }[] = [
+    { valor: "proposed", texto: "Por calificar" },
+    { valor: "selected", texto: "Elegir" },
+    { valor: "parked", texto: "Postergar" },
+    { valor: "discarded", texto: "Descartar" },
+  ];
+
+  const control = segmentos
+    .map(
+      (s) =>
+        `<button type="button" role="radio" aria-checked="${t.status === s.valor}" class="seg${t.status === s.valor ? " activo" : ""}" data-estado-seg="${s.valor}" data-tema="${t.id}">${s.texto}</button>`
+    )
+    .join("");
+
   const dialog = t.description
     ? `<dialog id="${idModal}" class="modal modal-desc">
   <header>
@@ -538,7 +555,7 @@ function filaTema(t: {
 
   return `<article class="fila tema-card estado-${t.status}" data-id="${t.id}">
   <header class="tema-head">
-    <span class="marca ${esAlcance ? "alcance" : "idea"}">${esAlcance ? "ALCANCE" : "IDEA"}</span>
+    <span class="marca ${esAlcance ? "alcance" : "idea"}${baja ? " dudosa" : ""}"${t.needsReview ? ' title="Jev duda de que se haya hablado"' : ""}>${marca}</span>
     <h3><a class="enlace-tema" href="/tema/${t.id}">${esc(t.title)}</a></h3>
     ${
       t.description
@@ -547,27 +564,17 @@ function filaTema(t: {
     }
   </header>
 
-  <footer class="tema-foot">
-    <span class="tema-conf${baja ? " baja" : ""}">
-      ${confianza != null ? `Confiabilidad del ${confianza}%` : "Confiabilidad sin calcular"}
-      ${t.needsReview ? `<span class="revisar">· a revisar</span>` : ""}
-    </span>
+  <div class="segmentado" role="radiogroup" aria-label="Decisión del tema">${control}</div>
 
-    <div class="controles">
-      <label>Decisión
-        <select data-campo="estado">${opciones(ESTADOS, t.status)}</select>
-      </label>
-      <div class="extra"${seleccionado ? "" : " hidden"}>
-        <label>Responsable
-          <select data-campo="owner">${opciones(DUENOS, t.owner ?? "")}</select>
-        </label>
-        <div class="campo-proyectos">
-          <span class="campo-label">Proyectos</span>
-          ${multiProyectos(t.id, proyectosDeTema({ db }, t.id))}
-        </div>
-      </div>
+  <div class="extra"${seleccionado ? "" : " hidden"}>
+    <label class="inline">Responsable
+      <select data-campo="owner">${opciones(DUENOS, t.owner ?? "")}</select>
+    </label>
+    <div class="campo-proyectos">
+      <span class="campo-label">Proyectos</span>
+      ${multiProyectos(t.id, proyectosDeTema({ db }, t.id))}
     </div>
-  </footer>
+  </div>
 </article>
 ${dialog}`;
 }

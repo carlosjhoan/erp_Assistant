@@ -336,44 +336,46 @@ document.querySelectorAll("dialog.modal").forEach(function (dialogo) {
   });
 });
 
-/* ---------- triaje dentro de la reunión ---------- */
+/* ---------- triaje dentro de la reunión: control segmentado ---------- */
 
-document.querySelectorAll("[data-tab]").forEach(function (contenedor) {
-  const tab = contenedor.dataset.tab;
+document.querySelectorAll("[data-estado-seg]").forEach(function (boton) {
+  boton.addEventListener("click", async function () {
+    const card = boton.closest(".tema-card");
+    const id = boton.dataset.tema;
+    const valor = boton.dataset.estadoSeg;
+    const anterior = card.classList.contains("estado-selected") ? "selected" : card.classList.contains("estado-parked") ? "parked" : card.classList.contains("estado-discarded") ? "discarded" : "proposed";
 
-  contenedor.querySelectorAll(".fila[data-id]").forEach(function (fila) {
-    fila.querySelectorAll("select[data-campo]").forEach(function (select) {
-      select.dataset.previo = select.value;
+    if (valor === anterior) return;
 
-      select.addEventListener("change", async function () {
-        const campo = select.dataset.campo;
-        const valor = select.value;
-        const anterior = select.dataset.previo || "";
-        select.disabled = true;
+    boton.closest(".segmentado").querySelectorAll("button").forEach(function (b) { b.disabled = true; });
 
-        try {
-          await pedir("/accion/" + fila.dataset.id + "/" + campo + "/" + encodeURIComponent(valor));
-          select.dataset.previo = valor;
+    try {
+      await pedir("/accion/" + id + "/estado/" + valor);
 
-          // En la pestaña "sin calificar" la fila deja de pertenecer: se va y
-          // se ajustan los contadores. En cualquier otra, se recarga.
-          if (campo === "estado" && tab === "proposed" && valor !== "proposed") {
-            fila.classList.add("saliendo");
-            setTimeout(function () {
-              fila.remove();
-              ajustarContadores(contenedor, valor);
-            }, 200);
-          } else if (campo === "estado") {
-            location.reload();
-          }
-        } catch (e) {
-          select.value = anterior;
-          fallar(e);
-        } finally {
-          select.disabled = false;
-        }
+      // Actualiza el estado visual sin recargar.
+      card.classList.remove("estado-proposed", "estado-selected", "estado-parked", "estado-discarded");
+      card.classList.add("estado-" + valor);
+      boton.closest(".segmentado").querySelectorAll("button").forEach(function (b) {
+        b.classList.toggle("activo", b === boton);
+        b.setAttribute("aria-checked", String(b === boton));
       });
-    });
+
+      const extra = card.querySelector(".extra");
+      if (extra) extra.hidden = valor !== "selected";
+
+      const contenedor = card.closest("[data-tab]");
+      if (contenedor && contenedor.dataset.tab === "proposed" && valor !== "proposed") {
+        card.classList.add("saliendo");
+        setTimeout(function () {
+          card.remove();
+          ajustarContadores(contenedor, valor);
+        }, 200);
+      }
+    } catch (e) {
+      fallar(e);
+    } finally {
+      boton.closest(".segmentado").querySelectorAll("button").forEach(function (b) { b.disabled = false; });
+    }
   });
 });
 

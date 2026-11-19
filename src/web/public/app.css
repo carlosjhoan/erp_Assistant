@@ -1087,3 +1087,57 @@ dialog.modal-desc .markdown p { font-size: 13.5px; line-height: 1.7; }
 .tema-conf .revisar { font-style: normal; color: var(--warn); }
 
 .tema-foot .controles { margin-left: auto; }
+
+/* ---------- badge compuesto y control segmentado ---------- */
+
+.marca.dudosa { color: var(--warn); border-color: #e6cd9f; }
+
+.segmentado {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 12px;
+  padding: 2px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+.seg {
+  font-family: inherit;
+  font-size: 11.5px;
+  color: var(--stone);
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  padding: 5px 11px;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.seg:hover { background: var(--soft); }
+.seg.activo {
+  background: linear-gradient(135deg, #19233e, #3b4661);
+  color: #fff;
+  font-weight: 600;
+}
+.seg:disabled { opacity: 0.6; cursor: wait; }
+
+.tema-card .extra {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--soft);
+}
+.tema-card .extra[hidden] { display: none; }
+
+label.inline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--olive);
+}
