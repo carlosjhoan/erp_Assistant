@@ -509,17 +509,20 @@ function iconoExtracciones(): string {
   return `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.7-4"/><path d="M13.8 2v3.2h-3.2"/></svg>`;
 }
 
-function filaTema(t: {
-  id: string;
-  title: string;
-  description: string | null;
-  scopeSignal: string | null;
-  verifyScore: number | null;
-  needsReview: boolean;
-  owner: string | null;
-  projectId: string | null;
-  status: string;
-}): string {
+function filaTema(
+  t: {
+    id: string;
+    title: string;
+    description: string | null;
+    scopeSignal: string | null;
+    verifyScore: number | null;
+    needsReview: boolean;
+    owner: string | null;
+    projectId: string | null;
+    status: string;
+  },
+  editable: boolean
+): string {
   const confianza = t.verifyScore != null ? Math.round(t.verifyScore * 100) : null;
   const baja = confianza != null && confianza < 60;
   const esAlcance = t.scopeSignal === "likely_scope";
@@ -533,24 +536,35 @@ function filaTema(t: {
     { valor: "discarded", texto: "Descartar" },
   ];
 
-  const control = segmentos
-    .map(
-      (s) =>
-        `<button type="button" role="radio" aria-checked="${t.status === s.valor}" class="seg${t.status === s.valor ? " activo" : ""}" data-estado-seg="${s.valor}" data-tema="${t.id}">${s.texto}</button>`
-    )
-    .join("");
+  // Radios nativos disfrazados de segmentos: el navegador maneja el estado,
+  // no nuestro JavaScript. Es lo que hace que siempre responda.
+  const control = editable
+    ? `<div class="segmentado" role="radiogroup" aria-label="Decisión del tema">${segmentos
+        .map(
+          (s) => `<label class="seg${t.status === s.valor ? " activo" : ""}">
+        <input type="radio" name="estado-${t.id}" value="${s.valor}" data-estado-radio="${t.id}"${t.status === s.valor ? " checked" : ""}>
+        <span>${s.texto}</span>
+      </label>`
+        )
+        .join("")}</div>`
+    : "";
 
-  const dialog = t.description
-    ? `<dialog id="${idModal}" class="modal modal-desc">
+  const estadoChip = editable
+    ? ""
+    : `<span class="estado-chip">${segmentos.find((s) => s.valor === t.status)?.texto ?? t.status}</span>`;
+
+  const dialog = `<dialog id="${idModal}" class="modal modal-desc">
   <header>
     <h2>${esc(t.title)}</h2>
     <button class="cerrar" data-cerrar-modal="${idModal}" aria-label="Cerrar">✕</button>
   </header>
-  <div class="markdown"><p>${esc(t.description)}</p></div>
-</dialog>`
-    : "";
+  ${t.description ? `<div class="markdown"><p>${esc(t.description)}</p></div>` : `<div class="markdown"><p class="nota">Sin descripción.</p></div>`}
+  <footer class="modal-pie">
+    <a class="boton secundario" href="/tema/${t.id}">Abrir tema</a>
+  </footer>
+</dialog>`;
 
-  return `<article class="fila tema-card estado-${t.status}" data-id="${t.id}">
+  return `<article class="fila tema-card estado-${t.status}${editable ? "" : " solo-lectura"}" data-id="${t.id}">
   <header class="tema-head">
     <div class="tema-marcas">
       <span class="marca ${esAlcance ? "alcance" : "idea"}">${esAlcance ? "ALCANCE" : "IDEA"}</span>
@@ -560,21 +574,22 @@ function filaTema(t: {
           : `<span class="jev" title="Jev no pudo evaluar este tema">Jev sin dato</span>`
       }
       ${t.needsReview ? `<span class="revisar" title="Jev duda de que se haya hablado">a revisar</span>` : ""}
+      ${estadoChip}
     </div>
-    <h3><a class="enlace-tema" href="/tema/${t.id}">${esc(t.title)}</a></h3>
-    ${
-      t.description
-        ? `<p class="tema-desc recortada" data-abrir-modal="${idModal}" role="button" tabindex="0">${esc(t.description)}</p>`
-        : ""
-    }
+
+    <h3>${esc(t.title)}</h3>
+
+    ${t.description ? `<p class="tema-desc">${esc(t.description)}</p>` : ""}
+    <button type="button" class="ver-mas" data-abrir-modal="${idModal}">ver más</button>
   </header>
 
-  <div class="tema-decision">
+  ${editable ? `<div class="tema-decision">
     <span class="campo-label">Decisión</span>
-    <div class="segmentado" role="radiogroup" aria-label="Decisión del tema">${control}</div>
-  </div>
+    ${control}
+  </div>` : ""}
 
-  <div class="extra"${seleccionado ? "" : " hidden"}>
+  ${editable && seleccionado
+    ? `<div class="extra">
     <div class="campo">
       <span class="campo-label">Responsable</span>
       <select data-campo="owner">${opciones(DUENOS, t.owner ?? "")}</select>
@@ -583,7 +598,20 @@ function filaTema(t: {
       <span class="campo-label">Proyectos</span>
       ${multiProyectos(t.id, proyectosDeTema({ db }, t.id))}
     </div>
-  </div>
+  </div>`
+    : ""}
+
+  ${!editable && seleccionado
+    ? `<div class="extra estatico">
+    <div class="campo"><span class="campo-label">Responsable</span><span class="valor">${t.owner === "opencode" ? "Código" : t.owner === "me" ? "Mío" : "Sin asignar"}</span></div>
+    <div class="campo"><span class="campo-label">Proyectos</span><span class="valor">${
+      proyectosDeTema({ db }, t.id)
+        .map((id) => db.select().from(project).all().find((p) => p.id === id)?.name)
+        .filter(Boolean)
+        .join(", ") || "Sin proyecto"
+    }</span></div>
+  </div>`
+    : ""}
 </article>
 ${dialog}`;
 }
@@ -605,7 +633,7 @@ function vistaReunion(id: string, tab?: string): Pagina {
   };
 
   // Por defecto, la pestaña donde hay trabajo: sin calificar si queda algo.
-  const activa = tab ?? (cuenta.proposed > 0 ? "proposed" : "todas");
+  const activa = tab ?? "todas";
 
   const pestañas: { id: string; texto: string; n: number }[] = [
     { id: "todas", texto: "Todas", n: cuenta.todas },
@@ -623,10 +651,11 @@ function vistaReunion(id: string, tab?: string): Pagina {
     .join("");
 
   const visibles = activa === "todas" ? temas : temas.filter((t) => t.status === activa);
+  const editable = activa === "todas";
 
   const lista =
     visibles.length > 0
-      ? visibles.map(filaTema).join("\n")
+      ? visibles.map((t) => filaTema(t, editable)).join("\n")
       : `<div class="vacio-mini">${
           activa === "proposed"
             ? "No queda nada sin calificar."

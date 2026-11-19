@@ -336,56 +336,47 @@ document.querySelectorAll("dialog.modal").forEach(function (dialogo) {
   });
 });
 
-/* ---------- triaje: control segmentado con delegacion de eventos ---------- */
+/* ---------- triaje con radios nativos ---------- */
 
-// Delegacion: funciona aunque las tarjetas se re-rendericen.
-document.addEventListener("click", async function (e) {
-  const boton = e.target.closest("[data-estado-seg]");
-  if (!boton) return;
+document.addEventListener("change", async function (e) {
+  const radio = e.target.closest("input[data-estado-radio]");
+  if (!radio) return;
 
-  e.preventDefault();
-
-  const card = boton.closest(".tema-card");
-  const id = boton.dataset.tema;
-  const valor = boton.dataset.estadoSeg;
-  const grupo = boton.closest(".segmentado");
+  const card = radio.closest(".tema-card");
+  const grupo = radio.closest(".segmentado");
   if (!card || !grupo) return;
 
-  const anterior = grupo.querySelector("button.activo");
-  if (anterior === boton) return;
+  const temaId = radio.dataset.estadoRadio;
+  const valor = radio.value;
+  const anterior = grupo.querySelector("label.activo input");
+  const valorAnterior = anterior ? anterior.value : "proposed";
 
-  grupo.querySelectorAll("button").forEach(function (b) { b.disabled = true; });
+  grupo.querySelectorAll("input").forEach(function (i) { i.disabled = true; });
+  grupo.querySelectorAll("label").forEach(function (l) { l.classList.toggle("activo", l.contains(radio)); });
 
   try {
-    await pedir("/accion/" + id + "/estado/" + valor);
+    await pedir("/accion/" + temaId + "/estado/" + valor);
 
     card.classList.remove("estado-proposed", "estado-selected", "estado-parked", "estado-discarded");
     card.classList.add("estado-" + valor);
 
-    grupo.querySelectorAll("button").forEach(function (b) {
-      b.classList.toggle("activo", b === boton);
-      b.setAttribute("aria-checked", String(b === boton));
-    });
-
+    // Responsable y Proyectos solo tienen sentido al elegir.
+    if (valor === "selected" && !card.querySelector(".extra")) {
+      location.reload();
+      return;
+    }
     const extra = card.querySelector(".extra");
     if (extra) extra.hidden = valor !== "selected";
 
-    const contenedor = card.closest("[data-tab]");
-    if (contenedor && contenedor.dataset.tab === "proposed" && valor !== "proposed") {
-      card.classList.add("saliendo");
-      const texto = boton.textContent;
-      setTimeout(function () {
-        card.remove();
-        ajustarContadores(contenedor, valor);
-        toast("Movido a " + texto, id, "proposed");
-      }, 200);
-    }
+    toast("Movido a " + radio.parentElement.querySelector("span").textContent, temaId, valorAnterior);
   } catch (err) {
+    if (anterior) {
+      anterior.checked = true;
+      grupo.querySelectorAll("label").forEach(function (l) { l.classList.toggle("activo", l.contains(anterior)); });
+    }
     fallar(err);
   } finally {
-    if (document.body.contains(grupo)) {
-      grupo.querySelectorAll("button").forEach(function (b) { b.disabled = false; });
-    }
+    grupo.querySelectorAll("input").forEach(function (i) { i.disabled = false; });
   }
 });
 
