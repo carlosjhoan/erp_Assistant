@@ -750,3 +750,45 @@ dialog.modal-desc .markdown p { font-size: 13.5px; line-height: 1.7; }
 .bloque-temas .pestanas { margin: 14px 0 12px; }
 
 .lista-temas .tema-card:first-child { margin-top: 0; }
+
+/* ---------- badges del bloque ---------- */
+
+.bloque-meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--stone);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 9px 2px 7px;
+}
+.badge svg { color: var(--olive); flex: none; }
+
+/* ---------- marca IDEA / ALCANCE: sólida para que se lea sobre cualquier tinte ---------- */
+
+.marca {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  border-radius: 5px;
+  padding: 2px 8px;
+  background: #fff;
+  margin-bottom: 6px;
+}
+.marca.alcance { color: #2f6b4f; border: 1px solid #a9cdb7; box-shadow: 0 1px 1px rgba(47,107,79,0.08); }
+.marca.idea { color: #46557a; border: 1px solid #b9c4da; box-shadow: 0 1px 1px rgba(70,85,122,0.08); }
+
+/* ---------- confiabilidad debajo ---------- */
+
+.confianza-linea {
+  font-size: 11.5px;
+  color: var(--olive);
+  margin: 8px 0 0;
+}
+.confianza-linea.baja { color: var(--warn); }
+.confianza-linea .revisar { color: var(--warn); }

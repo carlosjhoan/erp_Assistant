@@ -443,6 +443,14 @@ ${filas || `<div class="vacio"><h2>Sin reuniones</h2><p>Importá una desde Grano
   };
 }
 
+function iconoTemas(): string {
+  return `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h8"/></svg>`;
+}
+
+function iconoExtracciones(): string {
+  return `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.7-4"/><path d="M13.8 2v3.2h-3.2"/></svg>`;
+}
+
 function filaTema(t: {
   id: string;
   title: string;
@@ -455,7 +463,7 @@ function filaTema(t: {
   status: string;
 }): string {
   const confianza = t.verifyScore != null ? Math.round(t.verifyScore * 100) : null;
-  const claseConfianza = confianza != null && confianza < 60 ? "baja" : "";
+  const baja = confianza != null && confianza < 60;
   const esAlcance = t.scopeSignal === "likely_scope";
   const idModal = `desc-${t.id.slice(0, 8)}`;
   const seleccionado = t.status === "selected";
@@ -472,21 +480,17 @@ function filaTema(t: {
 
   return `<article class="fila tema-card estado-${t.status}" data-id="${t.id}">
   <div class="titulos">
-    <div class="etiquetas">
-      <span class="etiqueta ${esAlcance ? "alcance" : "idea"}">${esAlcance ? "ALCANCE" : "IDEA"}</span>
-      ${
-        confianza != null
-          ? `<span class="confianza ${claseConfianza}" title="Confianza de Jev en que esto se habló en la reunión">${confianza}%</span>`
-          : ""
-      }
-      ${t.needsReview ? `<span class="confianza baja" title="Jev duda de que se haya hablado">a revisar</span>` : ""}
-    </div>
+    <span class="marca ${esAlcance ? "alcance" : "idea"}">${esAlcance ? "ALCANCE" : "IDEA"}</span>
     <h3><a class="enlace-tema" href="/tema/${t.id}">${esc(t.title)}</a></h3>
     ${
       t.description
         ? `<p class="cita recortada" data-abrir-modal="${idModal}" role="button" tabindex="0">${esc(t.description)}</p>`
         : ""
     }
+    <p class="confianza-linea${baja ? " baja" : ""}">
+      ${confianza != null ? `Confiabilidad del ${confianza}%` : "Confiabilidad sin calcular"}
+      ${t.needsReview ? `<span class="revisar">· a revisar</span>` : ""}
+    </p>
   </div>
   <div class="controles">
     <label>Decisión
@@ -594,9 +598,8 @@ function vistaReunion(id: string, tab?: string): Pagina {
       <div>
         <h3>Temas de esta reunión</h3>
         <p class="bloque-meta">
-          ${temas.length} tema(s)
-          ${corridas > 0 ? ` · ${corridas} ${corridas === 1 ? "extracción" : "extracciones"}` : ""}
-          ${cuenta.proposed > 0 ? ` · ${cuenta.proposed} sin calificar` : ""}
+          <span class="badge">${iconoTemas()} ${temas.length} ${temas.length === 1 ? "tema" : "temas"}</span>
+          ${corridas > 0 ? `<span class="badge">${iconoExtracciones()} ${corridas} ${corridas === 1 ? "extracción" : "extracciones"}</span>` : ""}
         </p>
       </div>
       <div class="bloque-accion">
