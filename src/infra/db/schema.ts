@@ -94,6 +94,9 @@ export const topic = sqliteTable(
     scopeSignal: text("scope_signal", { enum: ["likely_scope", "idea_context"] }),
     scopeReason: text("scope_reason"),
     openQuestions: text("open_questions", { mode: "json" }).$type<string[]>(),
+    /** Lo que agregás vos para que el desglose no adivine. */
+    context: text("context"),
+
     // A quién le corresponde: a mí (entregable) o a un repo (cambio de código).
     owner: text("owner", { enum: ["me", "opencode"] }),
     ownerScore: real("owner_score"),

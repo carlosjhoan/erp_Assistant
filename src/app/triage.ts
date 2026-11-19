@@ -182,3 +182,11 @@ export function assertTriajeCompleto(ctx: TriageCtx, meetingId?: string): void {
     `Te faltan ${pendientes.length} tema(s) por calificar (selected / parked / discarded):\n${lista}`
   );
 }
+
+/** El contexto que vos aportás. Es lo que evita que el desglose adivine. */
+export function guardarContexto(ctx: TriageCtx, prefijo: string, contexto: string) {
+  const t = resolver(ctx, prefijo);
+  assertEditable(ctx, t.id);
+  ctx.db.update(topic).set({ context: contexto.trim() || null }).where(eq(topic.id, t.id)).run();
+  return { id: t.id, title: t.title };
+}
