@@ -197,6 +197,14 @@ export function guardarContexto(ctx: TriageCtx, prefijo: string, contexto: strin
 }
 
 /** Agrega o quita un proyecto del tema. Nunca deja de ser valido tener cero. */
+/** Deja el tema sin ningun proyecto. */
+export function limpiarProyectos(ctx: TriageCtx, prefijo: string) {
+  const t = resolver(ctx, prefijo);
+  assertEditable(ctx, t.id);
+  ctx.db.delete(topicProject).where(eq(topicProject.topicId, t.id)).run();
+  return { id: t.id, title: t.title };
+}
+
 export function alternarProyecto(ctx: TriageCtx, prefijo: string, projectId: string) {
   const t = resolver(ctx, prefijo);
   assertEditable(ctx, t.id);

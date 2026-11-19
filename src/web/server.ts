@@ -10,7 +10,7 @@ import { createTopicRepo } from "../infra/db/topic-repo.ts";
 import { esc, pagina, type Pagina } from "./render.ts";
 import { renderMarkdown, vistaPrevia } from "./markdown.ts";
 import { ordenarPorUrgencia } from "./orden-reuniones.ts";
-import { alternarProyecto, asignarOwner, cambiarEstado, deshacerDecision, quitarOwner, guardarContexto, proyectosDeTema } from "../app/triage.ts";
+import { alternarProyecto, limpiarProyectos, asignarOwner, cambiarEstado, deshacerDecision, quitarOwner, guardarContexto, proyectosDeTema } from "../app/triage.ts";
 import { aprobarRubrica, crearRubricaWeb, temasDeRubrica } from "../app/create-rubric.ts";
 import { detectarRepos } from "../app/detect-repos.ts";
 import { listarNotas, importarNota, archivarReunion, restaurarReunion } from "../app/granola-browser.ts";
@@ -56,6 +56,12 @@ function multiProyectos(topicId: string, activos: string[]): string {
   const proyectos = db.select().from(project).all().sort((a, b) => a.name.localeCompare(b.name));
   if (proyectos.length === 0) return `<span class="nota">No hay proyectos registrados.</span>`;
 
+  // "Sin proyecto" es una opcion de primera clase, no la ausencia de valor.
+  const ninguno = `<label class="opcion-check">
+        <input type="checkbox" data-sin-proyecto="${topicId}"${activos.length === 0 ? " checked" : ""}>
+        <span>Sin proyecto</span>
+      </label>`;
+
   const opciones = proyectos
     .map((p) => {
       const activo = activos.includes(p.id);
@@ -70,7 +76,7 @@ function multiProyectos(topicId: string, activos: string[]): string {
 
   return `<details class="multi">
     <summary><span class="multi-resumen">${resumen}</span></summary>
-    <div class="multi-lista">${opciones}</div>
+    <div class="multi-lista">${ninguno}<div class="multi-separador"></div>${opciones}</div>
   </details>`;
 }
 
@@ -529,27 +535,17 @@ function filaTema(
   const idModal = `desc-${t.id.slice(0, 8)}`;
   const seleccionado = t.status === "selected";
 
-  const segmentos: { valor: string; texto: string }[] = [
+  const estados: { valor: string; texto: string }[] = [
     { valor: "proposed", texto: "Por calificar" },
     { valor: "selected", texto: "Elegir" },
     { valor: "parked", texto: "Postergar" },
     { valor: "discarded", texto: "Descartar" },
   ];
 
-  const control = editable
-    ? `<div class="segmentado" role="radiogroup" aria-label="Decisión del tema">${segmentos
-        .map(
-          (s) => `<label class="seg${t.status === s.valor ? " activo" : ""}">
-        <input type="radio" name="estado-${t.id}" value="${s.valor}" data-estado-radio="${t.id}"${t.status === s.valor ? " checked" : ""}>
-        <span>${s.texto}</span>
-      </label>`
-        )
-        .join("")}</div>`
-    : "";
-
-  const estadoChip = editable
-    ? ""
-    : `<span class="estado-chip">${segmentos.find((s) => s.valor === t.status)?.texto ?? t.status}</span>`;
+  const nombres = proyectosDeTema({ db }, t.id)
+    .map((id) => db.select().from(project).all().find((p) => p.id === id)?.name)
+    .filter(Boolean)
+    .join(", ");
 
   const dialog = `<dialog id="${idModal}" class="modal modal-desc">
   <header>
@@ -562,14 +558,8 @@ function filaTema(
   </footer>
 </dialog>`;
 
-  const nombres = proyectosDeTema({ db }, t.id)
-    .map((id) => db.select().from(project).all().find((p) => p.id === id)?.name)
-    .filter(Boolean)
-    .join(", ");
-
-  return `<article class="fila tema-card estado-${t.status}${editable ? "" : " solo-lectura"}" data-id="${t.id}">
-  <header class="tema-head">
-    <div class="tema-marcas">
+  // Región común: tipo y confianza leen como una sola unidad.
+  const marcas = `<div class="tema-marcas">
       <span class="marca ${esAlcance ? "alcance" : "idea"}">${esAlcance ? "ALCANCE" : "IDEA"}</span>
       ${
         confianza != null
@@ -577,27 +567,19 @@ function filaTema(
           : `<span class="jev" title="Jev no pudo evaluar este tema">Jev sin dato</span>`
       }
       ${t.needsReview ? `<span class="revisar" title="Jev duda de que se haya hablado">a revisar</span>` : ""}
-      ${estadoChip}
-    </div>
+      ${editable ? "" : `<span class="estado-chip">${estados.find((s) => s.valor === t.status)?.texto ?? t.status}</span>`}
+    </div>`;
 
-    <h3>${esc(t.title)}</h3>
-    ${t.description ? `<p class="tema-desc">${esc(t.description)}</p>` : ""}
-    <button type="button" class="ver-mas" data-abrir-modal="${idModal}">ver más</button>
-  </header>
-
-  <footer class="tema-foot">
-    ${
-      editable
-        ? `<div class="campo campo-decision">
+  const pie = `<footer class="tema-foot">
+    <div class="campo">
       <span class="campo-label">Decisión</span>
-      ${control}
-    </div>`
-        : ""
-    }
-
-    ${
-      seleccionado
-        ? `<div class="campo">
+      ${
+        editable
+          ? `<select data-campo="estado">${opciones(estados, t.status)}</select>`
+          : `<span class="valor">${estados.find((s) => s.valor === t.status)?.texto ?? t.status}</span>`
+      }
+    </div>
+    <div class="campo">
       <span class="campo-label">Responsable</span>
       ${
         editable
@@ -608,10 +590,18 @@ function filaTema(
     <div class="campo">
       <span class="campo-label">Proyectos</span>
       ${editable ? multiProyectos(t.id, proyectosDeTema({ db }, t.id)) : `<span class="valor">${nombres || "Sin proyecto"}</span>`}
-    </div>`
-        : ""
-    }
-  </footer>
+    </div>
+  </footer>`;
+
+  return `<article class="fila tema-card estado-${t.status}${editable ? "" : " solo-lectura"}" data-id="${t.id}">
+  <header class="tema-head">
+    ${marcas}
+    <h3>${esc(t.title)}</h3>
+    ${t.description ? `<p class="tema-desc">${esc(t.description)}</p>` : ""}
+    <button type="button" class="ver-mas" data-abrir-modal="${idModal}">ver más</button>
+  </header>
+
+  ${pie}
 </article>
 ${dialog}`;
 }
@@ -937,6 +927,10 @@ async function accionTema(res: ServerResponse, id: string, campo: string, valor:
     }
 
     if (campo === "proyecto") {
+      if (valor === "ninguno") {
+        const r = limpiarProyectos({ db }, id);
+        return json(res, 200, { ok: true, titulo: r.title, ninguno: true });
+      }
       if (!valor) return json(res, 400, { error: "Falta el proyecto." });
       const r = alternarProyecto({ db }, id, valor);
       return json(res, 200, { ok: true, titulo: r.title, projectId: r.projectId, activo: r.activo });

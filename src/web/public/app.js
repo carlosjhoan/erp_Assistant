@@ -52,54 +52,35 @@
     alert(e && e.message ? e.message : String(e));
   }
 
-  /* ---------- bandeja: decisión y dueño ---------- */
+  /* ---------- tarjeta de tema: decision y responsable ---------- */
 
-  document.querySelectorAll(".fila[data-id]").forEach(function (fila) {
-    const id = fila.dataset.id;
+  document.querySelectorAll(".tema-card select[data-campo]").forEach(function (select) {
+    select.dataset.previo = select.value;
 
-    fila.querySelectorAll("select[data-campo]").forEach(function (select) {
-      select.dataset.previo = select.value;
+    select.addEventListener("change", async function () {
+      const card = select.closest(".tema-card");
+      const id = card.dataset.id;
+      const campo = select.dataset.campo;
+      const valor = select.value;
+      const anterior = select.dataset.previo || "";
+      select.disabled = true;
 
-      select.addEventListener("change", async function () {
-        const campo = select.dataset.campo;
-        const valor = select.value;
-        const anterior = select.dataset.previo || "";
-        select.disabled = true;
+      try {
+        await pedir("/accion/" + id + "/" + campo + "/" + encodeURIComponent(valor));
+        select.dataset.previo = valor;
 
-        try {
-          await pedir("/accion/" + id + "/" + campo + "/" + encodeURIComponent(valor));
-          select.dataset.previo = valor;
-
-          if (campo === "estado" && valor !== "proposed") {
-            fila.classList.add("saliendo");
-            setTimeout(function () {
-              fila.remove();
-              actualizarConteo();
-            }, 200);
-          }
-        } catch (e) {
-          select.value = anterior;
-          fallar(e);
-        } finally {
-          select.disabled = false;
+        if (campo === "estado") {
+          card.classList.remove("estado-proposed", "estado-selected", "estado-parked", "estado-discarded");
+          card.classList.add("estado-" + valor);
         }
-      });
+      } catch (e) {
+        select.value = anterior;
+        fallar(e);
+      } finally {
+        select.disabled = false;
+      }
     });
   });
-
-  function actualizarConteo() {
-    const restantes = document.querySelectorAll(".fila[data-id]").length;
-    const globo = document.querySelector(".nav .conteo");
-    if (globo) globo.textContent = String(restantes);
-
-    if (restantes === 0) {
-      const cont = document.querySelector(".contenido");
-      if (cont) {
-        cont.innerHTML =
-          '<div class="vacio"><h2>No hay temas por calificar</h2><p>La bandeja está limpia.</p></div>';
-      }
-    }
-  }
 
   /* ---------- botones con data-accion ---------- */
 
@@ -336,148 +317,6 @@ document.querySelectorAll("dialog.modal").forEach(function (dialogo) {
   });
 });
 
-/* ---------- triaje: el clic sobre el segmento es la accion ---------- */
-
-// No dependemos del evento change del radio: escuchamos el clic en la
-// etiqueta y aplicamos el cambio nosotros, marcando el input a mano.
-let aplicando = false;
-
-document.addEventListener("click", async function (e) {
-  const etiqueta = e.target.closest("label.seg");
-  if (!etiqueta || aplicando) return;
-
-  const input = etiqueta.querySelector("input[data-estado-radio]");
-  if (!input || input.disabled) return;
-
-  const card = etiqueta.closest(".tema-card");
-  const grupo = etiqueta.closest(".segmentado");
-  if (!card || !grupo) return;
-
-  const temaId = input.dataset.estadoRadio;
-  const valor = input.value;
-  const anterior = grupo.querySelector("input:checked");
-  const valorAnterior = anterior ? anterior.value : "proposed";
-
-  if (valorAnterior === valor) return;
-
-  aplicando = true;
-  e.preventDefault();
-
-  // Marca inmediata: el usuario ve el cambio antes de que responda el servidor.
-  input.checked = true;
-  grupo.querySelectorAll("label").forEach(function (l) {
-    l.classList.toggle("activo", l === etiqueta);
-  });
-
-  try {
-    await pedir("/accion/" + temaId + "/estado/" + valor);
-
-    card.classList.remove("estado-proposed", "estado-selected", "estado-parked", "estado-discarded");
-    card.classList.add("estado-" + valor);
-
-    // Al elegir hace falta mostrar Responsable y Proyectos.
-    if (valor === "selected" && !card.querySelector(".extra")) {
-      location.reload();
-      return;
-    }
-    const extra = card.querySelector(".extra");
-    if (extra) extra.hidden = valor !== "selected";
-
-    toast("Movido a " + etiqueta.textContent.trim(), temaId, valorAnterior);
-  } catch (err) {
-    if (anterior) {
-      anterior.checked = true;
-      grupo.querySelectorAll("label").forEach(function (l) {
-        l.classList.toggle("activo", l.contains(anterior));
-      });
-    }
-    fallar(err);
-  } finally {
-    aplicando = false;
-  }
-});
-
-/** Aviso corto con opcion de deshacer. */
-function toast(mensaje, temaId, volverA) {
-  const caja = document.createElement("div");
-  caja.className = "toast";
-  const texto = document.createElement("span");
-  texto.textContent = mensaje;
-  const deshacer = document.createElement("button");
-  deshacer.type = "button";
-  deshacer.textContent = "Deshacer";
-  caja.append(texto, deshacer);
-
-  deshacer.addEventListener("click", async function () {
-    try {
-      await pedir("/accion/" + temaId + "/estado/" + volverA);
-      location.reload();
-    } catch (e) {
-      fallar(e);
-    }
-  });
-
-  document.body.appendChild(caja);
-  setTimeout(function () { caja.remove(); }, 8000);
-}
-
-function ajustarContadores(contenedor, destino) {
-  const leer = function (id) {
-    const el = document.querySelector('[data-conteo="' + id + '"]');
-    if (!el) return null;
-    const b = el.querySelector("b");
-    return b ? b : null;
-  };
-
-  const restar = function (id) {
-    const b = leer(id);
-    if (b) b.textContent = String(Math.max(0, Number(b.textContent) - 1));
-  };
-  const sumar = function (id) {
-    const b = leer(id);
-    if (b) b.textContent = String(Number(b.textContent) + 1);
-  };
-
-  restar("proposed");
-  sumar(destino);
-
-  if (contenedor.querySelectorAll(".fila[data-id]").length === 0) {
-    contenedor.innerHTML = '<div class="vacio-mini">No queda nada sin calificar.</div>';
-  }
-}
-
-/* ---------- progresividad: dueño y proyecto solo al seleccionar ---------- */
-
-document.querySelectorAll(".tema-card").forEach(function (card) {
-  const selectEstado = card.querySelector('select[data-campo="estado"]');
-  const extra = card.querySelector(".extra");
-  if (!selectEstado || !extra) return;
-
-  function sincronizarClase() {
-    card.classList.remove("estado-proposed", "estado-selected", "estado-parked", "estado-discarded");
-    card.classList.add("estado-" + selectEstado.value);
-    extra.hidden = selectEstado.value !== "selected";
-  }
-
-  selectEstado.addEventListener("change", sincronizarClase);
-  sincronizarClase();
-});
-
-/* la descripción se abre con clic o Enter */
-document.querySelectorAll(".recortada[data-abrir-modal]").forEach(function (el) {
-  function abrir() {
-    const dialogo = document.getElementById(el.dataset.abrirModal);
-    if (dialogo && dialogo.showModal) dialogo.showModal();
-  }
-  el.addEventListener("click", abrir);
-  el.addEventListener("keydown", function (e) {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      abrir();
-    }
-  });
-});
-
 /* ---------- eliminar y restaurar reuniones ---------- */
 
 document.querySelectorAll("[data-archivar]").forEach(function (boton) {
@@ -554,6 +393,28 @@ document.querySelectorAll("input[data-toggle-proyecto]").forEach(function (chip)
       fallar(err);
     } finally {
       chip.disabled = false;
+    }
+  });
+});
+
+/* ---------- "Sin proyecto" como opcion explicita ---------- */
+
+document.querySelectorAll("[data-sin-proyecto]").forEach(function (chk) {
+  chk.addEventListener("click", async function (e) {
+    e.preventDefault();
+    const tema = chk.dataset.sinProyecto;
+    const detalle = chk.closest("details.multi");
+
+    try {
+      await pedir("/accion/" + tema + "/proyecto/ninguno");
+
+      detalle.querySelectorAll("input[data-toggle-proyecto]").forEach(function (i) { i.checked = false; });
+      chk.checked = true;
+
+      const resumen = detalle.querySelector(".multi-resumen");
+      if (resumen) resumen.textContent = "Sin proyecto";
+    } catch (err) {
+      fallar(err);
     }
   });
 });
