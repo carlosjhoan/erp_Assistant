@@ -874,7 +874,7 @@ dialog.modal-desc .markdown p { font-size: 13.5px; line-height: 1.7; }
   letter-spacing: -0.005em;
 }
 
-.metricas { display: flex; gap: 6px; flex-wrap: wrap; }
+.metricas { display: flex; gap: 6px; flex-wrap: wrap; padding-right: 34px; }
 
 .metrica {
   display: inline-flex;
@@ -918,36 +918,37 @@ dialog.modal-desc .markdown p { font-size: 13.5px; line-height: 1.7; }
   border: 0;
 }
 
-.card-borrar {
+.card-archivar {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  right: 12px;
+  bottom: 10px;
   z-index: 2;
-  width: 24px;
-  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 26px;
   border-radius: 7px;
   border: 1px solid transparent;
   background: transparent;
   color: var(--olive);
-  font-size: 12px;
-  line-height: 1;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.14s ease, color 0.14s ease, background 0.14s ease;
+  transition: opacity 0.14s ease, color 0.14s ease, background 0.14s ease, border-color 0.14s ease;
 }
 
-.card-reunion:hover .card-borrar,
-.card-borrar:focus-visible { opacity: 1; }
+.card-reunion:hover .card-archivar,
+.card-archivar:focus-visible { opacity: 1; }
 
-.card-borrar:hover {
-  color: var(--bad);
-  background: #fbeceb;
-  border-color: #e6c9c4;
+.card-archivar:hover {
+  color: var(--ink);
+  background: #eef1f6;
+  border-color: var(--line);
 }
 
 /* En pantallas sin hover, siempre visible. */
 @media (hover: none) {
-  .card-borrar { opacity: 1; }
+  .card-archivar { opacity: 1; }
 }
 
 /* ---------- archivadas ---------- */

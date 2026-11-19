@@ -438,7 +438,7 @@ function vistaReuniones(): Pagina {
 
       return `<article class="card-reunion ${extraidos ? "extraida" : "sin-extraer"}">
   <a class="card-link" href="/reunion/${m.id}"><span class="sr-only">Abrir ${esc(m.title)}</span></a>
-  <button class="card-borrar" data-archivar="${m.id}" data-titulo="${esc(m.title)}" data-temas="${cuenta.total}" aria-label="Archivar reunión" title="Archivar">✕</button>
+  <button class="card-archivar" data-archivar="${m.id}" data-titulo="${esc(m.title)}" data-temas="${cuenta.total}" aria-label="Archivar reunión" title="Archivar">${iconoArchivar()}</button>
   <div class="card-top">
     <span class="card-fecha">${icono("fecha")} ${esc(fecha)}</span>
     <span class="card-estado ${extraidos ? "ok" : "pendiente"}">${extraidos ? "Temas extraídos" : "Pendiente por extracción"}</span>
@@ -466,16 +466,17 @@ function vistaReuniones(): Pagina {
     conteoBandeja: reuniones.length,
     accion: `<a class="boton" href="/reuniones/nueva">Nueva reunión</a>`,
     cuerpo: `${tarjetas ? `<div class="grid-reuniones">${tarjetas}</div>` : `<div class="vacio"><h2>Sin reuniones</h2><p>Importá una desde Granola.</p></div>`}
-${
-  archivadas
-    ? `<section class="seccion-archivadas">
-  <h2>Archivadas <span class="avance">${archivadas.split("</div>").length - 1}</span></h2>
+<section class="seccion-archivadas">
+  <h2>Archivadas <span class="avance">${archivadas ? archivadas.split("</div>").length - 1 : 0}</span></h2>
   <p class="nota">No participan de la rúbrica ni de la detección de repos. Se pueden restaurar.</p>
-  ${archivadas}
-</section>`
-    : ""
-}`,
+  ${archivadas || `<p class="vacio-mini">No hay reuniones archivadas.</p>`}
+</section>`,
   };
+}
+
+/** Caja de archivo: se entiende sin leyenda. */
+function iconoArchivar(): string {
+  return `<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true"><rect x="1.8" y="2.6" width="12.4" height="3" rx="0.8"/><path d="M3 5.6v6.9a0.9 0.9 0 0 0 .9.9h8.2a0.9 0.9 0 0 0 .9-.9V5.6"/><path d="M5.9 8.7h4.2"/></svg>`;
 }
 
 function iconoTemas(): string {
