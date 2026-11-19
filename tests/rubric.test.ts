@@ -5,7 +5,7 @@ import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { openDatabase } from "../src/infra/db/client.ts";
 import { meeting, rubric, rubricItem, rubricSourceMeeting, topic } from "../src/infra/db/schema.ts";
 import { createTopicRepo } from "../src/infra/db/topic-repo.ts";
-import { createRubric, lunesDe, semanaSiguiente, viernesDe } from "../src/app/create-rubric.ts";
+import { aprobarRubrica, createRubric, lunesDe, semanaSiguiente, viernesDe } from "../src/app/create-rubric.ts";
 import { generateItems } from "../src/app/generate-items.ts";
 import { cambiarEstado } from "../src/app/triage.ts";
 import type { DecisionProvider, LlmProvider } from "../src/infra/llm/types.ts";
@@ -253,4 +253,49 @@ test("la corrida queda registrada en agent_run", async () => {
 
   const runs = db.select().from(rubricItem).all();
   assert.ok(runs.length > 0);
+});
+
+test("no se aprueba una rúbrica con un tema sin ítems", () => {
+  const { db, tema } = entorno();
+  const a = tema("Con ítems");
+  const b = tema("Sin ítems");
+  cambiarEstado({ db }, a, "selected");
+  cambiarEstado({ db }, b, "selected");
+
+  const r = createRubric({ db });
+  // se desglosa solo el primero
+  const i = db.select().from(rubricItem).all();
+  assert.equal(i.length, 0);
+
+  assert.throws(
+    () => aprobarRubrica({ db }, r.rubricId),
+    (e: Error) => {
+      assert.match(e.message, /Faltan desglosar 2 tema/);
+      return true;
+    }
+  );
+});
+
+test("con todos los temas desglosados, aprueba", async () => {
+  const { db, tema } = entorno();
+  const id = tema("Uno");
+  cambiarEstado({ db }, id, "selected");
+  const r = createRubric({ db });
+  await generateItems({ db, ...proveedores() }, id);
+
+  const a = aprobarRubrica({ db }, r.rubricId);
+
+  assert.equal(a.items, 2);
+  assert.equal(db.select().from(rubric).where(eq(rubric.id, r.rubricId)).get()?.status, "approved");
+});
+
+test("una rúbrica aprobada no se aprueba dos veces", async () => {
+  const { db, tema } = entorno();
+  const id = tema("Uno");
+  cambiarEstado({ db }, id, "selected");
+  const r = createRubric({ db });
+  await generateItems({ db, ...proveedores() }, id);
+  aprobarRubrica({ db }, r.rubricId);
+
+  assert.throws(() => aprobarRubrica({ db }, r.rubricId), /ya está en "approved"/);
 });

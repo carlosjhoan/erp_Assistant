@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
-import { meeting, rubric, rubricSourceMeeting, topic } from "../infra/db/schema.ts";
+import { meeting, rubric, rubricItem, rubricSourceMeeting, topic } from "../infra/db/schema.ts";
 import { createTopicRepo } from "../infra/db/topic-repo.ts";
 import { assertTriajeCompleto } from "./triage.ts";
 import type { openDatabase } from "../infra/db/client.ts";
@@ -165,4 +165,57 @@ export function temasDeRubrica(db: DB, rubricId: string) {
     .from(topic)
     .where(and(eq(topic.rubricId, rubricId), eq(topic.status, "selected")))
     .all();
+}
+
+export interface AprobarResult {
+  rubricId: string;
+  weekStart: string;
+  version: number;
+  items: number;
+  temas: number;
+}
+
+/**
+ * Aprueba la rúbrica. Es el único momento en que se congela.
+ *
+ * Guard: no se aprueba si hay un tema `selected` sin ningún ítem. Una rúbrica
+ * con un tema vacío promete algo que nadie desglosó.
+ */
+export function aprobarRubrica(ctx: { db: DB; actor?: string }, rubricId: string): AprobarResult {
+  const { db } = ctx;
+
+  const r = db.select().from(rubric).where(eq(rubric.id, rubricId)).get();
+  if (!r) throw new RubricError(`No existe la rúbrica ${rubricId}.`);
+  if (r.status === "approved" || r.status === "closed") {
+    throw new RubricError(`La rúbrica ya está en "${r.status}".`);
+  }
+  if (r.status !== "draft" && r.status !== "in_review") {
+    throw new RubricError(`No se aprueba una rúbrica en "${r.status}".`);
+  }
+
+  const temas = temasDeRubrica(db, rubricId);
+  if (temas.length === 0) throw new RubricError("La rúbrica no tiene ningún tema seleccionado.");
+
+  const items = db.select().from(rubricItem).where(eq(rubricItem.rubricId, rubricId)).all();
+  const sinItems = temas.filter((t) => !items.some((i) => i.topicId === t.id));
+
+  if (sinItems.length > 0) {
+    const lista = sinItems.map((t) => `  · ${t.title}`).join("\n");
+    throw new RubricError(
+      `Faltan desglosar ${sinItems.length} tema(s) antes de aprobar:\n${lista}\n\nDesglosá con: npm run items -- --topic <id>`
+    );
+  }
+
+  db.update(rubric)
+    .set({ status: "approved", approvedAt: new Date(), approvedBy: ctx.actor ?? "yo" })
+    .where(eq(rubric.id, rubricId))
+    .run();
+
+  return { rubricId, weekStart: r.weekStart, version: r.version, items: items.length, temas: temas.length };
+}
+
+/** Envoltorio para el botón de la UI: crea con la semana sugerida. */
+export function crearRubricaWeb(ctx: { db: DB }): { rubricId: string; adjuntos: number } {
+  const r = createRubric(ctx);
+  return { rubricId: r.rubricId, adjuntos: r.adjuntos };
 }
