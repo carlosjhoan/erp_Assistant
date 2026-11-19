@@ -486,7 +486,7 @@ function btnDeshabilitar(b, si) {
 
 /* ---------- chips de proyecto por tema ---------- */
 
-document.querySelectorAll("[data-toggle-proyecto]").forEach(function (chip) {
+document.querySelectorAll("input[data-toggle-proyecto]").forEach(function (chip) {
   chip.addEventListener("click", async function (e) {
     e.preventDefault();
     e.stopPropagation();
@@ -497,8 +497,15 @@ document.querySelectorAll("[data-toggle-proyecto]").forEach(function (chip) {
 
     try {
       const r = await pedir("/accion/" + tema + "/proyecto/" + proyecto);
-      chip.classList.toggle("activo", Boolean(r.activo));
-      chip.setAttribute("aria-pressed", String(Boolean(r.activo)));
+      chip.checked = Boolean(r.activo);
+
+      // El resumen del desplegable refleja cuantos quedaron marcados.
+      const detalle = chip.closest("details.multi");
+      const resumen = detalle ? detalle.querySelector(".multi-resumen") : null;
+      if (detalle && resumen) {
+        const n = detalle.querySelectorAll("input[data-toggle-proyecto]:checked").length;
+        resumen.textContent = n === 0 ? "Sin proyecto" : n === 1 ? "1 proyecto" : n + " proyectos";
+      }
     } catch (err) {
       fallar(err);
     } finally {

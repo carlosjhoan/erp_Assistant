@@ -45,18 +45,33 @@ const DUENOS = [
 ] as const;
 
 /** Chips de proyecto: un tema puede tener cero, uno o varios. */
-function chipsProyecto(topicId: string, activos: string[]): string {
+/**
+ * Multi-selección desplegable de proyectos.
+ *
+ * `<select multiple>` nativo es un anti-patrón: exige Ctrl+clic y casi nadie
+ * lo descubre. Acá es un `<details>` con checkboxes reales, que se puede usar
+ * con teclado, se lee con lector de pantalla y no cierra al marcar.
+ */
+function multiProyectos(topicId: string, activos: string[]): string {
   const proyectos = db.select().from(project).all().sort((a, b) => a.name.localeCompare(b.name));
   if (proyectos.length === 0) return `<span class="nota">No hay proyectos registrados.</span>`;
 
-  const chips = proyectos
+  const opciones = proyectos
     .map((p) => {
       const activo = activos.includes(p.id);
-      return `<button type="button" class="chip-proyecto${activo ? " activo" : ""}" data-toggle-proyecto="${p.id}" data-tema="${topicId}" aria-pressed="${activo}">${esc(p.name)}</button>`;
+      return `<label class="opcion-check">
+        <input type="checkbox" data-toggle-proyecto="${p.id}" data-tema="${topicId}"${activo ? " checked" : ""}>
+        <span>${esc(p.name)}</span>
+      </label>`;
     })
     .join("");
 
-  return `<div class="chips-proyecto">${chips}</div>`;
+  const resumen = activos.length === 0 ? "Sin proyecto" : activos.length === 1 ? "1 proyecto" : `${activos.length} proyectos`;
+
+  return `<details class="multi">
+    <summary><span class="multi-resumen">${resumen}</span></summary>
+    <div class="multi-lista">${opciones}</div>
+  </details>`;
 }
 
 function opciones(lista: readonly { valor: string; texto: string }[], actual: string | null | undefined): string {
@@ -522,37 +537,40 @@ function filaTema(t: {
     : "";
 
   return `<article class="fila tema-card estado-${t.status}" data-id="${t.id}">
-  <div class="titulos">
+  <header class="tema-head">
     <span class="marca ${esAlcance ? "alcance" : "idea"}">${esAlcance ? "ALCANCE" : "IDEA"}</span>
     <h3><a class="enlace-tema" href="/tema/${t.id}">${esc(t.title)}</a></h3>
     ${
       t.description
-        ? `<p class="cita recortada" data-abrir-modal="${idModal}" role="button" tabindex="0">${esc(t.description)}</p>`
+        ? `<p class="tema-desc recortada" data-abrir-modal="${idModal}" role="button" tabindex="0">${esc(t.description)}</p>`
         : ""
     }
-    <p class="confianza-linea${baja ? " baja" : ""}">
+  </header>
+
+  <footer class="tema-foot">
+    <span class="tema-conf${baja ? " baja" : ""}">
       ${confianza != null ? `Confiabilidad del ${confianza}%` : "Confiabilidad sin calcular"}
       ${t.needsReview ? `<span class="revisar">· a revisar</span>` : ""}
-    </p>
-  </div>
-  <div class="controles">
-    <label>Decisión
-      <select data-campo="estado">${opciones(ESTADOS, t.status)}</select>
-    </label>
-    <div class="extra"${seleccionado ? "" : " hidden"}>
-      <label>Responsable
-        <select data-campo="owner">${opciones(DUENOS, t.owner ?? "")}</select>
+    </span>
+
+    <div class="controles">
+      <label>Decisión
+        <select data-campo="estado">${opciones(ESTADOS, t.status)}</select>
       </label>
-      <div class="campo-proyectos">
-        <span class="campo-label">Proyectos</span>
-        ${chipsProyecto(t.id, proyectosDeTema({ db }, t.id))}
+      <div class="extra"${seleccionado ? "" : " hidden"}>
+        <label>Responsable
+          <select data-campo="owner">${opciones(DUENOS, t.owner ?? "")}</select>
+        </label>
+        <div class="campo-proyectos">
+          <span class="campo-label">Proyectos</span>
+          ${multiProyectos(t.id, proyectosDeTema({ db }, t.id))}
+        </div>
       </div>
     </div>
-  </div>
+  </footer>
 </article>
 ${dialog}`;
 }
-
 
 function vistaReunion(id: string, tab?: string): Pagina {
   const m = db.select().from(meeting).where(eq(meeting.id, id)).get();
