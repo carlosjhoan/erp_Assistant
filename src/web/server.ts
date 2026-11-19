@@ -5,7 +5,7 @@ import { join, extname } from "node:path";
 import { randomUUID } from "node:crypto";
 import { desc, eq } from "drizzle-orm";
 import { openDatabase } from "../infra/db/client.ts";
-import { repo as repoTable, rubric, rubricItem, topic } from "../infra/db/schema.ts";
+import { agentRun, llmCall, project, repo as repoTable, rubric, rubricItem, topic } from "../infra/db/schema.ts";
 import { createTopicRepo } from "../infra/db/topic-repo.ts";
 import { esc, pagina, type Pagina } from "./render.ts";
 import { asignarOwner, cambiarEstado, deshacerDecision, quitarOwner, guardarContexto } from "../app/triage.ts";
@@ -308,6 +308,119 @@ function vistaTema(id: string): Pagina {
   };
 }
 
+function vistaRepos(): Pagina {
+  const proyectos = db.select().from(project).all().sort((a, b) => a.name.localeCompare(b.name));
+  const repos = db.select().from(repoTable).all();
+  const faltantes = repos.filter((r) => !existsSync(r.path)).length;
+
+  const cuerpo = proyectos
+    .map((p) => {
+      const propios = repos.filter((r) => r.projectId === p.id).sort((a, b) => a.name.localeCompare(b.name));
+
+      const filas = propios
+        .map((r) => {
+          const existe = existsSync(r.path);
+          return `<article class="tarjeta-repo">
+  <header>
+    <strong>${esc(r.name)}</strong>
+    ${existe ? "" : `<span class="aviso-inline">ruta inexistente</span>`}
+    ${r.opencodeSessionId ? `<span class="sesion">sesión ${esc(r.opencodeSessionId.slice(0, 10))}</span>` : ""}
+  </header>
+  <p class="descripcion">${esc(r.description ?? "Sin descripción.")}</p>
+  <p class="ruta">${esc(r.path)}</p>
+  <div class="superficies-linea">
+    ${r.exposes.length > 0 ? `<span>expone: ${r.exposes.map((s) => `<code>${esc(s)}</code>`).join(" ")}</span>` : ""}
+    ${r.consumes.length > 0 ? `<span>consume: ${r.consumes.map((s) => `<code>${esc(s)}</code>`).join(" ")}</span>` : ""}
+  </div>
+  ${r.keywords.length > 0 ? `<p class="claves">${r.keywords.map((k) => `<span>${esc(k)}</span>`).join("")}</p>` : ""}
+</article>`;
+        })
+        .join("\n");
+
+      return `<section class="bloque-proyecto">
+  <h2>${esc(p.name)} <span class="avance">${propios.length}</span></h2>
+  <p class="ruta">${esc(p.path)}</p>
+  ${filas}
+</section>`;
+    })
+    .join("\n");
+
+  return {
+    titulo: "Repos",
+    seccion: "repos",
+    conteoBandeja: createTopicRepo(db).bandeja().length,
+    cuerpo: `<div class="resumen">
+  <span>${repos.length} repo(s) en ${proyectos.length} proyecto(s)</span>
+  <span>${repos.length - faltantes}/${repos.length} rutas existen</span>
+</div>
+${cuerpo}`,
+  };
+}
+
+function vistaTrazas(): Pagina {
+  const runs = db.select().from(agentRun).orderBy(desc(agentRun.createdAt)).limit(25).all();
+  const calls = db.select().from(llmCall).all();
+  const porRun = new Map<string, typeof calls>();
+  for (const c of calls) porRun.set(c.runId, [...(porRun.get(c.runId) ?? []), c]);
+
+  const totalCalls = calls.length;
+  const fallidas = runs.filter((r) => r.outcome === "failed").length;
+  const conReintento = runs.filter((r) => (r.attempts ?? 1) > 1).length;
+  const sinCerrar = runs.filter((r) => r.outcome === null).length;
+  const tokens = calls.reduce((n, c) => n + (c.inputTokens ?? 0) + (c.outputTokens ?? 0), 0);
+
+  const lista = runs
+    .map((r) => {
+      const suyas = (porRun.get(r.id) ?? []).sort((a, b) => (a.attempt ?? 1) - (b.attempt ?? 1));
+      const marca = r.outcome === "failed" ? "✗" : r.outcome === null ? "…" : "✓";
+      const color = r.outcome === "failed" ? "var(--bad)" : r.outcome === null ? "var(--warn)" : "var(--ok)";
+
+      const lineas = suyas
+        .map((c) => {
+          const cm = c.status === "ok" ? "✓" : "✗";
+          const err = c.errorKind ? ` · ${c.errorKind}` : "";
+          return `<div class="linea">
+  <span class="nombre">${cm} ${esc(c.provider)} / ${esc(c.model ?? "—")}</span>
+  <span>intento ${c.attempt ?? 1}</span>
+  <span>${c.inputTokens ?? 0}/${c.outputTokens ?? 0} tok</span>
+  <span>${c.durationMs ?? 0} ms</span>
+  <span>${err}</span>
+</div>`;
+        })
+        .join("\n");
+
+      return `<article class="run">
+  <header>
+    <span style="color:${color}">${marca}</span>
+    <strong>${esc(r.tool)}</strong>
+    <span class="papel">${esc(r.kind)}</span>
+    <span>${r.attempts ?? 1} intento(s)</span>
+    <span>${r.tokens ?? 0} tok</span>
+    <span>${r.durationMs ? (r.durationMs / 1000).toFixed(1) + " s" : "—"}</span>
+    ${r.errorKind ? `<span class="aviso-inline">${esc(r.errorKind)}</span>` : ""}
+    <span class="der">${r.createdAt ? new Date(r.createdAt).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" }) : ""}</span>
+  </header>
+  ${lineas}
+</article>`;
+    })
+    .join("\n");
+
+  return {
+    titulo: "Trazas",
+    seccion: "trazas",
+    conteoBandeja: createTopicRepo(db).bandeja().length,
+    cuerpo: `<div class="resumen">
+  <span>${runs.length} operación(es)</span>
+  <span>${totalCalls} llamada(s)</span>
+  <span>${tokens.toLocaleString("es-CO")} tok</span>
+  <span>fallidas ${fallidas}</span>
+  <span>con reintento ${conReintento}</span>
+  ${sinCerrar > 0 ? `<span style="color:var(--warn)">sin cerrar ${sinCerrar}</span>` : ""}
+</div>
+${lista || `<div class="vacio"><h2>Sin llamadas todavía</h2></div>`}`,
+  };
+}
+
 function marcador(titulo: string, seccion: string, fase: string): Pagina {
   return {
     titulo,
@@ -466,8 +579,8 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
   if (ruta === "/") return responder(res, 200, pagina(bandeja()));
   if (ruta === "/temas") return responder(res, 200, pagina(vistaTemas()));
   if (ruta === "/rubrica") return responder(res, 200, pagina(vistaRubrica()));
-  if (ruta === "/repos") return responder(res, 200, pagina(marcador("Repos", "repos", "Fase 4")));
-  if (ruta === "/trazas") return responder(res, 200, pagina(marcador("Trazas", "trazas", "Fase 4")));
+  if (ruta === "/repos") return responder(res, 200, pagina(vistaRepos()));
+  if (ruta === "/trazas") return responder(res, 200, pagina(vistaTrazas()));
 
   responder(res, 404, "no encontrado");
 });
