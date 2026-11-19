@@ -84,6 +84,7 @@ function bandeja(): Pagina {
     <label>Dueño
       <select data-campo="owner">${opciones(DUENOS, f.owner ?? "")}</select>
     </label>
+    <a class="abrir" href="/tema/${f.id}">Abrir →</a>
   </div>
 </article>`;
     })
