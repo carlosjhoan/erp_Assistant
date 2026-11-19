@@ -636,27 +636,29 @@ dialog.modal .cerrar {
   --glass-border-discarded: rgba(190, 110, 100, 0.42);
 }
 
+/* El color va como background-image sobre blanco solido: asi el degradado
+   compone contra un fondo conocido y no contra lo que haya detras. */
 .tema-card {
-  backdrop-filter: blur(8px);
-  transition: background 0.2s ease, border-color 0.2s ease;
+  background-color: #ffffff;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 .tema-card.estado-selected {
-  background: var(--glass-selected);
+  background-image: var(--glass-selected);
   border-color: var(--glass-border-selected);
 }
 .tema-card.estado-parked {
-  background: var(--glass-parked);
+  background-image: var(--glass-parked);
   border-color: var(--glass-border-parked);
 }
 .tema-card.estado-discarded {
-  background: var(--glass-discarded);
+  background-image: var(--glass-discarded);
   border-color: var(--glass-border-discarded);
 }
 
 /* pestañas con el mismo código de color, suaves */
-.pestana.estado-selected { border-color: var(--glass-border-selected); background: var(--glass-selected); }
-.pestana.estado-parked { border-color: var(--glass-border-parked); background: var(--glass-parked); }
-.pestana.estado-discarded { border-color: var(--glass-border-discarded); background: var(--glass-discarded); }
+.pestana.estado-selected { border-color: var(--glass-border-selected); background-color: #fff; background-image: var(--glass-selected); }
+.pestana.estado-parked { border-color: var(--glass-border-parked); background-color: #fff; background-image: var(--glass-parked); }
+.pestana.estado-discarded { border-color: var(--glass-border-discarded); background-color: #fff; background-image: var(--glass-discarded); }
 
 .pestana.estado-selected.activa { background: #e6f2ea; color: var(--ok); border-color: var(--ok); }
 .pestana.estado-parked.activa { background: #e8eef7; color: #3d5a80; border-color: #6e96c8; }

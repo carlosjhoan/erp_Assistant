@@ -39,6 +39,7 @@ export function pagina(p: Pagina): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
 <title>${esc(p.titulo)} · my_erp</title>
 <link rel="stylesheet" href="/app.css">
 </head>
