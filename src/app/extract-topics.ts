@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { meeting } from "../infra/db/schema.ts";
 import { createTopicRepo } from "../infra/db/topic-repo.ts";
 import { finishRun, startRun } from "../infra/llm/trace.ts";
+import { sincronizarEstadoReunion } from "./meeting-status.ts";
 import { LlmError, type DecisionProvider, type LlmProvider } from "../infra/llm/types.ts";
 import { ExtraccionTemas, type TemaPropuesto } from "./contracts.ts";
 import { promptExtraccion, SYSTEM_EXTRACCION } from "./prompts.ts";
@@ -94,6 +95,7 @@ export async function extractTopics(
     // quedan fantasmas de una corrida anterior.
     deps.setRun?.(undefined);
     const { borrados } = repo.reemplazarPropuestos(meetingId, []);
+    sincronizarEstadoReunion(db, meetingId);
 
     return {
       meetingTitle: reunion.title,
@@ -120,6 +122,7 @@ export async function extractTopics(
     deps.setRun?.(undefined);
   }
   const { borrados, ids } = repo.reemplazarPropuestos(meetingId, verificados);
+  sincronizarEstadoReunion(db, meetingId);
   const guardados = repo.porIds(ids);
 
   return {

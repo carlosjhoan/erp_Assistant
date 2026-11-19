@@ -5,7 +5,7 @@ import { join, extname } from "node:path";
 import { randomUUID } from "node:crypto";
 import { desc, eq } from "drizzle-orm";
 import { openDatabase } from "../infra/db/client.ts";
-import { agentRun, llmCall, project, projectRepository, repo as repoTable, rubric, rubricItem, topic } from "../infra/db/schema.ts";
+import { agentRun, llmCall, meeting, project, projectRepository, repo as repoTable, rubric, rubricItem, topic } from "../infra/db/schema.ts";
 import { createTopicRepo } from "../infra/db/topic-repo.ts";
 import { esc, pagina, type Pagina } from "./render.ts";
 import { asignarOwner, cambiarEstado, deshacerDecision, quitarOwner, guardarContexto } from "../app/triage.ts";
@@ -423,6 +423,113 @@ ${lista || `<div class="vacio"><h2>Sin llamadas todavía</h2></div>`}`,
   };
 }
 
+function vistaReuniones(filtro?: string): Pagina {
+  const todas = db.select().from(meeting).orderBy(desc(meeting.occurredAt)).all();
+  const estados: Record<string, string> = {
+    imported: "importada",
+    topics_extracted: "temas extraídos",
+    triaged: "triaje cerrado",
+  };
+  const colores: Record<string, string> = {
+    imported: "var(--olive)",
+    topics_extracted: "var(--warn)",
+    triaged: "var(--ok)",
+  };
+
+  const filtradas = filtro && estados[filtro] ? todas.filter((m) => m.status === filtro) : todas;
+
+  const pestañas = [
+    { id: "", texto: `Todas (${todas.length})` },
+    ...Object.entries(estados).map(([id, texto]) => ({
+      id,
+      texto: `${texto} (${todas.filter((m) => m.status === id).length})`,
+    })),
+  ]
+    .map((p) => `<a class="pestana${(filtro ?? "") === p.id ? " activa" : ""}" href="/reuniones${p.id ? `?estado=${p.id}` : ""}">${p.texto}</a>`)
+    .join("");
+
+  const filas = filtradas
+    .map((m) => {
+      const temas = db.select().from(topic).where(eq(topic.meetingId, m.id)).all();
+      const propuestos = temas.filter((t) => t.status === "proposed").length;
+
+      return `<article class="fila">
+  <div class="titulos">
+    <div class="etiquetas">
+      <span class="etiqueta" style="color:${colores[m.status] ?? "var(--olive)"}">${estados[m.status] ?? m.status}</span>
+      <span class="score">${m.occurredAt ? new Date(m.occurredAt).toLocaleDateString("es-CO") : "sin fecha"}</span>
+      <span class="score">${temas.length} tema(s)${propuestos > 0 ? ` · ${propuestos} sin calificar` : ""}</span>
+    </div>
+    <h3><a class="enlace-tema" href="/reunion/${m.id}">${esc(m.title)}</a></h3>
+    ${m.summary ? `<p class="cita">${esc(m.summary.slice(0, 180))}…</p>` : `<p class="cita">Sin notas.</p>`}
+  </div>
+  <div class="controles"><a class="abrir" href="/reunion/${m.id}">Abrir →</a></div>
+</article>`;
+    })
+    .join("\n");
+
+  return {
+    titulo: "Reuniones",
+    seccion: "reuniones",
+    conteoBandeja: createTopicRepo(db).bandeja().length,
+    cuerpo: `<div class="pestanas">${pestañas}</div>
+${filas || `<div class="vacio"><h2>Sin reuniones</h2><p>Importá una desde Granola con <code>npm run ingest</code>.</p></div>`}`,
+  };
+}
+
+function vistaReunion(id: string): Pagina {
+  const m = db.select().from(meeting).where(eq(meeting.id, id)).get();
+  if (!m) return { titulo: "Reunión", seccion: "reuniones", cuerpo: `<div class="vacio"><h2>No existe</h2></div>` };
+
+  const temas = db.select().from(topic).where(eq(topic.meetingId, m.id)).all();
+  const orden = ["proposed", "selected", "parked", "discarded"] as const;
+  const nombre: Record<string, string> = {
+    proposed: "Sin calificar",
+    selected: "Seleccionados",
+    parked: "Postergados",
+    discarded: "Descartados",
+  };
+
+  const bloqueTemas = orden
+    .map((s) => {
+      const lista = temas.filter((t) => t.status === s);
+      if (lista.length === 0) return "";
+      const items = lista
+        .map(
+          (t) => `<article class="fila compacta">
+  <div class="titulos"><h3><a class="enlace-tema" href="/tema/${t.id}">${esc(t.title)}</a></h3></div>
+  <div class="controles"><span class="dueno ${t.owner === "opencode" ? "codigo" : "mio"}">${t.owner === "opencode" ? "código" : t.owner === "me" ? "mío" : "—"}</span></div>
+</article>`
+        )
+        .join("\n");
+      return `<div class="grupo-fecha">${nombre[s]} (${lista.length})</div>${items}`;
+    })
+    .join("\n");
+
+  return {
+    titulo: m.title,
+    seccion: "reuniones",
+    conteoBandeja: createTopicRepo(db).bandeja().length,
+    cuerpo: `<a class="volver" href="/reuniones">← Reuniones</a>
+
+<div class="detalle">
+  <div class="etiquetas">
+    <span class="etiqueta alcance">${m.status}</span>
+    <span class="score">${m.occurredAt ? new Date(m.occurredAt).toLocaleString("es-CO", { dateStyle: "long" }) : ""}</span>
+    <span class="score">${temas.length} tema(s)</span>
+  </div>
+
+  <h3>Notas</h3>
+  ${m.summary ? `<div class="notas">${esc(m.summary)}</div>` : `<p class="nota">Sin notas guardadas.</p>`}
+
+  ${m.transcriptAvailable ? `<h3>Transcripción</h3><details><summary>${(m.transcript ?? "").length} caracteres</summary><div class="notas">${esc(m.transcript ?? "")}</div></details>` : `<p class="nota">Esta reunión no tiene transcripción.</p>`}
+
+  <h3>Temas de esta reunión</h3>
+  ${bloqueTemas || `<p class="nota">Todavía no se extrajeron temas. Corré <code>npm run topics:extract</code>.</p>`}
+</div>`,
+  };
+}
+
 function marcador(titulo: string, seccion: string, fase: string): Pagina {
   return {
     titulo,
@@ -580,6 +687,10 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
 
   if (ruta === "/") return responder(res, 200, pagina(bandeja()));
   if (ruta === "/temas") return responder(res, 200, pagina(vistaTemas()));
+  if (ruta.startsWith("/reuniones")) return responder(res, 200, pagina(vistaReuniones(url.searchParams.get("estado") ?? undefined)));
+
+  const verReunion = ruta.match(/^\/reunion\/([a-f0-9-]+)$/);
+  if (verReunion?.[1]) return responder(res, 200, pagina(vistaReunion(verReunion[1])));
   if (ruta === "/rubrica") return responder(res, 200, pagina(vistaRubrica()));
   if (ruta === "/repos") return responder(res, 200, pagina(vistaRepos()));
   if (ruta === "/trazas") return responder(res, 200, pagina(vistaTrazas()));

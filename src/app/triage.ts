@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { rubric, topic } from "../infra/db/schema.ts";
 import { createTopicRepo, type EstadoTema } from "../infra/db/topic-repo.ts";
 import { canTransitionTopic } from "../domain/status.ts";
+import { sincronizarEstadoReunion } from "./meeting-status.ts";
 import { LlmError } from "../infra/llm/types.ts";
 import type { openDatabase } from "../infra/db/client.ts";
 
@@ -65,6 +66,8 @@ export function cambiarEstado(ctx: TriageCtx, prefijo: string, destino: EstadoTe
     ...(destino === "selected" ? {} : { rubricId: null }),
   });
 
+  if (t.meetingId) sincronizarEstadoReunion(ctx.db, t.meetingId);
+
   return { id: t.id, title: t.title, desde, hacia: destino, sinCambios: false };
 }
 
@@ -111,6 +114,8 @@ export function deshacerDecision(ctx: TriageCtx, prefijo: string) {
     .set({ status: "proposed", decidedAt: null, decidedBy: null, rubricId: null, mergedIntoTopicId: null })
     .where(eq(topic.id, t.id))
     .run();
+
+  if (t.meetingId) sincronizarEstadoReunion(ctx.db, t.meetingId);
 
   return { id: t.id, title: t.title };
 }

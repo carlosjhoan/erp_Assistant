@@ -7,7 +7,8 @@ import { meeting, rubric, rubricItem, rubricSourceMeeting, topic } from "../src/
 import { createTopicRepo } from "../src/infra/db/topic-repo.ts";
 import { aprobarRubrica, createRubric, lunesDe, semanaSiguiente, viernesDe } from "../src/app/create-rubric.ts";
 import { generateItems } from "../src/app/generate-items.ts";
-import { cambiarEstado } from "../src/app/triage.ts";
+import { cambiarEstado, deshacerDecision } from "../src/app/triage.ts";
+import { derivarEstado } from "../src/app/meeting-status.ts";
 import type { DecisionProvider, LlmProvider } from "../src/infra/llm/types.ts";
 
 const APUNTE =
@@ -298,4 +299,27 @@ test("una rúbrica aprobada no se aprueba dos veces", async () => {
   aprobarRubrica({ db }, r.rubricId);
 
   assert.throws(() => aprobarRubrica({ db }, r.rubricId), /ya está en "approved"/);
+});
+
+/* ---------- estado de la reunión ---------- */
+
+test("el estado de la reunión se deriva de sus temas", () => {
+  const { db, tema } = entorno();
+  assert.equal(derivarEstado(db, "m1"), "imported");
+
+  const a = tema("Uno");
+  assert.equal(derivarEstado(db, "m1"), "topics_extracted");
+
+  cambiarEstado({ db }, a, "selected");
+  assert.equal(derivarEstado(db, "m1"), "triaged");
+});
+
+test("deshacer una decisión devuelve la reunión a topics_extracted", () => {
+  const { db, tema } = entorno();
+  const a = tema("Uno");
+  cambiarEstado({ db }, a, "selected");
+  assert.equal(derivarEstado(db, "m1"), "triaged");
+
+  deshacerDecision({ db }, a);
+  assert.equal(derivarEstado(db, "m1"), "topics_extracted");
 });

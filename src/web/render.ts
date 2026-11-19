@@ -19,6 +19,7 @@ export interface Pagina {
 
 const ENTRADAS = [
   { id: "bandeja", nombre: "Bandeja", href: "/" },
+  { id: "reuniones", nombre: "Reuniones", href: "/reuniones" },
   { id: "rubrica", nombre: "Rúbrica", href: "/rubrica" },
   { id: "temas", nombre: "Temas", href: "/temas" },
   { id: "repos", nombre: "Repos", href: "/repos" },

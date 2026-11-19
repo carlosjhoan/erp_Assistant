@@ -38,6 +38,16 @@ export const meeting = sqliteTable(
     privateNotesAvailable: integer("private_notes_available", { mode: "boolean" }).notNull().default(false),
     transcriptAvailable: integer("transcript_available", { mode: "boolean" }).notNull().default(false),
 
+    /**
+     * Como va la reunion: importada, con temas extraidos, o con el triaje cerrado.
+     * Se deriva de los temas, salvo imported que es el estado inicial.
+     */
+    status: text("status", { enum: ["imported", "topics_extracted", "triaged"] })
+      .notNull()
+      .default("imported"),
+    /** Proyecto por defecto de la reunion; los temas pueden cambiarlo. */
+    projectId: text("project_id").references(() => project.id),
+
     importedAt: now(),
   },
   (t) => [uniqueIndex("meeting_source_external").on(t.source, t.externalId), index("meeting_occurred").on(t.occurredAt)]
