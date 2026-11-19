@@ -616,7 +616,74 @@ function filaTema(
 ${dialog}`;
 }
 
-function vistaReunion(id: string, tab?: string): Pagina {
+/** Lo que esta reunión aportó a alguna rúbrica, agrupado por semana y tema. */
+function bloqueRubricaReunion(meetingId: string): string {
+  const temas = db.select().from(topic).where(eq(topic.meetingId, meetingId)).all();
+  const ids = temas.map((t) => t.id);
+
+  if (ids.length === 0) {
+    return `<div class="vacio-mini">Esta reunión todavía no tiene temas, así que no puede aportar nada a la rúbrica.</div>`;
+  }
+
+  const items = db.select().from(rubricItem).all().filter((i) => i.topicId && ids.includes(i.topicId));
+  const seleccionados = temas.filter((t) => t.status === "selected");
+  const sinRubrica = seleccionados.filter((t) => !t.rubricId);
+
+  if (items.length === 0) {
+    return `<div class="vacio-mini">
+      ${seleccionados.length === 0 ? "Marcá algún tema como <b>Elegir</b> para que pueda entrar a una rúbrica." : `${seleccionados.length} tema(s) elegido(s) sin desglosar todavía.`}
+    </div>
+    ${sinRubrica.length > 0 ? `<p class="nota">Generá la rúbrica con los temas elegidos: <code>npm run rubric</code></p>` : ""}`;
+  }
+
+  const rubricas = new Map<string, typeof items>();
+  for (const i of items) rubricas.set(i.rubricId, [...(rubricas.get(i.rubricId) ?? []), i]);
+
+  const nombresDeProyectos = (topicId: string) => {
+    const ids = proyectosDeTema({ db }, topicId);
+    const nombres = ids.map((id) => db.select().from(project).where(eq(project.id, id)).get()?.name).filter(Boolean);
+    return nombres.length > 0 ? nombres.join(", ") : "sin proyecto";
+  };
+
+  return [...rubricas.entries()]
+    .map(([rubricId, propios]) => {
+      const r = db.select().from(rubric).where(eq(rubric.id, rubricId)).get();
+      if (!r) return "";
+
+      const porTema = temas
+        .filter((t) => propios.some((i) => i.topicId === t.id))
+        .map((t) => {
+          const suyos = propios.filter((i) => i.topicId === t.id).sort((a, b) => a.position - b.position);
+          const filas = suyos
+            .map(
+              (i) => `<div class="item">
+  <div class="numero">${i.position + 1}</div>
+  <div>
+    <h4>${i.verifyStatus === "verified" ? "✓" : "⚠"} ${esc(i.title)}</h4>
+    <div class="criterio">${esc(i.acceptanceCriteria)}</div>
+    <div class="meta">
+      <span>${i.type}</span>
+      <span>${nombresDeProyectos(t.id)}</span>
+      ${i.repoId ? `<span>repo</span>` : ""}
+    </div>
+  </div>
+</div>`
+            )
+            .join("\n");
+          return `<div class="grupo-fecha">${esc(t.title)} (${suyos.length})</div>${filas}`;
+        })
+        .join("\n");
+
+      return `<section class="tema-bloque">
+  <h2>Rúbrica ${esc(r.weekStart)} · v${r.version} <span class="avance">${r.status}</span></h2>
+  <p class="nota">${propios.length} ítem(s) de esta reunión · entrega ${r.deadline ?? "sin fecha"}</p>
+  ${porTema}
+</section>`;
+    })
+    .join("\n");
+}
+
+function vistaReunion(id: string, tab?: string, vista: "temas" | "rubrica" = "temas"): Pagina {
   const m = db.select().from(meeting).where(eq(meeting.id, id)).get();
   if (!m) return { titulo: "Reunión", seccion: "reuniones", cuerpo: `<div class="vacio"><h2>No existe</h2></div>` };
 
@@ -693,6 +760,11 @@ function vistaReunion(id: string, tab?: string): Pagina {
     ${cuenta.proposed > 0 ? `<span>· ${cuenta.proposed} sin calificar</span>` : `<span>· todo calificado</span>`}
   </p>
 
+  <nav class="vistas">
+    <a class="vista${vista === "temas" ? " activa" : ""}" href="/reunion/${m.id}?vista=temas">Temas</a>
+    <a class="vista${vista === "rubrica" ? " activa" : ""}" href="/reunion/${m.id}?vista=rubrica">Rúbrica</a>
+  </nav>
+
   <h3>Notas</h3>
   ${
     notas
@@ -703,7 +775,18 @@ function vistaReunion(id: string, tab?: string): Pagina {
       : `<p class="nota">Sin notas guardadas.</p>`
   }
 
-  <section class="bloque-temas">
+  ${
+    vista === "rubrica"
+      ? `<section class="bloque-temas">
+    <header class="bloque-head">
+      <div>
+        <h3>Rúbrica de la semana</h3>
+        <p class="bloque-meta">Lo que esta reunión aportó a la rúbrica</p>
+      </div>
+    </header>
+    <div class="rubrica-reunion">${bloqueRubricaReunion(m.id)}</div>
+  </section>`
+      : `<section class="bloque-temas">
     <header class="bloque-head">
       <div>
         <h3>Temas de esta reunión</h3>
@@ -721,9 +804,11 @@ function vistaReunion(id: string, tab?: string): Pagina {
     <nav class="pestanas">${navegacion}</nav>
 
     <div class="lista-temas" data-tab="${activa}">
+    ${editable ? "" : "<p class=\"aviso-lectura\">Solo lectura. Para cambiar la decisión, usá la pestaña Todas.</p>"}
       ${lista}
     </div>
-  </section>
+  </section>`
+  }
 </div>
 ${modal}`,
   };
@@ -1039,7 +1124,7 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
   if (ruta === "/reuniones") return responder(res, 200, pagina(vistaReuniones()));
 
   const verReunion = ruta.match(/^\/reunion\/([a-f0-9-]+)$/);
-  if (verReunion?.[1]) return responder(res, 200, pagina(vistaReunion(verReunion[1], url.searchParams.get("tab") ?? undefined)));
+  if (verReunion?.[1]) return responder(res, 200, pagina(vistaReunion(verReunion[1], url.searchParams.get("tab") ?? undefined, url.searchParams.get("vista") === "rubrica" ? "rubrica" : "temas")));
   if (ruta === "/rubrica") return responder(res, 200, pagina(vistaRubrica()));
   if (ruta === "/repos") return responder(res, 200, pagina(vistaRepos()));
   if (ruta === "/trazas") return responder(res, 200, pagina(vistaTrazas()));
