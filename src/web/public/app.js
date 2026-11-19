@@ -430,6 +430,25 @@ document.querySelectorAll("[data-sin-proyecto]").forEach(function (chk) {
   });
 });
 
+/* ---------- desplegables de proyecto: se cierran como un menu ---------- */
+
+// Escape cierra primero el desplegable; si no hay ninguno abierto, sigue
+// hacia los modales.
+document.addEventListener("keydown", function (e) {
+  if (e.key !== "Escape") return;
+  const abierto = document.querySelector("details.multi[open]");
+  if (!abierto) return;
+  abierto.open = false;
+  e.stopPropagation();
+}, true);
+
+// Clic por fuera del desplegable.
+document.addEventListener("click", function (e) {
+  document.querySelectorAll("details.multi[open]").forEach(function (d) {
+    if (!d.contains(e.target)) d.open = false;
+  });
+});
+
 /* ---------- cerrar modales: Escape y clic por fuera ---------- */
 
 document.querySelectorAll("dialog.modal").forEach(function (dialogo) {
