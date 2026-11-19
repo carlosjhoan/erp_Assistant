@@ -4,8 +4,9 @@ import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { openDatabase } from "../src/infra/db/client.ts";
-import { project, projectRepository, repo } from "../src/infra/db/schema.ts";
+import { meeting, project, projectRepository, repo, topic } from "../src/infra/db/schema.ts";
 import { catalogo } from "../src/app/detect-repos.ts";
+import { createTopicRepo } from "../src/infra/db/topic-repo.ts";
 import { leerSeed, sembrar } from "../scripts/seed-repos.ts";
 
 function dbNueva() {
@@ -118,4 +119,35 @@ test("un repo en dos proyectos se presenta con ambos nombres", () => {
   const c = catalogo(db);
   assert.equal(c.length, 1);
   assert.equal(c[0]?.proyecto, "Alfa + Beta");
+});
+
+function conReunion() {
+  const db = dbNueva();
+  db.insert(meeting)
+    .values({ id: "m1", source: "granola", externalId: "g1", title: "R", occurredAt: new Date(), contentHash: "h", summary: "x" })
+    .run();
+  return db;
+}
+
+test("el borrado de reuniones es suave y reversible", async () => {
+  const { eliminarReunion, restaurarReunion } = await import("../src/app/granola-browser.ts");
+  const db = conReunion();
+
+  eliminarReunion(db, "m1");
+  const borrada = db.select().from(meeting).all().find((m) => m.id === "m1");
+  assert.ok(borrada, "la fila sigue existiendo");
+  assert.ok(borrada!.deletedAt, "queda marcada como eliminada");
+
+  restaurarReunion(db, "m1");
+  assert.equal(db.select().from(meeting).all().find((m) => m.id === "m1")!.deletedAt, null);
+});
+
+test("eliminar no toca los temas de la reunión", async () => {
+  const { eliminarReunion } = await import("../src/app/granola-browser.ts");
+  const db = conReunion();
+  createTopicRepo(db).crearManual({ meetingId: "m1", title: "Un tema" });
+
+  eliminarReunion(db, "m1");
+
+  assert.equal(db.select().from(topic).all().length, 1);
 });

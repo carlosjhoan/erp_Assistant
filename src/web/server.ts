@@ -13,7 +13,7 @@ import { ordenarPorUrgencia } from "./orden-reuniones.ts";
 import { asignarOwner, asignarProyecto, cambiarEstado, deshacerDecision, quitarOwner, guardarContexto } from "../app/triage.ts";
 import { aprobarRubrica, crearRubricaWeb, temasDeRubrica } from "../app/create-rubric.ts";
 import { detectarRepos } from "../app/detect-repos.ts";
-import { listarNotas, importarNota } from "../app/granola-browser.ts";
+import { listarNotas, importarNota, eliminarReunion, restaurarReunion } from "../app/granola-browser.ts";
 import { extractTopics, contarExtracciones } from "../app/extract-topics.ts";
 import { aceptarPropuestas, broadcast } from "../app/broadcast.ts";
 import { providersFromEnv } from "../infra/llm/providers.ts";
@@ -404,7 +404,8 @@ function icono(nombre: "fecha" | "temas" | "pendiente" | "seleccionada" | "poste
 }
 
 function vistaReuniones(): Pagina {
-  const reuniones = db.select().from(meeting).all();
+  const todas = db.select().from(meeting).all();
+  const reuniones = todas.filter((m) => !m.deletedAt);
   const temas = db.select().from(topic).all();
 
   const ordenadas = ordenarPorUrgencia(reuniones, temas);
@@ -438,15 +439,28 @@ function vistaReuniones(): Pagina {
         .filter(Boolean)
         .join("");
 
-      return `<a class="card-reunion${atencion ? " atencion" : ""}" href="/reunion/${m.id}">
+      return `<article class="card-reunion${atencion ? " atencion" : ""}">
+  <a class="card-link" href="/reunion/${m.id}"><span class="sr-only">Abrir ${esc(m.title)}</span></a>
+  <button class="card-borrar" data-eliminar="${m.id}" data-titulo="${esc(m.title)}" data-temas="${cuenta.total}" aria-label="Eliminar reunión" title="Eliminar">✕</button>
   <div class="card-top">
     <span class="card-fecha">${icono("fecha")} ${esc(fecha)}</span>
     <span class="card-estado ${extraidos ? "ok" : "pendiente"}">${extraidos ? "Temas extraídos" : "Pendiente por extracción"}</span>
   </div>
   <h3>${esc(m.title)}</h3>
   ${extraidos ? `<div class="metricas">${metricas}</div>` : `<p class="card-hint">Todavía no se le pidió a la IA que detecte los temas.</p>`}
-</a>`;
+</article>`;
     })
+    .join("\n");
+
+  const papelera = todas
+    .filter((m) => m.deletedAt)
+    .map(
+      (m) => `<div class="papelera-fila">
+  <span>${esc(m.title)}</span>
+  <span class="score">${m.occurredAt ? new Date(m.occurredAt).toLocaleDateString("es-CO") : ""}</span>
+  <button class="boton secundario" data-restaurar="${m.id}">Restaurar</button>
+</div>`
+    )
     .join("\n");
 
   return {
@@ -454,11 +468,15 @@ function vistaReuniones(): Pagina {
     seccion: "reuniones",
     conteoBandeja: reuniones.length,
     accion: `<a class="boton" href="/reuniones/nueva">Nueva reunión</a>`,
-    cuerpo: tarjetas
-      ? `<div class="grid-reuniones">${tarjetas}</div>`
-      : `<div class="vacio"><h2>Sin reuniones</h2><p>Importá una desde Granola.</p></div>`,
+    cuerpo: `${tarjetas ? `<div class="grid-reuniones">${tarjetas}</div>` : `<div class="vacio"><h2>Sin reuniones</h2><p>Importá una desde Granola.</p></div>`}
+${
+  papelera
+    ? `<details class="papelera"><summary>Papelera (${papelera.split("</div>").length - 1})</summary>${papelera}</details>`
+    : ""
+}`,
   };
 }
+
 function iconoTemas(): string {
   return `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h8"/></svg>`;
 }
@@ -794,6 +812,16 @@ async function accionGranola(res: ServerResponse, accion: string, cuerpo: string
 
 async function accionReunion(res: ServerResponse, id: string, accion: string) {
   try {
+    if (accion === "eliminar") {
+      eliminarReunion(db, id);
+      return json(res, 200, { ok: true });
+    }
+
+    if (accion === "restaurar") {
+      restaurarReunion(db, id);
+      return json(res, 200, { ok: true });
+    }
+
     if (accion === "detectar") {
       const r = await extractTopics({ db, ...providersFromEnv(db) }, id);
       return json(res, 200, { ok: true, extraidos: r.extracted, needsReview: r.needsReview });

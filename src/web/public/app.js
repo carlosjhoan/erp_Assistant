@@ -433,3 +433,53 @@ document.querySelectorAll(".recortada[data-abrir-modal]").forEach(function (el) 
     }
   });
 });
+
+/* ---------- eliminar y restaurar reuniones ---------- */
+
+document.querySelectorAll("[data-eliminar]").forEach(function (boton) {
+  boton.addEventListener("click", async function (e) {
+    // El botón vive encima del enlace estirado: hay que cortar la navegación.
+    e.preventDefault();
+    e.stopPropagation();
+
+    const temas = Number(boton.dataset.temas || 0);
+    const detalle =
+      temas > 0
+        ? "\n\nTiene " + temas + " tema(s) y sus ítems en la rúbrica quedan intactos."
+        : "";
+
+    if (!confirm("¿Eliminar «" + boton.dataset.titulo + "»?" + detalle + "\n\nSe puede restaurar desde la papelera.")) {
+      return;
+    }
+
+    try {
+      await pedir("/reunion/" + boton.dataset.eliminar + "/eliminar");
+      const card = boton.closest(".card-reunion");
+      if (card) {
+        card.classList.add("saliendo");
+        setTimeout(function () {
+          card.remove();
+        }, 200);
+      }
+    } catch (err) {
+      fallar(err);
+    }
+  });
+});
+
+document.querySelectorAll("[data-restaurar]").forEach(function (boton) {
+  boton.addEventListener("click", async function () {
+    btnDeshabilitar(boton, true);
+    try {
+      await pedir("/reunion/" + boton.dataset.restaurar + "/restaurar");
+      location.reload();
+    } catch (e) {
+      fallar(e);
+      btnDeshabilitar(boton, false);
+    }
+  });
+});
+
+function btnDeshabilitar(b, si) {
+  b.disabled = si;
+}

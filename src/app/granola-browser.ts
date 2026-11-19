@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { meeting } from "../infra/db/schema.ts";
+import { meeting, topic } from "../infra/db/schema.ts";
 import { conectar, UnauthorizedError, type GranolaConnection } from "../infra/granola/mcp.ts";
 import { FileOAuthProvider } from "../infra/granola/oauth.ts";
 import { parseMeetingsXml } from "../infra/granola/parse.ts";
@@ -114,4 +114,20 @@ export async function importarNota(
 /** ¿Ya está importada esta nota? */
 export function yaImportada(db: DB, externalId: string): boolean {
   return Boolean(db.select().from(meeting).where(eq(meeting.externalId, externalId)).get());
+}
+
+/** ¿Cuánto se lleva por delante eliminar esta reunión? */
+export function impactoDeEliminar(db: DB, meetingId: string) {
+  const temas = db.select().from(topic).where(eq(topic.meetingId, meetingId)).all();
+  return { temas: temas.length };
+}
+
+/** Borrado suave: sale de la lista, nada se destruye. */
+export function eliminarReunion(db: DB, meetingId: string): void {
+  db.update(meeting).set({ deletedAt: new Date() }).where(eq(meeting.id, meetingId)).run();
+}
+
+/** La devuelve a la lista. */
+export function restaurarReunion(db: DB, meetingId: string): void {
+  db.update(meeting).set({ deletedAt: null }).where(eq(meeting.id, meetingId)).run();
 }
