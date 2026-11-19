@@ -1461,3 +1461,40 @@ label.inline {
 }
 .tema-marcas .jev.baja { color: var(--warn); }
 .tema-marcas .marca { margin-bottom: 0; }
+
+/* ---------- alineacion exacta de los tres campos del pie ---------- */
+
+.tema-foot { align-items: start; }
+
+.tema-foot .campo { display: flex; flex-direction: column; gap: 5px; }
+
+/* Misma caja para los tres: alto, padding y tipografia identicos. */
+.tema-foot select,
+.tema-foot .multi > summary {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  margin: 0;
+  padding: 0 26px 0 9px;
+  font-family: inherit;
+  font-size: 12.5px;
+  line-height: 1;
+  box-sizing: border-box;
+}
+
+.tema-foot .multi {
+  display: block;
+  width: 100%;
+  margin: 0;
+}
+
+.tema-foot .multi > summary::-webkit-details-marker { display: none; }
+.tema-foot .multi > summary::marker { content: ""; }
+
+/* El texto del resumen no debe empujar la caja. */
+.tema-foot .multi-resumen {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
