@@ -429,24 +429,20 @@ document.querySelectorAll("[data-sin-proyecto]").forEach(function (chk) {
     }
   });
 });
-})();
 
 /* ---------- cerrar modales: Escape y clic por fuera ---------- */
 
 document.querySelectorAll("dialog.modal").forEach(function (dialogo) {
-  // Escape: el navegador lo maneja, pero nos aseguramos.
-  dialogo.addEventListener("cancel", function (e) {
-    e.preventDefault();
-    dialogo.close();
-  });
-
-  // Clic fuera del recuadro: el target es el propio dialog cuando se pulsa
-  // el fondo, pero comparamos el rectangulo para cubrir todos los casos.
+  // Clic sobre el fondo: el evento llega con el propio dialog como target.
   dialogo.addEventListener("click", function (e) {
-    const caja = dialogo.getBoundingClientRect();
-    const dentro =
-      e.clientX >= caja.left && e.clientX <= caja.right &&
-      e.clientY >= caja.top && e.clientY <= caja.bottom;
-    if (!dentro) dialogo.close();
+    if (e.target === dialogo) dialogo.close();
   });
 });
+
+// Escape: el navegador ya lo maneja, pero lo dejamos explicito.
+document.addEventListener("keydown", function (e) {
+  if (e.key !== "Escape") return;
+  document.querySelectorAll("dialog.modal[open]").forEach(function (d) { d.close(); });
+});
+
+})();
