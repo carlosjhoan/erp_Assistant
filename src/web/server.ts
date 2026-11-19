@@ -59,54 +59,6 @@ function opciones(lista: readonly { valor: string; texto: string }[], actual: st
 
 /* ---------- bandeja ---------- */
 
-function bandeja(): Pagina {
-  const filas = createTopicRepo(db).bandeja();
-  const total = filas.length;
-
-  if (total === 0) {
-    return {
-      titulo: "Bandeja",
-      seccion: "bandeja",
-      conteoBandeja: 0,
-      cuerpo: `<div class="vacio"><h2>No hay temas por calificar</h2><p>La bandeja está limpia. Todo el alcance de las reuniones ya fue decidido.</p></div>`,
-    };
-  }
-
-  const cuerpo = filas
-    .map((f) => {
-      const score = f.verifyScore;
-      const claseScore = score != null && score < 0.6 ? "bajo" : "";
-      const aviso = f.needsReview ? `<div class="aviso">⚠ Jev duda de que esto se haya hablado</div>` : "";
-
-      return `<article class="fila" data-id="${f.id}">
-  <div class="titulos">
-    <div class="etiquetas">
-      <span class="etiqueta ${f.scopeSignal === "likely_scope" ? "alcance" : "idea"}">${f.scopeSignal === "likely_scope" ? "alcance" : "idea"}</span>
-      <span class="score ${claseScore}">jev ${score != null ? score.toFixed(2) : "—"}</span>
-    </div>
-    <h3><a class="enlace-tema" href="/tema/${f.id}">${esc(f.title)}</a></h3>
-    ${f.description ? `<p class="cita">${esc(f.description)}</p>` : ""}
-    ${aviso}
-  </div>
-  <div class="controles">
-    <label>Decisión
-      <select data-campo="estado">${opciones(ESTADOS, "proposed")}</select>
-    </label>
-    <label>Dueño
-      <select data-campo="owner">${opciones(DUENOS, f.owner ?? "")}</select>
-    </label>
-    <label>Proyecto
-      <select data-campo="proyecto">${opcionesProyecto(f.projectId)}</select>
-    </label>
-    <a class="abrir" href="/tema/${f.id}">Abrir →</a>
-  </div>
-</article>`;
-    })
-    .join("\n");
-
-  return { titulo: "Bandeja", seccion: "bandeja", conteoBandeja: total, cuerpo };
-}
-
 /* ---------- rúbrica ---------- */
 
 function vistaRubrica(): Pagina {
@@ -610,17 +562,22 @@ function vistaReunion(id: string, tab?: string): Pagina {
     : "";
 
 
+  const fecha = m.occurredAt
+    ? new Date(m.occurredAt).toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+    : "fecha desconocida";
+
   return {
-    titulo: m.title,
+    titulo: `Reunión de ${fecha}`,
     seccion: "reuniones",
     conteoBandeja: createTopicRepo(db).bandeja().length,
     cuerpo: `<a class="volver" href="/reuniones">← Reuniones</a>
 
 <div class="detalle">
-  <div class="etiquetas">
-    <span class="etiqueta alcance">${m.status}</span>
-    <span class="score">${m.occurredAt ? new Date(m.occurredAt).toLocaleString("es-CO", { dateStyle: "long" }) : ""}</span>
-  </div>
+  <h2 class="titulo-reunion">${esc(m.title)}</h2>
+  <p class="meta-reunion">
+    <span>${temas.length} tema(s)</span>
+    ${cuenta.proposed > 0 ? `<span>· ${cuenta.proposed} sin calificar</span>` : `<span>· todo calificado</span>`}
+  </p>
 
   <h3>Notas</h3>
   ${
@@ -632,20 +589,28 @@ function vistaReunion(id: string, tab?: string): Pagina {
       : `<p class="nota">Sin notas guardadas.</p>`
   }
 
-  <div class="cabecera-seccion">
-    <h3>Temas de esta reunión</h3>
-    ${corridas > 0 ? `<span class="chip"><b>${corridas}</b> ${corridas === 1 ? "vez extraída" : "veces extraídas"}</span>` : ""}
-    <span class="der">
-      <button class="boton secundario" data-detectar-temas="${m.id}">Detectar temas</button>
-      <span class="cargando" hidden>extrayendo… puede tardar</span>
-    </span>
-  </div>
+  <section class="bloque-temas">
+    <header class="bloque-head">
+      <div>
+        <h3>Temas de esta reunión</h3>
+        <p class="bloque-meta">
+          ${temas.length} tema(s)
+          ${corridas > 0 ? ` · ${corridas} ${corridas === 1 ? "extracción" : "extracciones"}` : ""}
+          ${cuenta.proposed > 0 ? ` · ${cuenta.proposed} sin calificar` : ""}
+        </p>
+      </div>
+      <div class="bloque-accion">
+        <button class="boton" data-detectar-temas="${m.id}">Detectar temas</button>
+        <span class="cargando" hidden>extrayendo… puede tardar</span>
+      </div>
+    </header>
 
-  <nav class="pestanas">${navegacion}</nav>
+    <nav class="pestanas">${navegacion}</nav>
 
-  <div data-tab="${activa}">
-    ${lista}
-  </div>
+    <div class="lista-temas" data-tab="${activa}">
+      ${lista}
+    </div>
+  </section>
 </div>
 ${modal}`,
   };
@@ -742,6 +707,10 @@ function marcador(titulo: string, seccion: string, fase: string): Pagina {
 function responder(res: ServerResponse, codigo: number, cuerpo: string | Buffer, tipo = "text/html; charset=utf-8") {
   res.writeHead(codigo, { "content-type": tipo });
   res.end(cuerpo);
+}
+
+function redirect(destino: string) {
+  return `<meta http-equiv="refresh" content="0; url=${destino}">`;
 }
 
 function json(res: ServerResponse, codigo: number, datos: unknown) {
@@ -939,9 +908,9 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
   const verTema = ruta.match(/^\/tema\/([a-f0-9-]+)$/);
   if (verTema?.[1]) return responder(res, 200, pagina(vistaTema(verTema[1])));
 
-  if (ruta === "/") return responder(res, 200, pagina(bandeja()));
+  if (ruta === "/") return responder(res, 200, pagina(vistaProyectos()));
   if (ruta === "/temas") return responder(res, 200, pagina(vistaTemas()));
-  if (ruta === "/proyectos") return responder(res, 200, pagina(vistaProyectos()));
+  if (ruta === "/proyectos") return responder(res, 200, redirect("/"));
   if (ruta === "/reuniones/nueva") return responder(res, 200, pagina(vistaNuevaReunion()));
   if (ruta === "/reuniones") return responder(res, 200, pagina(vistaReuniones(url.searchParams.get("estado") ?? undefined)));
 

@@ -690,3 +690,63 @@ dialog.modal .cerrar {
 .extra[hidden] { display: none; }
 
 dialog.modal-desc .markdown p { font-size: 13.5px; line-height: 1.7; }
+
+/* ---------- cabecera de la reunión ---------- */
+
+.titulo-reunion {
+  font-size: 19px;
+  font-weight: 650;
+  margin: 8px 0 4px;
+  letter-spacing: -0.01em;
+}
+.meta-reunion {
+  display: flex;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--olive);
+  margin: 0 0 4px;
+}
+
+/* ---------- bloque de temas: agrupación por proximidad ---------- */
+
+.bloque-temas {
+  margin: 28px 0 0;
+  padding: 18px 18px 14px;
+  background: #fbfcfe;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.bloque-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--soft);
+}
+
+.bloque-head h3 {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.bloque-meta {
+  margin: 5px 0 0;
+  font-size: 11.5px;
+  color: var(--olive);
+}
+
+.bloque-accion {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.bloque-temas .pestanas { margin: 14px 0 12px; }
+
+.lista-temas .tema-card:first-child { margin-top: 0; }

@@ -18,8 +18,7 @@ export interface Pagina {
 }
 
 const ENTRADAS = [
-  { id: "proyectos", nombre: "Proyectos", href: "/proyectos" },
-  { id: "bandeja", nombre: "Bandeja", href: "/" },
+  { id: "proyectos", nombre: "Proyectos", href: "/" },
   { id: "reuniones", nombre: "Reuniones", href: "/reuniones" },
   { id: "rubrica", nombre: "Rúbrica", href: "/rubrica" },
   { id: "temas", nombre: "Temas", href: "/temas" },
@@ -30,7 +29,7 @@ const ENTRADAS = [
 export function pagina(p: Pagina): string {
   const nav = ENTRADAS.map((e) => {
     const activo = e.id === p.seccion ? " activo" : "";
-    const conteo = e.id === "bandeja" && p.conteoBandeja ? `<span class="conteo">${p.conteoBandeja}</span>` : "";
+    const conteo = e.id === "reuniones" && p.conteoBandeja ? `<span class="conteo">${p.conteoBandeja}</span>` : "";
     return `<a href="${e.href}" class="${e.id}${activo}">${e.nombre}${conteo}</a>`;
   }).join("\n");
 
