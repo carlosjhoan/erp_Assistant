@@ -983,3 +983,33 @@ dialog.modal-desc .markdown p { font-size: 13.5px; line-height: 1.7; }
   padding: 2px 10px;
   margin: 0 0 6px;
 }
+
+/* ---------- chips de proyecto ---------- */
+
+.campo-proyectos { display: flex; flex-direction: column; gap: 5px; }
+.campo-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--olive);
+}
+
+.chips-proyecto { display: flex; gap: 5px; flex-wrap: wrap; }
+
+.chip-proyecto {
+  font-family: inherit;
+  font-size: 11.5px;
+  color: var(--stone);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 11px;
+  cursor: pointer;
+  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+.chip-proyecto:hover { border-color: var(--accent-soft); }
+.chip-proyecto.activo {
+  color: #fff;
+  background: linear-gradient(135deg, #19233e, #3b4661);
+  border-color: #19233e;
+}

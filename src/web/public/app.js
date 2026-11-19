@@ -483,3 +483,26 @@ document.querySelectorAll("[data-restaurar]").forEach(function (boton) {
 function btnDeshabilitar(b, si) {
   b.disabled = si;
 }
+
+/* ---------- chips de proyecto por tema ---------- */
+
+document.querySelectorAll("[data-toggle-proyecto]").forEach(function (chip) {
+  chip.addEventListener("click", async function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const tema = chip.dataset.tema;
+    const proyecto = chip.dataset.toggleProyecto;
+    chip.disabled = true;
+
+    try {
+      const r = await pedir("/accion/" + tema + "/proyecto/" + proyecto);
+      chip.classList.toggle("activo", Boolean(r.activo));
+      chip.setAttribute("aria-pressed", String(Boolean(r.activo)));
+    } catch (err) {
+      fallar(err);
+    } finally {
+      chip.disabled = false;
+    }
+  });
+});

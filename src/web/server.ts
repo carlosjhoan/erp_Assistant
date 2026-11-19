@@ -10,7 +10,7 @@ import { createTopicRepo } from "../infra/db/topic-repo.ts";
 import { esc, pagina, type Pagina } from "./render.ts";
 import { renderMarkdown, vistaPrevia } from "./markdown.ts";
 import { ordenarPorUrgencia } from "./orden-reuniones.ts";
-import { asignarOwner, asignarProyecto, cambiarEstado, deshacerDecision, quitarOwner, guardarContexto } from "../app/triage.ts";
+import { alternarProyecto, asignarOwner, cambiarEstado, deshacerDecision, quitarOwner, guardarContexto, proyectosDeTema } from "../app/triage.ts";
 import { aprobarRubrica, crearRubricaWeb, temasDeRubrica } from "../app/create-rubric.ts";
 import { detectarRepos } from "../app/detect-repos.ts";
 import { listarNotas, importarNota, archivarReunion, restaurarReunion } from "../app/granola-browser.ts";
@@ -44,12 +44,19 @@ const DUENOS = [
   { valor: "opencode", texto: "Código" },
 ] as const;
 
-function opcionesProyecto(actual: string | null | undefined): string {
+/** Chips de proyecto: un tema puede tener cero, uno o varios. */
+function chipsProyecto(topicId: string, activos: string[]): string {
   const proyectos = db.select().from(project).all().sort((a, b) => a.name.localeCompare(b.name));
-  const lista = proyectos
-    .map((p) => `<option value="${p.id}"${actual === p.id ? " selected" : ""}>${esc(p.name)}</option>`)
+  if (proyectos.length === 0) return `<span class="nota">No hay proyectos registrados.</span>`;
+
+  const chips = proyectos
+    .map((p) => {
+      const activo = activos.includes(p.id);
+      return `<button type="button" class="chip-proyecto${activo ? " activo" : ""}" data-toggle-proyecto="${p.id}" data-tema="${topicId}" aria-pressed="${activo}">${esc(p.name)}</button>`;
+    })
     .join("");
-  return `<option value="">Sin proyecto</option>${lista}`;
+
+  return `<div class="chips-proyecto">${chips}</div>`;
 }
 
 function opciones(lista: readonly { valor: string; texto: string }[], actual: string | null | undefined): string {
@@ -536,9 +543,10 @@ function filaTema(t: {
       <label>Responsable
         <select data-campo="owner">${opciones(DUENOS, t.owner ?? "")}</select>
       </label>
-      <label>Proyecto
-        <select data-campo="proyecto">${opcionesProyecto(t.projectId)}</select>
-      </label>
+      <div class="campo-proyectos">
+        <span class="campo-label">Proyectos</span>
+        ${chipsProyecto(t.id, proyectosDeTema({ db }, t.id))}
+      </div>
     </div>
   </div>
 </article>
@@ -782,8 +790,9 @@ async function accionTema(res: ServerResponse, id: string, campo: string, valor:
     }
 
     if (campo === "proyecto") {
-      const r = asignarProyecto({ db }, id, valor || null);
-      return json(res, 200, { ok: true, titulo: r.title, projectId: r.projectId });
+      if (!valor) return json(res, 400, { error: "Falta el proyecto." });
+      const r = alternarProyecto({ db }, id, valor);
+      return json(res, 200, { ok: true, titulo: r.title, projectId: r.projectId, activo: r.activo });
     }
 
     json(res, 400, { error: "campo desconocido" });

@@ -1,5 +1,5 @@
-import { eq } from "drizzle-orm";
-import { project, rubric, topic } from "../infra/db/schema.ts";
+import { and, eq } from "drizzle-orm";
+import { project, rubric, topic, topicProject } from "../infra/db/schema.ts";
 import { createTopicRepo, type EstadoTema } from "../infra/db/topic-repo.ts";
 import { canTransitionTopic } from "../domain/status.ts";
 import { sincronizarEstadoReunion } from "./meeting-status.ts";
@@ -53,10 +53,6 @@ export function cambiarEstado(ctx: TriageCtx, prefijo: string, destino: EstadoTe
 
   const desde = t.status as EstadoTema;
   if (desde === destino) return { id: t.id, desde, hacia: destino, sinCambios: true };
-
-  if (destino === "selected" && !t.projectId) {
-    throw new TriageError("Antes de seleccionar, asigná un proyecto al tema.");
-  }
 
   if (!canTransitionTopic(desde, destino)) {
     throw new TriageError(
@@ -200,16 +196,30 @@ export function guardarContexto(ctx: TriageCtx, prefijo: string, contexto: strin
   return { id: t.id, title: t.title };
 }
 
-/** Asigna el proyecto del tema. Sin proyecto no se puede seleccionar. */
-export function asignarProyecto(ctx: TriageCtx, prefijo: string, projectId: string | null) {
+/** Agrega o quita un proyecto del tema. Nunca deja de ser valido tener cero. */
+export function alternarProyecto(ctx: TriageCtx, prefijo: string, projectId: string) {
   const t = resolver(ctx, prefijo);
   assertEditable(ctx, t.id);
 
-  if (projectId) {
-    const p = ctx.db.select().from(project).where(eq(project.id, projectId)).get();
-    if (!p) throw new TriageError(`No existe el proyecto ${projectId}.`);
+  const p = ctx.db.select().from(project).where(eq(project.id, projectId)).get();
+  if (!p) throw new TriageError(`No existe el proyecto ${projectId}.`);
+
+  const actual = ctx.db
+    .select()
+    .from(topicProject)
+    .where(and(eq(topicProject.topicId, t.id), eq(topicProject.projectId, projectId)))
+    .get();
+
+  if (actual) {
+    ctx.db.delete(topicProject).where(and(eq(topicProject.topicId, t.id), eq(topicProject.projectId, projectId))).run();
+    return { id: t.id, title: t.title, projectId, activo: false };
   }
 
-  ctx.db.update(topic).set({ projectId }).where(eq(topic.id, t.id)).run();
-  return { id: t.id, title: t.title, projectId };
+  ctx.db.insert(topicProject).values({ topicId: t.id, projectId }).run();
+  return { id: t.id, title: t.title, projectId, activo: true };
+}
+
+/** Los proyectos de un tema, como ids. */
+export function proyectosDeTema(ctx: TriageCtx, topicId: string): string[] {
+  return ctx.db.select().from(topicProject).where(eq(topicProject.topicId, topicId)).all().map((x) => x.projectId);
 }

@@ -399,3 +399,20 @@ export const projectRepository = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.projectId, t.repoId] })]
 );
+
+/**
+ * Un tema puede involucrar varios proyectos, uno, o ninguno. La columna
+ * topic.project_id queda por historia; en codigo la verdad es esta tabla.
+ */
+export const topicProject = sqliteTable(
+  "topic_project",
+  {
+    topicId: text("topic_id")
+      .notNull()
+      .references(() => topic.id),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => project.id),
+  },
+  (t) => [primaryKey({ columns: [t.topicId, t.projectId] })]
+);

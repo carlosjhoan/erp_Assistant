@@ -7,8 +7,9 @@ import { meeting, project, rubric, topic } from "../src/infra/db/schema.ts";
 import { createTopicRepo, rangoSemana } from "../src/infra/db/topic-repo.ts";
 
 import {
-  asignarProyecto,
+  alternarProyecto,
   assertTriajeCompleto,
+  proyectosDeTema,
   cambiarEstado,
   crear,
   editar,
@@ -216,27 +217,28 @@ test("un error de triaje tiene nombre propio para poder distinguirlo", () => {
   assert.throws(() => cambiarEstado({ db }, "noexiste", "selected"), (e) => e instanceof TriageError);
 });
 
-test("no se puede seleccionar un tema sin proyecto", () => {
+
+test("un tema puede seleccionarse sin proyecto", () => {
   const { db, repo } = entorno();
-  // Sin pasar por crearTema: este no lleva proyecto.
-  const id = repo.crearManual({ meetingId: "m1", title: "Uno" });
-  assert.throws(() => cambiarEstado({ db }, id, "selected"), /asigná un proyecto/);
+  const id = repo.crearManual({ meetingId: "m1", title: "Sin proyecto" });
+  assert.equal(cambiarEstado({ db }, id, "selected").hacia, "selected");
 });
 
-test("con proyecto asignado, la selección pasa", () => {
-  const { db, crearTema } = entorno();
-  db.insert(project).values({ id: "p1", name: "P", path: "/p" }).run();
-  const id = crearTema("Uno");
+test("un tema puede tener varios proyectos", () => {
+  const { db, repo } = entorno();
+  db.insert(project).values({ id: "p2", name: "Otro", path: "/p2" }).run();
+  const id = repo.crearManual({ meetingId: "m1", title: "Dos proyectos" });
 
-  asignarProyecto({ db }, id, "p1");
-  const r = cambiarEstado({ db }, id, "selected");
+  alternarProyecto({ db }, id, "proj1");
+  alternarProyecto({ db }, id, "p2");
+  assert.equal(proyectosDeTema({ db }, id).length, 2);
 
-  assert.equal(r.hacia, "selected");
-  assert.equal(db.select().from(topic).where(eq(topic.id, id)).get()?.projectId, "p1");
+  alternarProyecto({ db }, id, "p2");
+  assert.deepEqual(proyectosDeTema({ db }, id), ["proj1"]);
 });
 
-test("asignar un proyecto inexistente se rechaza", () => {
+test("un proyecto inexistente se rechaza", () => {
   const { db, crearTema } = entorno();
   const id = crearTema("Uno");
-  assert.throws(() => asignarProyecto({ db }, id, "no-existe"), /No existe el proyecto/);
+  assert.throws(() => alternarProyecto({ db }, id, "no-existe"), /No existe el proyecto/);
 });
