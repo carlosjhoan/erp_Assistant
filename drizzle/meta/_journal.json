@@ -85,6 +85,13 @@
       "when": 1795061740898,
       "tag": "0011_estado_reunion",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1795062790562,
+      "tag": "0012_proyecto_tema",
+      "breakpoints": true
     }
   ]
 }

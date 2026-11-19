@@ -3,10 +3,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { openDatabase } from "../src/infra/db/client.ts";
-import { meeting, rubric, topic } from "../src/infra/db/schema.ts";
+import { meeting, project, rubric, topic } from "../src/infra/db/schema.ts";
 import { createTopicRepo, rangoSemana } from "../src/infra/db/topic-repo.ts";
 
 import {
+  asignarProyecto,
   assertTriajeCompleto,
   cambiarEstado,
   crear,
@@ -32,9 +33,13 @@ function entorno() {
     })
     .run();
 
+  // Todo tema necesita proyecto para poder seleccionarse: el helper deja uno listo.
+  db.insert(project).values({ id: "proj1", name: "Prueba", path: "/p" }).run();
+
   const repo = createTopicRepo(db);
   const crearTema = (title: string, status: "proposed" | "selected" | "parked" | "discarded" = "proposed") => {
     const id = repo.crearManual({ meetingId: "m1", title, status });
+    db.update(topic).set({ projectId: "proj1" }).where(eq(topic.id, id)).run();
     return id;
   };
 
@@ -209,4 +214,29 @@ test("la bandeja puede filtrarse por semana de la reunión", () => {
 test("un error de triaje tiene nombre propio para poder distinguirlo", () => {
   const { db } = entorno();
   assert.throws(() => cambiarEstado({ db }, "noexiste", "selected"), (e) => e instanceof TriageError);
+});
+
+test("no se puede seleccionar un tema sin proyecto", () => {
+  const { db, repo } = entorno();
+  // Sin pasar por crearTema: este no lleva proyecto.
+  const id = repo.crearManual({ meetingId: "m1", title: "Uno" });
+  assert.throws(() => cambiarEstado({ db }, id, "selected"), /asigná un proyecto/);
+});
+
+test("con proyecto asignado, la selección pasa", () => {
+  const { db, crearTema } = entorno();
+  db.insert(project).values({ id: "p1", name: "P", path: "/p" }).run();
+  const id = crearTema("Uno");
+
+  asignarProyecto({ db }, id, "p1");
+  const r = cambiarEstado({ db }, id, "selected");
+
+  assert.equal(r.hacia, "selected");
+  assert.equal(db.select().from(topic).where(eq(topic.id, id)).get()?.projectId, "p1");
+});
+
+test("asignar un proyecto inexistente se rechaza", () => {
+  const { db, crearTema } = entorno();
+  const id = crearTema("Uno");
+  assert.throws(() => asignarProyecto({ db }, id, "no-existe"), /No existe el proyecto/);
 });

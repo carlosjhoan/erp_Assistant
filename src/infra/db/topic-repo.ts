@@ -108,6 +108,7 @@ export function createTopicRepo(db: DB) {
         description: topic.description,
         scopeSignal: topic.scopeSignal,
         owner: topic.owner,
+        projectId: topic.projectId,
         scopeReason: topic.scopeReason,
         needsReview: topic.needsReview,
         verifyScore: topic.verifyScore,

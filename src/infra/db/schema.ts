@@ -104,8 +104,13 @@ export const topic = sqliteTable(
     scopeSignal: text("scope_signal", { enum: ["likely_scope", "idea_context"] }),
     scopeReason: text("scope_reason"),
     openQuestions: text("open_questions", { mode: "json" }).$type<string[]>(),
+    /** Proyecto al que pertenece el tema. Obligatorio para poder seleccionarlo. */
+    projectId: text("project_id").references(() => project.id),
+
     /** Lo que agregás vos para que el desglose no adivine. */
     context: text("context"),
+    /** De dónde salió el contexto: escrito o dictado. */
+    contextSource: text("context_source", { enum: ["text", "voice"] }),
 
     // A quién le corresponde: a mí (entregable) o a un repo (cambio de código).
     owner: text("owner", { enum: ["me", "opencode"] }),

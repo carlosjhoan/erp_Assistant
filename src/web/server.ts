@@ -8,7 +8,7 @@ import { openDatabase } from "../infra/db/client.ts";
 import { agentRun, llmCall, meeting, project, projectRepository, repo as repoTable, rubric, rubricItem, topic } from "../infra/db/schema.ts";
 import { createTopicRepo } from "../infra/db/topic-repo.ts";
 import { esc, pagina, type Pagina } from "./render.ts";
-import { asignarOwner, cambiarEstado, deshacerDecision, quitarOwner, guardarContexto } from "../app/triage.ts";
+import { asignarOwner, asignarProyecto, cambiarEstado, deshacerDecision, quitarOwner, guardarContexto } from "../app/triage.ts";
 import { aprobarRubrica, crearRubricaWeb, temasDeRubrica } from "../app/create-rubric.ts";
 import { detectarRepos } from "../app/detect-repos.ts";
 import { listarNotas, importarNota } from "../app/granola-browser.ts";
@@ -41,6 +41,14 @@ const DUENOS = [
   { valor: "me", texto: "Mío" },
   { valor: "opencode", texto: "Código" },
 ] as const;
+
+function opcionesProyecto(actual: string | null | undefined): string {
+  const proyectos = db.select().from(project).all().sort((a, b) => a.name.localeCompare(b.name));
+  const lista = proyectos
+    .map((p) => `<option value="${p.id}"${actual === p.id ? " selected" : ""}>${esc(p.name)}</option>`)
+    .join("");
+  return `<option value="">Sin proyecto</option>${lista}`;
+}
 
 function opciones(lista: readonly { valor: string; texto: string }[], actual: string | null | undefined): string {
   return lista
@@ -85,6 +93,9 @@ function bandeja(): Pagina {
     </label>
     <label>Dueño
       <select data-campo="owner">${opciones(DUENOS, f.owner ?? "")}</select>
+    </label>
+    <label>Proyecto
+      <select data-campo="proyecto">${opcionesProyecto(f.projectId)}</select>
     </label>
     <a class="abrir" href="/tema/${f.id}">Abrir →</a>
   </div>
@@ -551,6 +562,66 @@ function vistaNuevaReunion(): Pagina {
   };
 }
 
+function vistaProyectos(): Pagina {
+  const proyectos = db.select().from(project).all().sort((a, b) => {
+    if (a.status !== b.status) return a.status === "active" ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+  const vinculos = db.select().from(projectRepository).all();
+  const repos = db.select().from(repoTable).all();
+  const temas = db.select().from(topic).all();
+  const items = db.select().from(rubricItem).all();
+
+  const tarjetas = proyectos
+    .map((p) => {
+      const misRepos = repos.filter((r) => vinculos.some((v) => v.projectId === p.id && v.repoId === r.id));
+      const misTemas = temas.filter((t) => t.projectId === p.id);
+      const itemsPorTema = new Map(items.map((i) => [i.topicId, i]));
+      const misItems = misTemas.flatMap((t) => items.filter((i) => i.topicId === t.id));
+      const hechos = misItems.filter((i) => i.status === "done").length;
+      const pct = misItems.length > 0 ? Math.round((hechos / misItems.length) * 100) : 0;
+
+      const sinCalificar = misTemas.filter((t) => t.status === "proposed").length;
+      const seleccionados = misTemas.filter((t) => t.status === "selected").length;
+
+      return `<article class="tarjeta-proyecto">
+  <header>
+    <strong>${esc(p.name)}</strong>
+    <span class="dueno ${p.status === "active" ? "mio" : "codigo"}">${p.status}</span>
+    <span class="der">${misRepos.length} repo(s)</span>
+  </header>
+  <p class="descripcion">${esc(p.description ?? "Sin descripción.")}</p>
+
+  <div class="progreso" title="${hechos} de ${misItems.length} ítems hechos">
+    <div class="barra" style="width:${pct}%"></div>
+  </div>
+  <p class="cifras">
+    <span><b>${misItems.length}</b> ítem(s)</span>
+    <span><b>${hechos}</b> hechos</span>
+    <span><b>${seleccionados}</b> en la rúbrica</span>
+    ${sinCalificar > 0 ? `<span style="color:var(--warn)"><b>${sinCalificar}</b> sin calificar</span>` : ""}
+  </p>
+
+  ${misRepos.length > 0 ? `<p class="repos-lista">${misRepos.map((r) => `<code>${esc(r.name)}</code>`).join(" ")}</p>` : ""}
+</article>`;
+    })
+    .join("\n");
+
+  const activos = proyectos.filter((p) => p.status === "active").length;
+
+  return {
+    titulo: "Proyectos",
+    seccion: "proyectos",
+    conteoBandeja: createTopicRepo(db).bandeja().length,
+    cuerpo: `<div class="resumen">
+  <span>${proyectos.length} proyecto(s)</span>
+  <span>${activos} activo(s)</span>
+  <span>${repos.length} repo(s) en total</span>
+</div>
+${tarjetas || `<div class="vacio"><h2>Sin proyectos</h2><p>Corré <code>npm run repos:seed</code>.</p></div>`}`,
+  };
+}
+
 function marcador(titulo: string, seccion: string, fase: string): Pagina {
   return {
     titulo,
@@ -591,6 +662,11 @@ async function accionTema(res: ServerResponse, id: string, campo: string, valor:
       if (!["me", "opencode"].includes(valor)) return json(res, 400, { error: "dueño inválido" });
       const r = asignarOwner({ db }, id, valor as "me");
       return json(res, 200, { ok: true, titulo: r.title, owner: r.owner });
+    }
+
+    if (campo === "proyecto") {
+      const r = asignarProyecto({ db }, id, valor || null);
+      return json(res, 200, { ok: true, titulo: r.title, projectId: r.projectId });
     }
 
     json(res, 400, { error: "campo desconocido" });
@@ -711,7 +787,7 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
     }
   }
 
-  const tema = ruta.match(/^\/accion\/([a-f0-9-]+)\/(\w+)\/(\w*)$/);
+  const tema = ruta.match(/^\/accion\/([a-f0-9-]+)\/(\w+)\/([a-zA-Z0-9-]*)$/);
   if (tema?.[1] && tema[2]) {
     accionTema(res, tema[1], tema[2], tema[3] ?? "");
     return;
@@ -759,6 +835,7 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
 
   if (ruta === "/") return responder(res, 200, pagina(bandeja()));
   if (ruta === "/temas") return responder(res, 200, pagina(vistaTemas()));
+  if (ruta === "/proyectos") return responder(res, 200, pagina(vistaProyectos()));
   if (ruta === "/reuniones/nueva") return responder(res, 200, pagina(vistaNuevaReunion()));
   if (ruta === "/reuniones") return responder(res, 200, pagina(vistaReuniones(url.searchParams.get("estado") ?? undefined)));
 

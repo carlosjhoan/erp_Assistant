@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { openDatabase } from "../src/infra/db/client.ts";
-import { meeting, rubric, rubricItem, rubricSourceMeeting, topic } from "../src/infra/db/schema.ts";
+import { meeting, project, rubric, rubricItem, rubricSourceMeeting, topic } from "../src/infra/db/schema.ts";
 import { createTopicRepo } from "../src/infra/db/topic-repo.ts";
 import { aprobarRubrica, createRubric, lunesDe, semanaSiguiente, viernesDe } from "../src/app/create-rubric.ts";
 import { generateItems } from "../src/app/generate-items.ts";
@@ -30,9 +30,15 @@ function entorno() {
     })
     .run();
 
+  // Seleccionar exige proyecto: el helper deja uno listo para todos los temas.
+  db.insert(project).values({ id: "proj1", name: "Prueba", path: "/p" }).run();
+
   const repo = createTopicRepo(db);
-  const tema = (title: string, status: "proposed" | "selected" | "parked" | "discarded" = "proposed") =>
-    repo.crearManual({ meetingId: "m1", title, status });
+  const tema = (title: string, status: "proposed" | "selected" | "parked" | "discarded" = "proposed") => {
+    const id = repo.crearManual({ meetingId: "m1", title, status });
+    db.update(topic).set({ projectId: "proj1" }).where(eq(topic.id, id)).run();
+    return id;
+  };
 
   return { db, repo, tema };
 }

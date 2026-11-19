@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { rubric, topic } from "../infra/db/schema.ts";
+import { project, rubric, topic } from "../infra/db/schema.ts";
 import { createTopicRepo, type EstadoTema } from "../infra/db/topic-repo.ts";
 import { canTransitionTopic } from "../domain/status.ts";
 import { sincronizarEstadoReunion } from "./meeting-status.ts";
@@ -53,6 +53,10 @@ export function cambiarEstado(ctx: TriageCtx, prefijo: string, destino: EstadoTe
 
   const desde = t.status as EstadoTema;
   if (desde === destino) return { id: t.id, desde, hacia: destino, sinCambios: true };
+
+  if (destino === "selected" && !t.projectId) {
+    throw new TriageError("Antes de seleccionar, asigná un proyecto al tema.");
+  }
 
   if (!canTransitionTopic(desde, destino)) {
     throw new TriageError(
@@ -194,4 +198,18 @@ export function guardarContexto(ctx: TriageCtx, prefijo: string, contexto: strin
   assertEditable(ctx, t.id);
   ctx.db.update(topic).set({ context: contexto.trim() || null }).where(eq(topic.id, t.id)).run();
   return { id: t.id, title: t.title };
+}
+
+/** Asigna el proyecto del tema. Sin proyecto no se puede seleccionar. */
+export function asignarProyecto(ctx: TriageCtx, prefijo: string, projectId: string | null) {
+  const t = resolver(ctx, prefijo);
+  assertEditable(ctx, t.id);
+
+  if (projectId) {
+    const p = ctx.db.select().from(project).where(eq(project.id, projectId)).get();
+    if (!p) throw new TriageError(`No existe el proyecto ${projectId}.`);
+  }
+
+  ctx.db.update(topic).set({ projectId }).where(eq(topic.id, t.id)).run();
+  return { id: t.id, title: t.title, projectId };
 }
