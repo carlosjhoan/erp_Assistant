@@ -11,6 +11,8 @@ import { esc, pagina, type Pagina } from "./render.ts";
 import { asignarOwner, cambiarEstado, deshacerDecision, quitarOwner, guardarContexto } from "../app/triage.ts";
 import { aprobarRubrica, crearRubricaWeb, temasDeRubrica } from "../app/create-rubric.ts";
 import { detectarRepos } from "../app/detect-repos.ts";
+import { listarNotas, importarNota } from "../app/granola-browser.ts";
+import { extractTopics } from "../app/extract-topics.ts";
 import { aceptarPropuestas, broadcast } from "../app/broadcast.ts";
 import { providersFromEnv } from "../infra/llm/providers.ts";
 import { workerFromEnv } from "../infra/opencode/worker.ts";
@@ -472,7 +474,7 @@ function vistaReuniones(filtro?: string): Pagina {
     titulo: "Reuniones",
     seccion: "reuniones",
     conteoBandeja: createTopicRepo(db).bandeja().length,
-    cuerpo: `<div class="pestanas">${pestañas}</div>
+    cuerpo: `<div class="barra-titulo"><div class="pestanas">${pestañas}</div><a class="boton" href="/reuniones/nueva">Nueva reunión</a></div>
 ${filas || `<div class="vacio"><h2>Sin reuniones</h2><p>Importá una desde Granola con <code>npm run ingest</code>.</p></div>`}`,
   };
 }
@@ -525,7 +527,25 @@ function vistaReunion(id: string): Pagina {
   ${m.transcriptAvailable ? `<h3>Transcripción</h3><details><summary>${(m.transcript ?? "").length} caracteres</summary><div class="notas">${esc(m.transcript ?? "")}</div></details>` : `<p class="nota">Esta reunión no tiene transcripción.</p>`}
 
   <h3>Temas de esta reunión</h3>
+  <div class="acciones-linea"><button class="boton secundario" data-detectar-temas="${m.id}">Detectar temas</button><span class="cargando" hidden>extrayendo… puede tardar</span></div>
   ${bloqueTemas || `<p class="nota">Todavía no se extrajeron temas. Corré <code>npm run topics:extract</code>.</p>`}
+</div>`,
+  };
+}
+
+function vistaNuevaReunion(): Pagina {
+  return {
+    titulo: "Nueva reunión",
+    seccion: "reuniones",
+    conteoBandeja: createTopicRepo(db).bandeja().length,
+    cuerpo: `<a class="volver" href="/reuniones">← Reuniones</a>
+
+<div class="detalle">
+  <p class="nota">Se buscan las últimas notas en Granola. Las que ya están importadas aparecen marcadas.</p>
+  <p style="margin:14px 0"><button class="boton" data-buscar-granola>Buscar en Granola</button>
+  <span class="cargando" hidden>consultando…</span></p>
+
+  <div id="resultados"></div>
 </div>`,
   };
 }
@@ -575,6 +595,39 @@ async function accionTema(res: ServerResponse, id: string, campo: string, valor:
     json(res, 400, { error: "campo desconocido" });
   } catch (e) {
     json(res, 400, { error: e instanceof Error ? e.message : String(e) });
+  }
+}
+
+/** Acciones de Granola y de reuniones. */
+async function accionGranola(res: ServerResponse, accion: string, cuerpo: string) {
+  try {
+    if (accion === "listar") {
+      const notas = await listarNotas(db, 10);
+      return json(res, 200, { ok: true, notas });
+    }
+
+    if (accion === "importar") {
+      const id = cuerpo.trim();
+      if (!id) return json(res, 400, { error: "Falta el id de la nota." });
+      const r = await importarNota(db, id);
+      return json(res, 200, { ok: true, ...r });
+    }
+
+    json(res, 400, { error: "acción desconocida" });
+  } catch (e) {
+    json(res, 500, { error: e instanceof Error ? e.message : String(e) });
+  }
+}
+
+async function accionReunion(res: ServerResponse, id: string, accion: string) {
+  try {
+    if (accion === "detectar") {
+      const r = await extractTopics({ db, ...providersFromEnv(db) }, id);
+      return json(res, 200, { ok: true, extraidos: r.extracted, needsReview: r.needsReview });
+    }
+    json(res, 400, { error: "acción desconocida" });
+  } catch (e) {
+    json(res, 500, { error: e instanceof Error ? e.message : String(e) });
   }
 }
 
@@ -663,6 +716,24 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
     return;
   }
 
+  // Granola: el cuerpo trae el id de la nota.
+  if (ruta === "/granola/listar" || ruta === "/granola/importar") {
+    let cuerpo = "";
+    if (req.method === "POST") {
+      const partes: Buffer[] = [];
+      for await (const chunk of req) partes.push(chunk as Buffer);
+      cuerpo = Buffer.concat(partes).toString("utf8");
+    }
+    await accionGranola(res, ruta === "/granola/listar" ? "listar" : "importar", cuerpo);
+    return;
+  }
+
+  const verReunionAccion = ruta.match(/^\/reunion\/([a-f0-9-]+)\/(\w+)$/);
+  if (verReunionAccion?.[1] && verReunionAccion[2]) {
+    await accionReunion(res, verReunionAccion[1], verReunionAccion[2]);
+    return;
+  }
+
   // Acciones del detalle: el cuerpo llega como texto plano (contexto) o vacío.
   const detalle = ruta.match(/^\/tema\/([a-f0-9-]+)\/(\w+)$/);
   if (detalle?.[1] && detalle[2]) {
@@ -687,7 +758,8 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
 
   if (ruta === "/") return responder(res, 200, pagina(bandeja()));
   if (ruta === "/temas") return responder(res, 200, pagina(vistaTemas()));
-  if (ruta.startsWith("/reuniones")) return responder(res, 200, pagina(vistaReuniones(url.searchParams.get("estado") ?? undefined)));
+  if (ruta === "/reuniones/nueva") return responder(res, 200, pagina(vistaNuevaReunion()));
+  if (ruta === "/reuniones") return responder(res, 200, pagina(vistaReuniones(url.searchParams.get("estado") ?? undefined)));
 
   const verReunion = ruta.match(/^\/reunion\/([a-f0-9-]+)$/);
   if (verReunion?.[1]) return responder(res, 200, pagina(vistaReunion(verReunion[1])));

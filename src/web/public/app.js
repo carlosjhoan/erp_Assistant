@@ -171,3 +171,101 @@ async function llamarTexto(ruta: string, cuerpo: string) {
   if (!r.ok || !datos.ok) throw new Error(datos.error ?? "No se pudo guardar");
   return datos;
 }
+
+/* ---------- nueva reunión con Granola ---------- */
+
+const btnBuscar = document.querySelector<HTMLButtonElement>("[data-buscar-granola]");
+const resultados = document.getElementById("resultados");
+
+if (btnBuscar && resultados) {
+  btnBuscar.addEventListener("click", async () => {
+    btnBuscar.disabled = true;
+    btnBuscar.textContent = "Buscando…";
+    resultados.innerHTML = "";
+
+    try {
+      const r = await fetch("/granola/listar", { method: "POST" });
+      const datos = (await r.json()) as { ok?: boolean; error?: string; notas?: Array<{ externalId: string; title: string; occurredAt: string; participantes: number; yaImportada: boolean }> };
+
+      if (!r.ok || !datos.ok) throw new Error(datos.error ?? "No se pudo consultar Granola");
+      const notas = datos.notas ?? [];
+
+      if (notas.length === 0) {
+        resultados.innerHTML = '<div class="vacio"><h2>No hay notas recientes</h2></div>';
+        return;
+      }
+
+      resultados.innerHTML = notas
+        .map(
+          (n) => `<article class="fila">
+  <div class="titulos">
+    <div class="etiquetas">
+      <span class="score">${new Date(n.occurredAt).toLocaleDateString("es-CO")}</span>
+      <span class="score">${n.participantes} participante(s)</span>
+      ${n.yaImportada ? '<span class="etiqueta alcance">ya importada</span>' : ""}
+    </div>
+    <h3>${escapar(n.title)}</h3>
+  </div>
+  <div class="controles">
+    ${
+      n.yaImportada
+        ? ""
+        : `<button class="boton" data-importar="${escapar(n.externalId)}">Importar</button>`
+    }
+  </div>
+</article>`
+        )
+        .join("");
+
+      resultados.querySelectorAll<HTMLButtonElement>("[data-importar]").forEach((b) => {
+        b.addEventListener("click", async () => {
+          b.disabled = true;
+          b.textContent = "Importando…";
+          try {
+            const resp = await fetch("/granola/importar", { method: "POST", body: b.dataset.importar! });
+            const d = (await resp.json()) as { ok?: boolean; error?: string; meetingId?: string };
+            if (!resp.ok || !d.ok) throw new Error(d.error ?? "No se pudo importar");
+            location.href = `/reunion/${d.meetingId}`;
+          } catch (e) {
+            alert(e instanceof Error ? e.message : String(e));
+            b.disabled = false;
+            b.textContent = "Importar";
+          }
+        });
+      });
+    } catch (e) {
+      resultados.innerHTML = `<div class="nota error">${escapar(e instanceof Error ? e.message : String(e))}</div>`;
+    } finally {
+      btnBuscar.disabled = false;
+      btnBuscar.textContent = "Buscar en Granola";
+    }
+  });
+}
+
+function escapar(s: string) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/* ---------- detectar temas de una reunión ---------- */
+
+document.querySelectorAll<HTMLButtonElement>("[data-detectar-temas]").forEach((b) => {
+  b.addEventListener("click", async () => {
+    const id = b.dataset.detectarTemas!;
+    if (!confirm("Se extraen los temas de esta reunión. Puede tardar 10-20 segundos. ¿Seguir?")) return;
+
+    b.disabled = true;
+    const aviso = b.parentElement?.querySelector<HTMLElement>(".cargando");
+    if (aviso) aviso.hidden = false;
+
+    try {
+      const r = await fetch(`/reunion/${id}/detectar`, { method: "POST" });
+      const d = (await r.json()) as { ok?: boolean; error?: string; extraidos?: number };
+      if (!r.ok || !d.ok) throw new Error(d.error ?? "No se pudo extraer");
+      location.reload();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : String(e));
+      b.disabled = false;
+      if (aviso) aviso.hidden = true;
+    }
+  });
+});
