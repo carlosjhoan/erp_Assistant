@@ -4,7 +4,8 @@ import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { openDatabase } from "../src/infra/db/client.ts";
-import { project, repo } from "../src/infra/db/schema.ts";
+import { project, projectRepository, repo } from "../src/infra/db/schema.ts";
+import { catalogo } from "../src/app/detect-repos.ts";
 import { leerSeed, sembrar } from "../scripts/seed-repos.ts";
 
 function dbNueva() {
@@ -89,4 +90,32 @@ test("las rutas del registro existen en disco", () => {
   for (const r of seed.repos) {
     assert.ok(existsSync(r.path), `falta ${r.path}`);
   }
+});
+
+test("sembrar crea el vinculo muchos-a-muchos", () => {
+  const db = dbNueva();
+  sembrar(db, SEED);
+  const vinculos = db.select().from(projectRepository).all();
+  assert.equal(vinculos.length, 2);
+  assert.equal(db.select().from(project).all().length, 1);
+});
+
+test("un repo en dos proyectos se presenta con ambos nombres", () => {
+  const db = dbNueva();
+  sembrar(db, {
+    projects: [
+      { name: "Alfa", path: "/a" },
+      { name: "Beta", path: "/b" },
+    ],
+    repos: [{ project: "Alfa", name: "Compartido", path: "/a/compartido" }],
+  });
+
+  // Se vincula a mano al segundo proyecto.
+  const repoId = db.select().from(repo).all()[0]!.id;
+  const beta = db.select().from(project).all().find((p) => p.name === "Beta")!;
+  db.insert(projectRepository).values({ projectId: beta.id, repoId }).run();
+
+  const c = catalogo(db);
+  assert.equal(c.length, 1);
+  assert.equal(c[0]?.proyecto, "Alfa + Beta");
 });

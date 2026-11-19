@@ -5,7 +5,7 @@ import { join, extname } from "node:path";
 import { randomUUID } from "node:crypto";
 import { desc, eq } from "drizzle-orm";
 import { openDatabase } from "../infra/db/client.ts";
-import { agentRun, llmCall, project, repo as repoTable, rubric, rubricItem, topic } from "../infra/db/schema.ts";
+import { agentRun, llmCall, project, projectRepository, repo as repoTable, rubric, rubricItem, topic } from "../infra/db/schema.ts";
 import { createTopicRepo } from "../infra/db/topic-repo.ts";
 import { esc, pagina, type Pagina } from "./render.ts";
 import { asignarOwner, cambiarEstado, deshacerDecision, quitarOwner, guardarContexto } from "../app/triage.ts";
@@ -311,11 +311,13 @@ function vistaTema(id: string): Pagina {
 function vistaRepos(): Pagina {
   const proyectos = db.select().from(project).all().sort((a, b) => a.name.localeCompare(b.name));
   const repos = db.select().from(repoTable).all();
+  const vinculos = db.select().from(projectRepository).all();
   const faltantes = repos.filter((r) => !existsSync(r.path)).length;
 
   const cuerpo = proyectos
     .map((p) => {
-      const propios = repos.filter((r) => r.projectId === p.id).sort((a, b) => a.name.localeCompare(b.name));
+      const ids = vinculos.filter((v) => v.projectId === p.id).map((v) => v.repoId);
+      const propios = repos.filter((r) => ids.includes(r.id)).sort((a, b) => a.name.localeCompare(b.name));
 
       const filas = propios
         .map((r) => {

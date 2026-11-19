@@ -10,7 +10,7 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { openDatabase } from "../src/infra/db/client.ts";
-import { project, repo } from "../src/infra/db/schema.ts";
+import { project, projectRepository, repo } from "../src/infra/db/schema.ts";
 
 interface RepoSeed {
   project: string;
@@ -77,13 +77,20 @@ export function sembrar(db: ReturnType<typeof openDatabase>["db"], seed: Seed) {
         consumes: r.consumes ?? [],
       };
 
+      let repoId = existente?.id;
       if (existente) {
         db.update(repo).set(valores).where(eq(repo.id, existente.id)).run();
         resultado.actualizados++;
       } else {
-        db.insert(repo).values({ id: randomUUID(), ...valores }).run();
+        repoId = randomUUID();
+        db.insert(repo).values({ id: repoId, ...valores }).run();
         resultado.creados++;
       }
+
+      // El vinculo muchos-a-muchos es la relacion real; la columna repo.project_id
+      // queda por compatibilidad hasta que todo lea esta tabla.
+      db.insert(projectRepository).values({ projectId, repoId: repoId! }).onConflictDoNothing().run();
+
       resultado.repos++;
     }
   });

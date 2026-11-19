@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { meeting, project, repo, topic } from "../infra/db/schema.ts";
+import { meeting, project, projectRepository, repo, topic } from "../infra/db/schema.ts";
 import { finishRun, startRun } from "../infra/llm/trace.ts";
 import { LlmError, type LlmProvider } from "../infra/llm/types.ts";
 import { DeteccionRepos, type RepoElegido } from "./contracts.ts";
@@ -40,19 +40,30 @@ export class DeteccionError extends LlmError {
 
 /** Carga el catálogo con el nombre de su proyecto. */
 export function catalogo(db: DB): RepoParaCatalogo[] {
-  return db
-    .select({ r: repo, p: project })
+  const filas = db
+    .select({ r: repo, proyecto: project.name })
     .from(repo)
-    .innerJoin(project, eq(repo.projectId, project.id))
-    .all()
-    .map(({ r, p }) => ({
-      id: r.id,
-      nombre: r.name,
-      proyecto: p.name,
-      description: r.description,
-      keywords: r.keywords,
-      exposes: r.exposes,
-      consumes: r.consumes,
+    .leftJoin(projectRepository, eq(projectRepository.repoId, repo.id))
+    .leftJoin(project, eq(project.id, projectRepository.projectId))
+    .all();
+
+  // Un repo puede estar en varios proyectos: se presenta con todos sus nombres.
+  const porRepo = new Map<string, { fila: (typeof filas)[number]["r"]; proyectos: string[] }>();
+  for (const f of filas) {
+    const actual = porRepo.get(f.r.id) ?? { fila: f.r, proyectos: [] };
+    if (f.proyecto && !actual.proyectos.includes(f.proyecto)) actual.proyectos.push(f.proyecto);
+    porRepo.set(f.r.id, actual);
+  }
+
+  return [...porRepo.values()]
+    .map(({ fila, proyectos }) => ({
+      id: fila.id,
+      nombre: fila.name,
+      proyecto: proyectos.sort().join(" + ") || "(sin proyecto)",
+      description: fila.description,
+      keywords: fila.keywords,
+      exposes: fila.exposes,
+      consumes: fila.consumes,
     }))
     .sort((a, b) => a.proyecto.localeCompare(b.proyecto) || a.nombre.localeCompare(b.nombre));
 }

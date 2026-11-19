@@ -287,7 +287,10 @@ export const llmCall = sqliteTable(
 export const project = sqliteTable("project", {
   id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
+  /** Que es este proyecto y de que se ocupa. */
+  description: text("description"),
   path: text("path").notNull(),
+  status: text("status", { enum: ["active", "paused", "done"] }).notNull().default("active"),
   createdAt: now(),
 });
 
@@ -357,4 +360,21 @@ export const topicRepo = sqliteTable(
     evaluatedAt: integer("evaluated_at", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch() * 1000)`),
   },
   (t) => [uniqueIndex("topic_repo_unique").on(t.topicId, t.repoId), index("topic_repo_status").on(t.status)]
+);
+
+/**
+ * Un repo puede servir a varios proyectos. Es la relacion real: dos carpetas
+ * distintas comparten raiz, y un repo puede entrar en dos frentes comerciales.
+ */
+export const projectRepository = sqliteTable(
+  "project_repository",
+  {
+    projectId: text("project_id")
+      .notNull()
+      .references(() => project.id),
+    repoId: text("repo_id")
+      .notNull()
+      .references(() => repo.id),
+  },
+  (t) => [primaryKey({ columns: [t.projectId, t.repoId] })]
 );
