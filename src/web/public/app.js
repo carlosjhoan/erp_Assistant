@@ -292,7 +292,6 @@
       }
     });
   });
-})();
 
 /* ---------- modal de notas ---------- */
 
@@ -416,5 +415,26 @@ document.querySelectorAll("[data-sin-proyecto]").forEach(function (chk) {
     } catch (err) {
       fallar(err);
     }
+  });
+});
+})();
+
+/* ---------- cerrar modales: Escape y clic por fuera ---------- */
+
+document.querySelectorAll("dialog.modal").forEach(function (dialogo) {
+  // Escape: el navegador lo maneja, pero nos aseguramos.
+  dialogo.addEventListener("cancel", function (e) {
+    e.preventDefault();
+    dialogo.close();
+  });
+
+  // Clic fuera del recuadro: el target es el propio dialog cuando se pulsa
+  // el fondo, pero comparamos el rectangulo para cubrir todos los casos.
+  dialogo.addEventListener("click", function (e) {
+    const caja = dialogo.getBoundingClientRect();
+    const dentro =
+      e.clientX >= caja.left && e.clientX <= caja.right &&
+      e.clientY >= caja.top && e.clientY <= caja.bottom;
+    if (!dentro) dialogo.close();
   });
 });

@@ -1441,15 +1441,23 @@ label.inline {
 .multi { width: 100%; }
 .multi-separador { height: 1px; background: var(--soft); margin: 4px 2px; }
 
-/* ---------- cabecera: tipo y confianza como una unidad ---------- */
-
+/* Cabecera: tipo y confianza agrupados por proximidad y alineacion,
+   sin caja alrededor. */
 .tema-marcas {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px 4px 4px;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid var(--soft);
-  border-radius: 999px;
-  margin-bottom: 8px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
 }
+
+/* confianza como texto, pegada al tipo */
+.tema-marcas .jev {
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--olive);
+  background: none;
+  border: 0;
+  padding: 0;
+}
+.tema-marcas .jev.baja { color: var(--warn); }
+.tema-marcas .marca { margin-bottom: 0; }

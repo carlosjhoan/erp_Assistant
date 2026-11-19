@@ -547,7 +547,7 @@ function filaTema(
     .filter(Boolean)
     .join(", ");
 
-  const dialog = `<dialog id="${idModal}" class="modal modal-desc">
+  const dialog = `<dialog id="${idModal}" class="modal modal-desc" closedby="any">
   <header>
     <h2>${esc(t.title)}</h2>
     <button class="cerrar" data-cerrar-modal="${idModal}" aria-label="Cerrar">✕</button>
@@ -721,7 +721,7 @@ function vistaReunion(id: string, tab?: string, vista: "temas" | "rubrica" = "te
         }</div>`;
 
   const modal = notas
-    ? `<dialog id="modal-notas" class="modal">
+    ? `<dialog id="modal-notas" class="modal" closedby="any">
   <header>
     <h2>${esc(m.title)}</h2>
     <button class="cerrar" data-cerrar-modal="modal-notas" aria-label="Cerrar">✕</button>
