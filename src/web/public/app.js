@@ -1,271 +1,311 @@
-/** Selectores por fila y acciones de la rúbrica. Sin teclado: todo visible. */
+/* my_erp — JavaScript plano. Sin tipos ni genéricos: el navegador no los parsea. */
 
-function actualizarConteo() {
-  const restantes = document.querySelectorAll(".fila[data-id]").length;
-  const globo = document.querySelector(".nav .conteo");
-  if (globo) globo.textContent = String(restantes);
+(function () {
+  "use strict";
 
-  if (restantes === 0) {
-    const cont = document.querySelector(".contenido");
-    if (cont) {
-      cont.innerHTML =
-        '<div class="vacio"><h2>No hay temas por calificar</h2><p>La bandeja está limpia. Todo el alcance de las reuniones ya fue decidido.</p></div>';
+  /* ---------- utilidades ---------- */
+
+  function escapar(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  async function pedir(ruta, cuerpo, tipo) {
+    const opciones = { method: "POST" };
+    if (cuerpo !== undefined) {
+      opciones.body = cuerpo;
+      opciones.headers = { "content-type": tipo || "text/plain" };
+    }
+
+    let respuesta;
+    try {
+      respuesta = await fetch(ruta, opciones);
+    } catch (e) {
+      throw new Error("No se pudo llegar al servidor: " + (e && e.message ? e.message : e));
+    }
+
+    let datos;
+    try {
+      datos = await respuesta.json();
+    } catch (e) {
+      throw new Error("El servidor respondió algo que no es JSON (código " + respuesta.status + ").");
+    }
+
+    if (!respuesta.ok || !datos || !datos.ok) {
+      throw new Error((datos && datos.error) || "Falló la operación (código " + respuesta.status + ").");
+    }
+    return datos;
+  }
+
+  function mostrarEstado(elemento, texto, tipo) {
+    if (!elemento) return;
+    elemento.hidden = !texto;
+    elemento.textContent = texto || "";
+    elemento.className = "estado" + (tipo ? " " + tipo : "");
+  }
+
+  function fallar(e) {
+    console.error(e);
+    alert(e && e.message ? e.message : String(e));
+  }
+
+  /* ---------- bandeja: decisión y dueño ---------- */
+
+  document.querySelectorAll(".fila[data-id]").forEach(function (fila) {
+    const id = fila.dataset.id;
+
+    fila.querySelectorAll("select[data-campo]").forEach(function (select) {
+      select.dataset.previo = select.value;
+
+      select.addEventListener("change", async function () {
+        const campo = select.dataset.campo;
+        const valor = select.value;
+        const anterior = select.dataset.previo || "";
+        select.disabled = true;
+
+        try {
+          await pedir("/accion/" + id + "/" + campo + "/" + encodeURIComponent(valor));
+          select.dataset.previo = valor;
+
+          if (campo === "estado" && valor !== "proposed") {
+            fila.classList.add("saliendo");
+            setTimeout(function () {
+              fila.remove();
+              actualizarConteo();
+            }, 200);
+          }
+        } catch (e) {
+          select.value = anterior;
+          fallar(e);
+        } finally {
+          select.disabled = false;
+        }
+      });
+    });
+  });
+
+  function actualizarConteo() {
+    const restantes = document.querySelectorAll(".fila[data-id]").length;
+    const globo = document.querySelector(".nav .conteo");
+    if (globo) globo.textContent = String(restantes);
+
+    if (restantes === 0) {
+      const cont = document.querySelector(".contenido");
+      if (cont) {
+        cont.innerHTML =
+          '<div class="vacio"><h2>No hay temas por calificar</h2><p>La bandeja está limpia.</p></div>';
+      }
     }
   }
-}
 
-async function llamar(ruta: string): Promise<{ ok?: boolean; error?: string } & Record<string, unknown>> {
-  const r = await fetch(ruta, { method: "POST" });
-  const datos = (await r.json()) as { ok?: boolean; error?: string };
-  if (!r.ok || !datos.ok) throw new Error(datos.error ?? "No se pudo guardar");
-  return datos;
-}
+  /* ---------- botones con data-accion ---------- */
 
-/* ---------- bandeja ---------- */
-
-document.querySelectorAll<HTMLElement>(".fila[data-id]").forEach((fila) => {
-  const id = fila.dataset.id!;
-
-  fila.querySelectorAll<HTMLSelectElement>("select[data-campo]").forEach((select) => {
-    select.dataset.previo = select.value;
-
-    select.addEventListener("change", async () => {
-      const campo = select.dataset.campo!;
-      const valor = select.value;
-      const anterior = select.dataset.previo ?? "";
-      select.disabled = true;
+  document.querySelectorAll("[data-accion]").forEach(function (boton) {
+    boton.addEventListener("click", async function () {
+      const accion = boton.dataset.accion;
+      boton.disabled = true;
 
       try {
-        await llamar(`/accion/${id}/${campo}/${encodeURIComponent(valor)}`);
-        select.dataset.previo = valor;
-
-        if (campo === "estado" && valor !== "proposed") {
-          fila.classList.add("saliendo");
-          setTimeout(() => {
-            fila.remove();
-            actualizarConteo();
-          }, 220);
+        if (accion === "crear-rubrica") {
+          await pedir("/rubrica/crear");
+          location.reload();
+          return;
+        }
+        if (accion === "aprobar") {
+          await pedir("/rubrica/aprobar/" + boton.dataset.rubrica);
+          location.reload();
           return;
         }
       } catch (e) {
-        select.value = anterior;
-        alert(e instanceof Error ? e.message : String(e));
+        fallar(e);
       } finally {
-        select.disabled = false;
+        boton.disabled = false;
       }
     });
   });
-});
 
-/* ---------- botones de acción ---------- */
+  /* ---------- detalle del tema ---------- */
 
-document.querySelectorAll<HTMLElement>("[data-accion]").forEach((boton) => {
-  boton.addEventListener("click", async () => {
-    const accion = boton.dataset.accion!;
-    boton.setAttribute("disabled", "true");
+  document.querySelectorAll("[data-guardar-contexto]").forEach(function (boton) {
+    boton.addEventListener("click", async function () {
+      const id = boton.dataset.guardarContexto;
+      const area = document.querySelector('textarea[data-contexto="' + id + '"]');
+      if (!area) return;
 
-    try {
-      if (accion === "crear-rubrica") {
-        await llamar("/rubrica/crear");
+      boton.disabled = true;
+      try {
+        await pedir("/tema/" + id + "/contexto", area.value);
+        boton.textContent = "Guardado ✓";
+        setTimeout(function () {
+          boton.textContent = "Guardar contexto";
+        }, 1600);
+      } catch (e) {
+        fallar(e);
+      } finally {
+        boton.disabled = false;
+      }
+    });
+  });
+
+  document.querySelectorAll("[data-detectar]").forEach(function (boton) {
+    boton.addEventListener("click", async function () {
+      const id = boton.dataset.detectar;
+      const estado = boton.parentElement.querySelector(".cargando");
+
+      boton.disabled = true;
+      boton.textContent = "Detectando…";
+      mostrarEstado(estado, "Consultando el catálogo de repos…");
+
+      try {
+        const r = await pedir("/tema/" + id + "/detectar");
+        if (r.duda) alert("El modelo pidió aclaración:\n\n" + r.duda);
         location.reload();
-        return;
+      } catch (e) {
+        fallar(e);
+        boton.disabled = false;
+        boton.textContent = "Detectar repos";
+        mostrarEstado(estado, "");
       }
+    });
+  });
 
-      if (accion === "aprobar") {
-        const id = boton.dataset.rubrica!;
-        await llamar(`/rubrica/aprobar/${id}`);
+  document.querySelectorAll("[data-difundir]").forEach(function (boton) {
+    boton.addEventListener("click", async function () {
+      const id = boton.dataset.difundir;
+      const estado = boton.parentElement.querySelector(".cargando");
+
+      if (!confirm("Se abre una sesión de OpenCode por repo. Puede tardar varios minutos. ¿Seguir?")) return;
+
+      boton.disabled = true;
+      mostrarEstado(estado, "OpenCode está analizando los repos… no cierres esta pestaña.");
+
+      try {
+        await pedir("/tema/" + id + "/difundir");
         location.reload();
-        return;
+      } catch (e) {
+        fallar(e);
+        boton.disabled = false;
+        mostrarEstado(estado, "");
       }
-    } catch (e) {
-      alert(e instanceof Error ? e.message : String(e));
-    } finally {
-      boton.removeAttribute("disabled");
-    }
+    });
   });
-});
 
-/* ---------- detalle del tema ---------- */
-
-const cargando = document.querySelector<HTMLElement>(".cargando");
-
-function ocupado(si: boolean) {
-  if (cargando) cargando.hidden = !si;
-}
-
-document.querySelectorAll<HTMLButtonElement>("[data-guardar-contexto]").forEach((b) => {
-  b.addEventListener("click", async () => {
-    const id = b.dataset.guardarContexto!;
-    const area = document.querySelector<HTMLTextAreaElement>(`textarea[data-contexto="${id}"]`);
-    if (!area) return;
-    b.disabled = true;
-    try {
-      await llamarTexto(`/tema/${id}/contexto`, area.value);
-      b.textContent = "Guardado ✓";
-      setTimeout(() => (b.textContent = "Guardar contexto"), 1600);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : String(e));
-    } finally {
-      b.disabled = false;
-    }
-  });
-});
-
-document.querySelectorAll<HTMLButtonElement>("[data-detectar]").forEach((b) => {
-  b.addEventListener("click", async () => {
-    const id = b.dataset.detectar!;
-    b.disabled = true;
-    b.textContent = "Detectando…";
-    ocupado(true);
-    try {
-      const r = await llamar(`/tema/${id}/detectar`);
-      const n = Array.isArray(r.repos) ? (r.repos as unknown[]).length : 0;
-      if (r.duda) alert(`El modelo pidió aclaración:\n\n${r.duda}`);
-      if (n === 0) alert("No se determinó ningún repo.");
-      location.reload();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : String(e));
-      b.disabled = false;
-      b.textContent = "Detectar repos";
-      ocupado(false);
-    }
-  });
-});
-
-document.querySelectorAll<HTMLButtonElement>("[data-difundir]").forEach((b) => {
-  b.addEventListener("click", async () => {
-    const id = b.dataset.difundir!;
-    if (!confirm("Se abre una sesión de OpenCode por repo. Puede tardar varios minutos. ¿Seguir?")) return;
-    b.disabled = true;
-    ocupado(true);
-    try {
-      await llamar(`/tema/${id}/difundir`);
-      location.reload();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : String(e));
-      b.disabled = false;
-      ocupado(false);
-    }
-  });
-});
-
-document.querySelectorAll<HTMLButtonElement>("[data-aceptar]").forEach((b) => {
-  b.addEventListener("click", async () => {
-    const id = b.dataset.aceptar!;
-    const repo = b.dataset.repo!;
-    b.disabled = true;
-    try {
-      const r = await llamarTexto(`/tema/${id}/aceptar`, repo);
-      alert(`${r.materializados ?? 0} ítem(s) creados en la rúbrica.`);
-      location.reload();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : String(e));
-      b.disabled = false;
-    }
-  });
-});
-
-async function llamarTexto(ruta: string, cuerpo: string) {
-  const r = await fetch(ruta, { method: "POST", body: cuerpo, headers: { "content-type": "text/plain" } });
-  const datos = (await r.json()) as { ok?: boolean; error?: string; materializados?: number };
-  if (!r.ok || !datos.ok) throw new Error(datos.error ?? "No se pudo guardar");
-  return datos;
-}
-
-/* ---------- nueva reunión con Granola ---------- */
-
-const btnBuscar = document.querySelector<HTMLButtonElement>("[data-buscar-granola]");
-const resultados = document.getElementById("resultados");
-
-if (btnBuscar && resultados) {
-  btnBuscar.addEventListener("click", async () => {
-    btnBuscar.disabled = true;
-    btnBuscar.textContent = "Buscando…";
-    resultados.innerHTML = "";
-
-    try {
-      const r = await fetch("/granola/listar", { method: "POST" });
-      const datos = (await r.json()) as { ok?: boolean; error?: string; notas?: Array<{ externalId: string; title: string; occurredAt: string; participantes: number; yaImportada: boolean }> };
-
-      if (!r.ok || !datos.ok) throw new Error(datos.error ?? "No se pudo consultar Granola");
-      const notas = datos.notas ?? [];
-
-      if (notas.length === 0) {
-        resultados.innerHTML = '<div class="vacio"><h2>No hay notas recientes</h2></div>';
-        return;
+  document.querySelectorAll("[data-aceptar]").forEach(function (boton) {
+    boton.addEventListener("click", async function () {
+      boton.disabled = true;
+      try {
+        const r = await pedir("/tema/" + boton.dataset.aceptar + "/aceptar", boton.dataset.repo);
+        alert((r.materializados || 0) + " ítem(s) creados en la rúbrica.");
+        location.reload();
+      } catch (e) {
+        fallar(e);
+        boton.disabled = false;
       }
+    });
+  });
 
-      resultados.innerHTML = notas
-        .map(
-          (n) => `<article class="fila">
-  <div class="titulos">
-    <div class="etiquetas">
-      <span class="score">${new Date(n.occurredAt).toLocaleDateString("es-CO")}</span>
-      <span class="score">${n.participantes} participante(s)</span>
-      ${n.yaImportada ? '<span class="etiqueta alcance">ya importada</span>' : ""}
-    </div>
-    <h3>${escapar(n.title)}</h3>
-  </div>
-  <div class="controles">
-    ${
-      n.yaImportada
-        ? ""
-        : `<button class="boton" data-importar="${escapar(n.externalId)}">Importar</button>`
-    }
-  </div>
-</article>`
-        )
-        .join("");
+  /* ---------- nueva reunión con Granola ---------- */
 
-      resultados.querySelectorAll<HTMLButtonElement>("[data-importar]").forEach((b) => {
-        b.addEventListener("click", async () => {
-          b.disabled = true;
-          b.textContent = "Importando…";
-          try {
-            const resp = await fetch("/granola/importar", { method: "POST", body: b.dataset.importar! });
-            const d = (await resp.json()) as { ok?: boolean; error?: string; meetingId?: string };
-            if (!resp.ok || !d.ok) throw new Error(d.error ?? "No se pudo importar");
-            location.href = `/reunion/${d.meetingId}`;
-          } catch (e) {
-            alert(e instanceof Error ? e.message : String(e));
-            b.disabled = false;
-            b.textContent = "Importar";
-          }
-        });
+  const btnBuscar = document.querySelector("[data-buscar-granola]");
+  const resultados = document.getElementById("resultados");
+  const estadoGranola = document.getElementById("estado-granola");
+
+  if (btnBuscar && resultados) {
+    btnBuscar.addEventListener("click", async function () {
+      btnBuscar.disabled = true;
+      resultados.innerHTML = "";
+
+      mostrarEstado(estadoGranola, "Conectando con Granola vía MCP…");
+      await new Promise(function (r) {
+        setTimeout(r, 50);
       });
-    } catch (e) {
-      resultados.innerHTML = `<div class="nota error">${escapar(e instanceof Error ? e.message : String(e))}</div>`;
-    } finally {
-      btnBuscar.disabled = false;
-      btnBuscar.textContent = "Buscar en Granola";
-    }
+      mostrarEstado(estadoGranola, "Buscando las últimas notas…");
+
+      try {
+        const datos = await pedir("/granola/listar");
+        const notas = datos.notas || [];
+
+        mostrarEstado(
+          estadoGranola,
+          notas.length + " nota(s) encontradas · " + notas.filter(function (n) {
+            return !n.yaImportada;
+          }).length + " sin importar",
+          "ok"
+        );
+
+        if (notas.length === 0) {
+          resultados.innerHTML = '<div class="vacio"><h2>No hay notas recientes</h2></div>';
+          return;
+        }
+
+        resultados.innerHTML = notas
+          .map(function (n) {
+            return (
+              '<article class="fila"><div class="titulos"><div class="etiquetas">' +
+              '<span class="score">' + new Date(n.occurredAt).toLocaleDateString("es-CO") + "</span>" +
+              '<span class="score">' + n.participantes + " participante(s)</span>" +
+              (n.yaImportada ? '<span class="etiqueta alcance">ya importada</span>' : "") +
+              "</div><h3>" + escapar(n.title) + "</h3></div>" +
+              '<div class="controles">' +
+              (n.yaImportada
+                ? '<span class="nota">no se importa de nuevo</span>'
+                : '<button class="boton" data-importar="' + escapar(n.externalId) + '">Importar</button>') +
+              "</div></article>"
+            );
+          })
+          .join("");
+
+        resultados.querySelectorAll("[data-importar]").forEach(function (b) {
+          b.addEventListener("click", async function () {
+            b.disabled = true;
+            b.textContent = "Importando…";
+            mostrarEstado(estadoGranola, "Trayendo la nota completa (notas + transcripción)…");
+
+            try {
+              const r = await pedir("/granola/importar", b.dataset.importar);
+              mostrarEstado(estadoGranola, "Importada. Abriendo…", "ok");
+              location.href = "/reunion/" + r.meetingId;
+            } catch (e) {
+              fallar(e);
+              b.disabled = false;
+              b.textContent = "Importar";
+              mostrarEstado(estadoGranola, "");
+            }
+          });
+        });
+      } catch (e) {
+        mostrarEstado(estadoGranola, e.message, "error");
+        fallar(e);
+      } finally {
+        btnBuscar.disabled = false;
+      }
+    });
+  }
+
+  /* ---------- detectar temas de una reunión ---------- */
+
+  document.querySelectorAll("[data-detectar-temas]").forEach(function (boton) {
+    boton.addEventListener("click", async function () {
+      const id = boton.dataset.detectarTemas;
+      const estado = boton.parentElement.querySelector(".cargando");
+
+      if (!confirm("Se extraen los temas de esta reunión. Puede tardar 10-20 segundos. ¿Seguir?")) return;
+
+      boton.disabled = true;
+      mostrarEstado(estado, "Extrayendo temas y verificándolos con Jev…");
+
+      try {
+        const r = await pedir("/reunion/" + id + "/detectar");
+        mostrarEstado(estado, r.extraidos + " tema(s) extraídos. Recargando…", "ok");
+        location.reload();
+      } catch (e) {
+        fallar(e);
+        boton.disabled = false;
+        mostrarEstado(estado, "");
+      }
+    });
   });
-}
-
-function escapar(s: string) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-
-/* ---------- detectar temas de una reunión ---------- */
-
-document.querySelectorAll<HTMLButtonElement>("[data-detectar-temas]").forEach((b) => {
-  b.addEventListener("click", async () => {
-    const id = b.dataset.detectarTemas!;
-    if (!confirm("Se extraen los temas de esta reunión. Puede tardar 10-20 segundos. ¿Seguir?")) return;
-
-    b.disabled = true;
-    const aviso = b.parentElement?.querySelector<HTMLElement>(".cargando");
-    if (aviso) aviso.hidden = false;
-
-    try {
-      const r = await fetch(`/reunion/${id}/detectar`, { method: "POST" });
-      const d = (await r.json()) as { ok?: boolean; error?: string; extraidos?: number };
-      if (!r.ok || !d.ok) throw new Error(d.error ?? "No se pudo extraer");
-      location.reload();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : String(e));
-      b.disabled = false;
-      if (aviso) aviso.hidden = true;
-    }
-  });
-});
+})();

@@ -545,6 +545,7 @@ function vistaNuevaReunion(): Pagina {
   <p style="margin:14px 0"><button class="boton" data-buscar-granola>Buscar en Granola</button>
   <span class="cargando" hidden>consultando…</span></p>
 
+  <p id="estado-granola" class="estado" hidden></p>
   <div id="resultados"></div>
 </div>`,
   };
