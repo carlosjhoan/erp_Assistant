@@ -117,17 +117,17 @@ export function yaImportada(db: DB, externalId: string): boolean {
 }
 
 /** ¿Cuánto se lleva por delante eliminar esta reunión? */
-export function impactoDeEliminar(db: DB, meetingId: string) {
+export function impactoDeArchivar(db: DB, meetingId: string) {
   const temas = db.select().from(topic).where(eq(topic.meetingId, meetingId)).all();
   return { temas: temas.length };
 }
 
-/** Borrado suave: sale de la lista, nada se destruye. */
-export function eliminarReunion(db: DB, meetingId: string): void {
-  db.update(meeting).set({ deletedAt: new Date() }).where(eq(meeting.id, meetingId)).run();
+/** Archiva: sale de la lista activa, nada se destruye. */
+export function archivarReunion(db: DB, meetingId: string): void {
+  db.update(meeting).set({ archivedAt: new Date() }).where(eq(meeting.id, meetingId)).run();
 }
 
-/** La devuelve a la lista. */
+/** La devuelve a la lista activa. */
 export function restaurarReunion(db: DB, meetingId: string): void {
-  db.update(meeting).set({ deletedAt: null }).where(eq(meeting.id, meetingId)).run();
+  db.update(meeting).set({ archivedAt: null }).where(eq(meeting.id, meetingId)).run();
 }

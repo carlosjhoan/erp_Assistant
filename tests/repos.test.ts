@@ -130,24 +130,24 @@ function conReunion() {
 }
 
 test("el borrado de reuniones es suave y reversible", async () => {
-  const { eliminarReunion, restaurarReunion } = await import("../src/app/granola-browser.ts");
+  const { archivarReunion, restaurarReunion } = await import("../src/app/granola-browser.ts");
   const db = conReunion();
 
-  eliminarReunion(db, "m1");
+  archivarReunion(db, "m1");
   const borrada = db.select().from(meeting).all().find((m) => m.id === "m1");
   assert.ok(borrada, "la fila sigue existiendo");
-  assert.ok(borrada!.deletedAt, "queda marcada como eliminada");
+  assert.ok(borrada!.archivedAt, "queda marcada como eliminada");
 
   restaurarReunion(db, "m1");
-  assert.equal(db.select().from(meeting).all().find((m) => m.id === "m1")!.deletedAt, null);
+  assert.equal(db.select().from(meeting).all().find((m) => m.id === "m1")!.archivedAt, null);
 });
 
 test("eliminar no toca los temas de la reunión", async () => {
-  const { eliminarReunion } = await import("../src/app/granola-browser.ts");
+  const { archivarReunion } = await import("../src/app/granola-browser.ts");
   const db = conReunion();
   createTopicRepo(db).crearManual({ meetingId: "m1", title: "Un tema" });
 
-  eliminarReunion(db, "m1");
+  archivarReunion(db, "m1");
 
   assert.equal(db.select().from(topic).all().length, 1);
 });

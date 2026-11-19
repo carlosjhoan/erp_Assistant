@@ -45,8 +45,11 @@ export const meeting = sqliteTable(
     status: text("status", { enum: ["imported", "topics_extracted", "triaged"] })
       .notNull()
       .default("imported"),
-    /** Borrado suave: sale de la lista pero nada se destruye. */
-    deletedAt: integer("deleted_at", { mode: "timestamp_ms" }),
+    /**
+     * Archivada: sale de la lista activa, nada se destruye, es reversible.
+     * La columna se llama deleted_at por historia; en codigo siempre es archivedAt.
+     */
+    archivedAt: integer("deleted_at", { mode: "timestamp_ms" }),
 
     /** Proyecto por defecto de la reunion; los temas pueden cambiarlo. */
     projectId: text("project_id").references(() => project.id),

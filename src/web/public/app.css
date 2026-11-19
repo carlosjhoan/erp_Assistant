@@ -809,12 +809,27 @@ dialog.modal-desc .markdown p { font-size: 13.5px; line-height: 1.7; }
   text-decoration: none;
   color: inherit;
   background-color: #ffffff;
-  background-image: linear-gradient(135deg, rgba(25, 35, 62, 0.045), rgba(25, 35, 62, 0.012));
-  border: 1px solid var(--line);
+  border: 1px solid #c9d3e4;
   border-radius: 14px;
   padding: 16px 18px 14px;
   transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
 }
+
+/* Extraída: azul de la marca, de oscuro a claro. */
+.card-reunion.extraida {
+  background-image: linear-gradient(140deg, rgba(25, 35, 62, 0.10), rgba(139, 158, 190, 0.10) 55%, rgba(255, 255, 255, 0));
+  border-color: #b3c0d8;
+}
+
+/* Pendiente por extraer: gris, sin azul, para que no compita. */
+.card-reunion.sin-extraer {
+  background-color: #f4f6f9;
+  background-image: none;
+  border-color: #dde2ea;
+  border-style: dashed;
+}
+.card-reunion.sin-extraer h3 { color: var(--stone); }
+
 
 .card-reunion:hover {
   border-color: var(--accent-soft);
@@ -822,17 +837,6 @@ dialog.modal-desc .markdown p { font-size: 13.5px; line-height: 1.7; }
   transform: translateY(-1px);
 }
 
-/* Acento a la izquierda: esta reunión pide trabajo. */
-.card-reunion.atencion::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 14px;
-  bottom: 14px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: var(--warn);
-}
 
 .card-top {
   display: flex;
@@ -859,8 +863,8 @@ dialog.modal-desc .markdown p { font-size: 13.5px; line-height: 1.7; }
   padding: 2px 9px;
   border: 1px solid;
 }
-.card-estado.ok { color: var(--ok); border-color: #b9d6c3; background: #eef6f0; }
-.card-estado.pendiente { color: var(--warn); border-color: #e6cd9f; background: #fbf3e4; }
+.card-estado.ok { color: #fff; border-color: #19233e; background: linear-gradient(135deg, #19233e, #3b4661); }
+.card-estado.pendiente { color: #5a6a8c; border-color: #d8dde9; background: #eef0f4; }
 
 .card-reunion h3 {
   font-size: 14.5px;
@@ -946,26 +950,35 @@ dialog.modal-desc .markdown p { font-size: 13.5px; line-height: 1.7; }
   .card-borrar { opacity: 1; }
 }
 
-/* ---------- papelera ---------- */
+/* ---------- archivadas ---------- */
 
-.papelera { margin-top: 28px; }
-.papelera summary {
-  font-size: 11.5px;
-  color: var(--olive);
-  cursor: pointer;
-  padding: 6px 0;
-}
-.papelera-fila {
+.seccion-archivadas { margin-top: 34px; padding-top: 18px; border-top: 1px solid var(--line); }
+.seccion-archivadas h2 { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--olive); margin: 0 0 4px; }
+.seccion-archivadas h2 .avance { font-weight: 400; color: var(--line); }
+.seccion-archivadas .nota { margin: 0 0 10px; }
+
+.archivada-fila {
   display: flex;
   align-items: center;
   gap: 12px;
   font-size: 12.5px;
   color: var(--stone);
-  background: #fff;
+  background: #f7f8fa;
   border: 1px dashed var(--line);
   border-radius: 10px;
   padding: 8px 12px;
   margin: 6px 0;
 }
-.papelera-fila .score { color: var(--olive); }
-.papelera-fila .boton { margin-left: auto; }
+.archivada-fila .score { color: var(--olive); }
+.archivada-fila .boton { margin-left: auto; }
+
+.badge-archivada {
+  display: inline-block;
+  font-size: 11px;
+  color: #5a6a8c;
+  background: #eef0f4;
+  border: 1px solid #d8dde9;
+  border-radius: 999px;
+  padding: 2px 10px;
+  margin: 0 0 6px;
+}

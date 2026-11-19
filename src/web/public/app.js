@@ -436,7 +436,7 @@ document.querySelectorAll(".recortada[data-abrir-modal]").forEach(function (el) 
 
 /* ---------- eliminar y restaurar reuniones ---------- */
 
-document.querySelectorAll("[data-eliminar]").forEach(function (boton) {
+document.querySelectorAll("[data-archivar]").forEach(function (boton) {
   boton.addEventListener("click", async function (e) {
     // El botón vive encima del enlace estirado: hay que cortar la navegación.
     e.preventDefault();
@@ -448,12 +448,12 @@ document.querySelectorAll("[data-eliminar]").forEach(function (boton) {
         ? "\n\nTiene " + temas + " tema(s) y sus ítems en la rúbrica quedan intactos."
         : "";
 
-    if (!confirm("¿Eliminar «" + boton.dataset.titulo + "»?" + detalle + "\n\nSe puede restaurar desde la papelera.")) {
+    if (!confirm("¿Archivar «" + boton.dataset.titulo + "»?" + detalle + "\n\nDeja de aparecer en la lista. Se puede restaurar desde Archivadas.")) {
       return;
     }
 
     try {
-      await pedir("/reunion/" + boton.dataset.eliminar + "/eliminar");
+      await pedir("/reunion/" + boton.dataset.archivar + "/archivar");
       const card = boton.closest(".card-reunion");
       if (card) {
         card.classList.add("saliendo");
