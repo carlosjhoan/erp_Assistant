@@ -381,12 +381,24 @@ document.querySelectorAll("input[data-toggle-proyecto]").forEach(function (chip)
       const r = await pedir("/accion/" + tema + "/proyecto/" + proyecto);
       chip.checked = Boolean(r.activo);
 
-      // El resumen del desplegable refleja cuantos quedaron marcados.
       const detalle = chip.closest("details.multi");
+
+      // "Sin proyecto" y cualquier proyecto son excluyentes: si marcás uno,
+      // el otro deja de tener sentido.
+      if (detalle && r.activo) {
+        const ninguno = detalle.querySelector("input[data-sin-proyecto]");
+        if (ninguno) ninguno.checked = false;
+      }
+
+      // El resumen del desplegable refleja cuantos quedaron marcados.
       const resumen = detalle ? detalle.querySelector(".multi-resumen") : null;
       if (detalle && resumen) {
         const n = detalle.querySelectorAll("input[data-toggle-proyecto]:checked").length;
         resumen.textContent = n === 0 ? "Sin proyecto" : n === 1 ? "1 proyecto" : n + " proyectos";
+
+        // Si ya no queda ninguno, "Sin proyecto" vuelve a estar marcado.
+        const ninguno = detalle.querySelector("input[data-sin-proyecto]");
+        if (ninguno) ninguno.checked = n === 0;
       }
     } catch (err) {
       fallar(err);
