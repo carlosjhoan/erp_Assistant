@@ -9,6 +9,7 @@ import { agentRun, llmCall, meeting, project, projectRepository, repo as repoTab
 import { createTopicRepo } from "../infra/db/topic-repo.ts";
 import { esc, pagina, type Pagina } from "./render.ts";
 import { renderMarkdown, vistaPrevia } from "./markdown.ts";
+import { ordenarPorUrgencia } from "./orden-reuniones.ts";
 import { asignarOwner, asignarProyecto, cambiarEstado, deshacerDecision, quitarOwner, guardarContexto } from "../app/triage.ts";
 import { aprobarRubrica, crearRubricaWeb, temasDeRubrica } from "../app/create-rubric.ts";
 import { detectarRepos } from "../app/detect-repos.ts";
@@ -403,10 +404,12 @@ function icono(nombre: "fecha" | "temas" | "pendiente" | "seleccionada" | "poste
 }
 
 function vistaReuniones(): Pagina {
-  const reuniones = db.select().from(meeting).orderBy(desc(meeting.occurredAt)).all();
+  const reuniones = db.select().from(meeting).all();
   const temas = db.select().from(topic).all();
 
-  const tarjetas = reuniones
+  const ordenadas = ordenarPorUrgencia(reuniones, temas);
+
+  const tarjetas = ordenadas
     .map((m) => {
       const propios = temas.filter((t) => t.meetingId === m.id);
       const cuenta = {
