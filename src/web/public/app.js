@@ -228,13 +228,16 @@
         const datos = await pedir("/granola/listar");
         const notas = datos.notas || [];
 
-        mostrarEstado(
-          estadoGranola,
-          notas.length + " nota(s) encontradas · " + notas.filter(function (n) {
-            return !n.yaImportada;
-          }).length + " sin importar",
-          "ok"
-        );
+        const pendientes = notas.filter(function (n) {
+          return !n.yaImportada;
+        }).length;
+
+        const resumen = notas.length === 0
+          ? "No hay notas en los últimos 30 días"
+          : notas.length + " nota(s) en los últimos 30 días · " +
+            (pendientes === 0 ? "todas ya importadas" : pendientes + " sin importar");
+
+        mostrarEstado(estadoGranola, resumen, pendientes === 0 && notas.length > 0 ? "" : "ok");
 
         if (notas.length === 0) {
           resultados.innerHTML = '<div class="vacio"><h2>No hay notas recientes</h2></div>';

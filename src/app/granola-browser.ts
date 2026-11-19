@@ -42,14 +42,15 @@ async function conectarOBien(): Promise<GranolaConnection> {
   }
 }
 
-/** Las últimas notas, sin guardar nada. Marca las que ya están importadas. */
+/** Las últimas notas de los últimos 30 días, sin guardar nada. */
 export async function listarNotas(db: DB, limite = 10): Promise<NotaReciente[]> {
   const conn = await conectarOBien();
 
   try {
     const res = await conn.client.callTool({
       name: "list_meetings",
-      arguments: { limit: limite, max_participants: 10 },
+      // El rango por defecto de Granola es la última semana; 30 dias trae el historial util.
+      arguments: { time_range: "last_30_days", limit: limite, max_participants: 10 },
     });
 
     const texto = textOf(res as { content?: unknown });
