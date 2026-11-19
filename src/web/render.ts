@@ -14,6 +14,8 @@ export interface Pagina {
   seccion: string;
   /** <num> por mostrar al lado de la entrada de la bandeja. */
   conteoBandeja?: number;
+  /** Acción a la derecha del título de la página. */
+  accion?: string;
   cuerpo: string;
 }
 
@@ -50,7 +52,9 @@ export function pagina(p: Pagina): string {
   <nav class="nav">${nav}</nav>
 </aside>
 <main class="principal">
-  <header class="cabecera"><h1>${esc(p.titulo)}</h1></header>
+  <header class="cabecera"><h1>${esc(p.titulo)}</h1>
+    ${p.accion ? `<span class="cabecera-accion">${p.accion}</span>` : ""}
+  </header>
   <section class="contenido">${p.cuerpo}</section>
 </main>
 <script src="/app.js"></script>

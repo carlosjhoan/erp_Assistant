@@ -792,3 +792,101 @@ dialog.modal-desc .markdown p { font-size: 13.5px; line-height: 1.7; }
 }
 .confianza-linea.baja { color: var(--warn); }
 .confianza-linea .revisar { color: var(--warn); }
+
+/* ---------- tarjetas de reunión (glass) ---------- */
+
+.cabecera-accion { margin-left: auto; }
+
+.grid-reuniones {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 14px;
+}
+
+.card-reunion {
+  display: block;
+  position: relative;
+  text-decoration: none;
+  color: inherit;
+  background-color: #ffffff;
+  background-image: linear-gradient(135deg, rgba(25, 35, 62, 0.045), rgba(25, 35, 62, 0.012));
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px 14px;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.card-reunion:hover {
+  border-color: var(--accent-soft);
+  box-shadow: 0 6px 22px rgba(25, 35, 62, 0.09);
+  transform: translateY(-1px);
+}
+
+/* Acento a la izquierda: esta reunión pide trabajo. */
+.card-reunion.atencion::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--warn);
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.card-fecha {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--olive);
+}
+.card-fecha svg { flex: none; }
+
+.card-estado {
+  margin-left: auto;
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 2px 9px;
+  border: 1px solid;
+}
+.card-estado.ok { color: var(--ok); border-color: #b9d6c3; background: #eef6f0; }
+.card-estado.pendiente { color: var(--warn); border-color: #e6cd9f; background: #fbf3e4; }
+
+.card-reunion h3 {
+  font-size: 14.5px;
+  font-weight: 620;
+  margin: 0 0 12px;
+  line-height: 1.35;
+  letter-spacing: -0.005em;
+}
+
+.metricas { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.metrica {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  border-radius: 6px;
+  padding: 2px 8px 2px 6px;
+  border: 1px solid transparent;
+  background: #fff;
+}
+.metrica svg { flex: none; }
+.metrica.total { color: var(--stone); border-color: var(--line); }
+.metrica.pendiente { color: var(--warn); border-color: #ecd9b4; background: #fdf7ec; }
+.metrica.seleccionada { color: var(--ok); border-color: #b9d6c3; background: #f1f8f3; }
+.metrica.postergada { color: #3d5a80; border-color: #bccbe0; background: #eff4fa; }
+.metrica.descartada { color: var(--bad); border-color: #e2c3bd; background: #fbf1ef; }
+
+.card-hint { font-size: 12px; color: var(--olive); margin: 0; }

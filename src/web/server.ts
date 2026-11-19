@@ -389,60 +389,73 @@ ${lista || `<div class="vacio"><h2>Sin llamadas todavía</h2></div>`}`,
   };
 }
 
-function vistaReuniones(filtro?: string): Pagina {
-  const todas = db.select().from(meeting).orderBy(desc(meeting.occurredAt)).all();
-  const estados: Record<string, string> = {
-    imported: "importada",
-    topics_extracted: "temas extraídos",
-    triaged: "triaje cerrado",
+/** Iconos en línea: no dependen de la fuente del sistema. */
+function icono(nombre: "fecha" | "temas" | "pendiente" | "seleccionada" | "postergada" | "descartada"): string {
+  const trazos: Record<string, string> = {
+    fecha: `<rect x="2" y="3.5" width="12" height="10.5" rx="1.5"/><path d="M2 6.5h12M5.5 2v3M10.5 2v3"/>`,
+    temas: `<path d="M2 4h12M2 8h12M2 12h8"/>`,
+    pendiente: `<circle cx="8" cy="8" r="5.6"/><path d="M8 5v3.2l2 1.4"/>`,
+    seleccionada: `<circle cx="8" cy="8" r="5.6"/><path d="M5.5 8.2l1.8 1.8 3.4-3.6"/>`,
+    postergada: `<circle cx="8" cy="8" r="5.6"/><path d="M6.5 5.8v4.4M9.5 5.8v4.4"/>`,
+    descartada: `<circle cx="8" cy="8" r="5.6"/><path d="M6 6l4 4M10 6l-4 4"/>`,
   };
-  const colores: Record<string, string> = {
-    imported: "var(--olive)",
-    topics_extracted: "var(--warn)",
-    triaged: "var(--ok)",
-  };
+  return `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">${trazos[nombre] ?? ""}</svg>`;
+}
 
-  const filtradas = filtro && estados[filtro] ? todas.filter((m) => m.status === filtro) : todas;
+function vistaReuniones(): Pagina {
+  const reuniones = db.select().from(meeting).orderBy(desc(meeting.occurredAt)).all();
+  const temas = db.select().from(topic).all();
 
-  const pestañas = [
-    { id: "", texto: `Todas (${todas.length})` },
-    ...Object.entries(estados).map(([id, texto]) => ({
-      id,
-      texto: `${texto} (${todas.filter((m) => m.status === id).length})`,
-    })),
-  ]
-    .map((p) => `<a class="pestana${(filtro ?? "") === p.id ? " activa" : ""}" href="/reuniones${p.id ? `?estado=${p.id}` : ""}">${p.texto}</a>`)
-    .join("");
-
-  const filas = filtradas
+  const tarjetas = reuniones
     .map((m) => {
-      const temas = db.select().from(topic).where(eq(topic.meetingId, m.id)).all();
-      const propuestos = temas.filter((t) => t.status === "proposed").length;
+      const propios = temas.filter((t) => t.meetingId === m.id);
+      const cuenta = {
+        total: propios.length,
+        proposed: propios.filter((t) => t.status === "proposed").length,
+        selected: propios.filter((t) => t.status === "selected").length,
+        parked: propios.filter((t) => t.status === "parked").length,
+        discarded: propios.filter((t) => t.status === "discarded").length,
+      };
 
-      return `<article class="fila">
-  <div class="titulos">
-    <div class="etiquetas">
-      <span class="etiqueta" style="color:${colores[m.status] ?? "var(--olive)"}">${estados[m.status] ?? m.status}</span>
-      <span class="score">${m.occurredAt ? new Date(m.occurredAt).toLocaleDateString("es-CO") : "sin fecha"}</span>
-      <span class="score">${temas.length} tema(s)${propuestos > 0 ? ` · ${propuestos} sin calificar` : ""}</span>
-    </div>
-    <h3><a class="enlace-tema" href="/reunion/${m.id}">${esc(m.title)}</a></h3>
-    ${m.summary ? `<p class="cita">${esc(m.summary.slice(0, 180))}…</p>` : `<p class="cita">Sin notas.</p>`}
+      const extraidos = cuenta.total > 0;
+      const fecha = m.occurredAt
+        ? new Date(m.occurredAt).toLocaleDateString("es-CO", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
+        : "sin fecha";
+
+      // El acento marca que la reunión pide trabajo: sin extraer o sin calificar.
+      const atencion = !extraidos || cuenta.proposed > 0;
+
+      const metricas = [
+        `<span class="metrica total">${icono("temas")} ${cuenta.total} ${cuenta.total === 1 ? "tema" : "temas"}</span>`,
+        cuenta.proposed > 0 ? `<span class="metrica pendiente">${icono("pendiente")} ${cuenta.proposed} sin clasificar</span>` : "",
+        cuenta.selected > 0 ? `<span class="metrica seleccionada">${icono("seleccionada")} ${cuenta.selected} seleccionada${cuenta.selected === 1 ? "" : "s"}</span>` : "",
+        cuenta.parked > 0 ? `<span class="metrica postergada">${icono("postergada")} ${cuenta.parked} postergada${cuenta.parked === 1 ? "" : "s"}</span>` : "",
+        cuenta.discarded > 0 ? `<span class="metrica descartada">${icono("descartada")} ${cuenta.discarded} descartada${cuenta.discarded === 1 ? "" : "s"}</span>` : "",
+      ]
+        .filter(Boolean)
+        .join("");
+
+      return `<a class="card-reunion${atencion ? " atencion" : ""}" href="/reunion/${m.id}">
+  <div class="card-top">
+    <span class="card-fecha">${icono("fecha")} ${esc(fecha)}</span>
+    <span class="card-estado ${extraidos ? "ok" : "pendiente"}">${extraidos ? "Temas extraídos" : "Pendiente por extracción"}</span>
   </div>
-  <div class="controles"><a class="abrir" href="/reunion/${m.id}">Abrir →</a></div>
-</article>`;
+  <h3>${esc(m.title)}</h3>
+  ${extraidos ? `<div class="metricas">${metricas}</div>` : `<p class="card-hint">Todavía no se le pidió a la IA que detecte los temas.</p>`}
+</a>`;
     })
     .join("\n");
 
   return {
     titulo: "Reuniones",
     seccion: "reuniones",
-    conteoBandeja: createTopicRepo(db).bandeja().length,
-    cuerpo: `<div class="barra-titulo"><div class="pestanas">${pestañas}</div><a class="boton" href="/reuniones/nueva">Nueva reunión</a></div>
-${filas || `<div class="vacio"><h2>Sin reuniones</h2><p>Importá una desde Granola con <code>npm run ingest</code>.</p></div>`}`,
+    conteoBandeja: reuniones.length,
+    accion: `<a class="boton" href="/reuniones/nueva">Nueva reunión</a>`,
+    cuerpo: tarjetas
+      ? `<div class="grid-reuniones">${tarjetas}</div>`
+      : `<div class="vacio"><h2>Sin reuniones</h2><p>Importá una desde Granola.</p></div>`,
   };
 }
-
 function iconoTemas(): string {
   return `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h8"/></svg>`;
 }
@@ -508,6 +521,8 @@ function filaTema(t: {
 </article>
 ${dialog}`;
 }
+
+
 function vistaReunion(id: string, tab?: string): Pagina {
   const m = db.select().from(meeting).where(eq(meeting.id, id)).get();
   if (!m) return { titulo: "Reunión", seccion: "reuniones", cuerpo: `<div class="vacio"><h2>No existe</h2></div>` };
@@ -915,7 +930,7 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
   if (ruta === "/temas") return responder(res, 200, pagina(vistaTemas()));
   if (ruta === "/proyectos") return responder(res, 200, redirect("/"));
   if (ruta === "/reuniones/nueva") return responder(res, 200, pagina(vistaNuevaReunion()));
-  if (ruta === "/reuniones") return responder(res, 200, pagina(vistaReuniones(url.searchParams.get("estado") ?? undefined)));
+  if (ruta === "/reuniones") return responder(res, 200, pagina(vistaReuniones()));
 
   const verReunion = ruta.match(/^\/reunion\/([a-f0-9-]+)$/);
   if (verReunion?.[1]) return responder(res, 200, pagina(vistaReunion(verReunion[1], url.searchParams.get("tab") ?? undefined)));
