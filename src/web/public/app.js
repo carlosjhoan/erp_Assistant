@@ -1,54 +1,58 @@
-/** Teclado y acciones de la bandeja. Vanilla, cero framework. */
+/** Selectores por fila. Sin teclado: la decisión se ve y se elige. */
 
-const filas = [...document.querySelectorAll<HTMLElement>(".fila[data-id]")];
-let foco = -1;
-
-function enfocar(i: number) {
-  if (i < 0 || i >= filas.length) return;
-  filas[foco]?.classList.remove("foco");
-  foco = i;
-  const f = filas[foco]!;
-  f.classList.add("foco");
-  f.scrollIntoView({ block: "nearest" });
-}
-
-async function accion(accion: string, fila: HTMLElement) {
+document.querySelectorAll<HTMLElement>(".fila[data-id]").forEach((fila) => {
   const id = fila.dataset.id!;
-  const r = await fetch(`/accion/${id}/${accion}`, { method: "POST" });
-  if (!r.ok) {
-    const texto = await r.text();
-    alert(texto);
-    return;
-  }
-  // La decisión saca la fila de la bandeja: se recarga.
-  location.reload();
-}
 
-filas.forEach((f, i) => {
-  f.addEventListener("mouseenter", () => enfocar(i));
-  f.querySelectorAll<HTMLButtonElement>("button.tecla").forEach((b) => {
-    b.addEventListener("click", (e) => {
-      e.stopPropagation();
-      accion(b.dataset.accion!, f);
+  fila.querySelectorAll<HTMLSelectElement>("select[data-campo]").forEach((select) => {
+    // Guarda el valor previo para poder volver si el servidor rechaza.
+    select.dataset.previo = select.value;
+
+    select.addEventListener("change", async () => {
+      const campo = select.dataset.campo!;
+      const valor = select.value;
+      const anterior = select.dataset.previo ?? "";
+
+      select.disabled = true;
+
+      try {
+        const r = await fetch(`/accion/${id}/${campo}/${encodeURIComponent(valor)}`, { method: "POST" });
+        const datos = (await r.json()) as { ok?: boolean; error?: string; estado?: string };
+
+        if (!r.ok || !datos.ok) {
+          throw new Error(datos.error ?? "No se pudo guardar");
+        }
+
+        select.dataset.previo = valor;
+
+        // Si la decisión la saca de la bandeja, la fila se va.
+        if (campo === "estado" && valor !== "proposed") {
+          fila.classList.add("saliendo");
+          setTimeout(() => {
+            fila.remove();
+            actualizarConteo();
+          }, 220);
+          return;
+        }
+      } catch (e) {
+        select.value = anterior;
+        alert(e instanceof Error ? e.message : String(e));
+      } finally {
+        select.disabled = false;
+      }
     });
   });
 });
 
-document.addEventListener("keydown", (e) => {
-  if (filas.length === 0) return;
-  if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+function actualizarConteo() {
+  const restantes = document.querySelectorAll(".fila[data-id]").length;
+  const globo = document.querySelector(".nav .conteo");
+  if (globo) globo.textContent = String(restantes);
 
-  const actual = filas[foco];
-
-  if (e.key === "ArrowDown" || e.key === "j") { e.preventDefault(); enfocar(foco + 1); return; }
-  if (e.key === "ArrowUp" || e.key === "k") { e.preventDefault(); enfocar(foco - 1); return; }
-
-  if (!actual) { if (e.key === "j" || e.key === "ArrowDown") enfocar(0); return; }
-
-  const teclas: Record<string, string> = { e: "selected", p: "parked", d: "discarded", c: "opencode", m: "me" };
-  const accion = teclas[e.key.toLowerCase()];
-  if (accion && !e.metaKey && !e.ctrlKey) {
-    e.preventDefault();
-    accion(accion, actual);
+  if (restantes === 0) {
+    const cont = document.querySelector(".contenido");
+    if (cont) {
+      cont.innerHTML =
+        '<div class="vacio"><h2>No hay temas por calificar</h2><p>La bandeja está limpia. Todo el alcance de las reuniones ya fue decidido.</p></div>';
+    }
   }
-});
+}

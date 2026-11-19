@@ -95,6 +95,34 @@ export function asignarOwner(ctx: TriageCtx, prefijo: string, owner: "me" | "ope
   return { id: t.id, title: t.title, owner };
 }
 
+/**
+ * Deshacer una decisión: vuelve a la bandeja.
+ *
+ * La máquina de estados no lo permite como transición de flujo, y está bien:
+ * aparcar es una decisión. Pero corregir un clic equivocado es otra cosa, y
+ * tiene que poder hacerse.
+ */
+export function deshacerDecision(ctx: TriageCtx, prefijo: string) {
+  const t = resolver(ctx, prefijo);
+  assertEditable(ctx, t.id);
+
+  ctx.db
+    .update(topic)
+    .set({ status: "proposed", decidedAt: null, decidedBy: null, rubricId: null, mergedIntoTopicId: null })
+    .where(eq(topic.id, t.id))
+    .run();
+
+  return { id: t.id, title: t.title };
+}
+
+/** Sacar el dueño sin tocar la decisión: son dos cosas distintas. */
+export function quitarOwner(ctx: TriageCtx, prefijo: string) {
+  const t = resolver(ctx, prefijo);
+  assertEditable(ctx, t.id);
+  ctx.db.update(topic).set({ owner: null, ownerScore: null, ownerDetail: null }).where(eq(topic.id, t.id)).run();
+  return { id: t.id, title: t.title };
+}
+
 export function editar(ctx: TriageCtx, prefijo: string, campos: { title?: string; description?: string }) {
   const t = resolver(ctx, prefijo);
   assertEditable(ctx, t.id);
