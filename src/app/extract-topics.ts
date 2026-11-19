@@ -1,5 +1,6 @@
+import { createHash } from "node:crypto";
 import { eq } from "drizzle-orm";
-import { meeting } from "../infra/db/schema.ts";
+import { agentRun, meeting } from "../infra/db/schema.ts";
 import { createTopicRepo } from "../infra/db/topic-repo.ts";
 import { finishRun, startRun } from "../infra/llm/trace.ts";
 import { sincronizarEstadoReunion } from "./meeting-status.ts";
@@ -143,4 +144,13 @@ export async function extractTopics(
       score: v.score,
     })),
   };
+}
+
+/**
+ * Cuántas veces se corrió la extracción sobre esta reunión. Se deriva del log
+ * de operaciones (mismo hash del apunte), así que no puede desincronizarse.
+ */
+export function contarExtracciones(db: DB, summary: string): number {
+  const hash = createHash("sha256").update(summary).digest("hex").slice(0, 32);
+  return db.select().from(agentRun).all().filter((r) => r.tool === "extract_topics" && r.inputHash === hash).length;
 }

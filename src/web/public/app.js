@@ -335,3 +335,69 @@ document.querySelectorAll("dialog.modal").forEach(function (dialogo) {
     if (e.target === dialogo) dialogo.close();
   });
 });
+
+/* ---------- triaje dentro de la reunión ---------- */
+
+document.querySelectorAll("[data-tab]").forEach(function (contenedor) {
+  const tab = contenedor.dataset.tab;
+
+  contenedor.querySelectorAll(".fila[data-id]").forEach(function (fila) {
+    fila.querySelectorAll("select[data-campo]").forEach(function (select) {
+      select.dataset.previo = select.value;
+
+      select.addEventListener("change", async function () {
+        const campo = select.dataset.campo;
+        const valor = select.value;
+        const anterior = select.dataset.previo || "";
+        select.disabled = true;
+
+        try {
+          await pedir("/accion/" + fila.dataset.id + "/" + campo + "/" + encodeURIComponent(valor));
+          select.dataset.previo = valor;
+
+          // En la pestaña "sin calificar" la fila deja de pertenecer: se va y
+          // se ajustan los contadores. En cualquier otra, se recarga.
+          if (campo === "estado" && tab === "proposed" && valor !== "proposed") {
+            fila.classList.add("saliendo");
+            setTimeout(function () {
+              fila.remove();
+              ajustarContadores(contenedor, valor);
+            }, 200);
+          } else if (campo === "estado") {
+            location.reload();
+          }
+        } catch (e) {
+          select.value = anterior;
+          fallar(e);
+        } finally {
+          select.disabled = false;
+        }
+      });
+    });
+  });
+});
+
+function ajustarContadores(contenedor, destino) {
+  const leer = function (id) {
+    const el = document.querySelector('[data-conteo="' + id + '"]');
+    if (!el) return null;
+    const b = el.querySelector("b");
+    return b ? b : null;
+  };
+
+  const restar = function (id) {
+    const b = leer(id);
+    if (b) b.textContent = String(Math.max(0, Number(b.textContent) - 1));
+  };
+  const sumar = function (id) {
+    const b = leer(id);
+    if (b) b.textContent = String(Number(b.textContent) + 1);
+  };
+
+  restar("proposed");
+  sumar(destino);
+
+  if (contenedor.querySelectorAll(".fila[data-id]").length === 0) {
+    contenedor.innerHTML = '<div class="vacio-mini">No queda nada sin calificar.</div>';
+  }
+}

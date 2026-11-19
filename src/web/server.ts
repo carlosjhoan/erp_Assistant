@@ -13,7 +13,7 @@ import { asignarOwner, asignarProyecto, cambiarEstado, deshacerDecision, quitarO
 import { aprobarRubrica, crearRubricaWeb, temasDeRubrica } from "../app/create-rubric.ts";
 import { detectarRepos } from "../app/detect-repos.ts";
 import { listarNotas, importarNota } from "../app/granola-browser.ts";
-import { extractTopics } from "../app/extract-topics.ts";
+import { extractTopics, contarExtracciones } from "../app/extract-topics.ts";
 import { aceptarPropuestas, broadcast } from "../app/broadcast.ts";
 import { providersFromEnv } from "../infra/llm/providers.ts";
 import { workerFromEnv } from "../infra/opencode/worker.ts";
@@ -529,35 +529,52 @@ function filaTema(t: {
 </article>`;
 }
 
-function vistaReunion(id: string): Pagina {
+function vistaReunion(id: string, tab?: string): Pagina {
   const m = db.select().from(meeting).where(eq(meeting.id, id)).get();
   if (!m) return { titulo: "Reunión", seccion: "reuniones", cuerpo: `<div class="vacio"><h2>No existe</h2></div>` };
 
   const temas = db.select().from(topic).where(eq(topic.meetingId, m.id)).all();
-  const pendientes = temas.filter((t) => t.status === "proposed").length;
   const notas = m.summary ?? "";
+  const corridas = notas ? contarExtracciones(db, notas) : 0;
 
-  const triaje =
-    pendientes > 0
-      ? `<div class="grupo-fecha">Sin calificar (${pendientes})</div>${temas.filter((t) => t.status === "proposed").map(filaTema).join("\n")}`
-      : "";
+  const cuenta = {
+    todas: temas.length,
+    proposed: temas.filter((t) => t.status === "proposed").length,
+    selected: temas.filter((t) => t.status === "selected").length,
+    parked: temas.filter((t) => t.status === "parked").length,
+    discarded: temas.filter((t) => t.status === "discarded").length,
+  };
 
-  const otras = (["selected", "parked", "discarded"] as const)
-    .map((s) => {
-      const lista = temas.filter((t) => t.status === s);
-      if (lista.length === 0) return "";
-      const nombre = { selected: "Seleccionados", parked: "Postergados", discarded: "Descartados" }[s];
-      const filas = lista
-        .map(
-          (t) => `<article class="fila compacta">
-  <div class="titulos"><h3><a class="enlace-tema" href="/tema/${t.id}">${esc(t.title)}</a></h3></div>
-  <div class="controles"><span class="dueno ${t.owner === "opencode" ? "codigo" : "mio"}">${t.owner === "opencode" ? "código" : t.owner === "me" ? "mío" : "—"}</span></div>
-</article>`
-        )
-        .join("\n");
-      return `<div class="grupo-fecha">${nombre} (${lista.length})</div>${filas}`;
-    })
-    .join("\n");
+  // Por defecto, la pestaña donde hay trabajo: sin calificar si queda algo.
+  const activa = tab ?? (cuenta.proposed > 0 ? "proposed" : "todas");
+
+  const pestañas: { id: string; texto: string; n: number }[] = [
+    { id: "proposed", texto: "Sin calificar", n: cuenta.proposed },
+    { id: "todas", texto: "Todas", n: cuenta.todas },
+    { id: "selected", texto: "Seleccionadas", n: cuenta.selected },
+    { id: "parked", texto: "Postergadas", n: cuenta.parked },
+    { id: "discarded", texto: "Descartadas", n: cuenta.discarded },
+  ];
+
+  const navegacion = pestañas
+    .map(
+      (p) =>
+        `<a class="pestana${activa === p.id ? " activa" : ""}" href="/reunion/${m.id}?tab=${p.id}" data-conteo="${p.id}">${p.texto} <b>${p.n}</b></a>`
+    )
+    .join("");
+
+  const visibles = activa === "todas" ? temas : temas.filter((t) => t.status === activa);
+
+  const lista =
+    visibles.length > 0
+      ? visibles.map(filaTema).join("\n")
+      : `<div class="vacio-mini">${
+          activa === "proposed"
+            ? "No queda nada sin calificar."
+            : activa === "todas"
+              ? "Esta reunión no tiene temas todavía."
+              : "No hay temas en este estado."
+        }</div>`;
 
   const modal = notas
     ? `<dialog id="modal-notas" class="modal">
@@ -569,6 +586,11 @@ function vistaReunion(id: string): Pagina {
 </dialog>`
     : "";
 
+  const avisoCorridas =
+    corridas > 1
+      ? `<span class="nota" title="Cada corrida reemplaza solo los temas sin calificar">reextraer ya se hizo ${corridas} veces</span>`
+      : "";
+
   return {
     titulo: m.title,
     seccion: "reuniones",
@@ -579,7 +601,6 @@ function vistaReunion(id: string): Pagina {
   <div class="etiquetas">
     <span class="etiqueta alcance">${m.status}</span>
     <span class="score">${m.occurredAt ? new Date(m.occurredAt).toLocaleString("es-CO", { dateStyle: "long" }) : ""}</span>
-    <span class="score">${temas.length} tema(s)${pendientes > 0 ? ` · ${pendientes} sin calificar` : ""}</span>
   </div>
 
   <h3>Notas</h3>
@@ -592,15 +613,21 @@ function vistaReunion(id: string): Pagina {
       : `<p class="nota">Sin notas guardadas.</p>`
   }
 
-  <h3>Temas de esta reunión</h3>
-  <div class="acciones-linea">
-    <button class="boton secundario" data-detectar-temas="${m.id}">Detectar temas</button>
-    <span class="cargando" hidden>extrayendo… puede tardar</span>
+  <div class="cabecera-seccion">
+    <h3>Temas de esta reunión</h3>
+    ${corridas > 0 ? `<span class="chip">${corridas} ${corridas === 1 ? "extracción" : "extracciones"}</span>` : ""}
+    ${avisoCorridas}
+    <span class="der">
+      <button class="boton secundario" data-detectar-temas="${m.id}">Detectar temas</button>
+      <span class="cargando" hidden>extrayendo… puede tardar</span>
+    </span>
   </div>
 
-  ${triaje}
-  ${otras}
-  ${temas.length === 0 ? `<p class="nota">Todavía no se extrajeron temas.</p>` : ""}
+  <nav class="pestanas">${navegacion}</nav>
+
+  <div data-tab="${activa}">
+    ${lista}
+  </div>
 </div>
 ${modal}`,
   };
@@ -901,7 +928,7 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
   if (ruta === "/reuniones") return responder(res, 200, pagina(vistaReuniones(url.searchParams.get("estado") ?? undefined)));
 
   const verReunion = ruta.match(/^\/reunion\/([a-f0-9-]+)$/);
-  if (verReunion?.[1]) return responder(res, 200, pagina(vistaReunion(verReunion[1])));
+  if (verReunion?.[1]) return responder(res, 200, pagina(vistaReunion(verReunion[1], url.searchParams.get("tab") ?? undefined)));
   if (ruta === "/rubrica") return responder(res, 200, pagina(vistaRubrica()));
   if (ruta === "/repos") return responder(res, 200, pagina(vistaRepos()));
   if (ruta === "/trazas") return responder(res, 200, pagina(vistaTrazas()));

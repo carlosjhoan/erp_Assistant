@@ -590,3 +590,37 @@ dialog.modal .cerrar {
 .markdown strong { color: var(--ink); }
 .markdown code { background: var(--soft); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
 .markdown hr { border: 0; border-top: 1px solid var(--soft); margin: 16px 0; }
+
+/* ---------- sección con acción a la derecha ---------- */
+
+.cabecera-seccion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 24px 0 10px;
+}
+.cabecera-seccion h3 { margin: 0; }
+.cabecera-seccion .der { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+.chip {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--olive);
+  background: var(--soft);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+.pestanas .pestana b { font-weight: 600; opacity: 0.75; margin-left: 3px; }
+
+.vacio-mini {
+  font-size: 12.5px;
+  color: var(--olive);
+  background: #fff;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 18px;
+  text-align: center;
+  margin: 6px 0;
+}
