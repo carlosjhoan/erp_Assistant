@@ -3684,3 +3684,58 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
 
 /* El aro tiene que girar desde cero al aparecer. */
 .pm-fg { transition: stroke-dasharray 820ms cubic-bezier(0.22, 0.8, 0.3, 1); }
+
+/* ============================================================
+   Ritmo de entrada: mas lento, mas suave, con aire entre grupos.
+   ============================================================ */
+
+.marca {
+  height: 42px;
+  margin-bottom: 14px;
+}
+
+.saludo { gap: 12px; }
+
+/* Entradas con curva de salida suave y duracion mas larga. */
+@keyframes suave-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); filter: blur(3px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+
+.inicio[data-estado="idle"] .marca,
+.inicio[data-estado="idle"] .perfil {
+  animation: suave-in 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.inicio[data-estado="idle"] .marca { animation-delay: 80ms; }
+.inicio[data-estado="idle"] .perfil { animation-delay: 300ms; }
+
+.inicio[data-estado="idle"] .pcard {
+  animation: suave-in 640ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.inicio[data-estado="idle"] .pcard:nth-child(1) { animation-delay: 1800ms; }
+.inicio[data-estado="idle"] .pcard:nth-child(2) { animation-delay: 1960ms; }
+.inicio[data-estado="idle"] .pcard:nth-child(3) { animation-delay: 2120ms; }
+.inicio[data-estado="idle"] .pcard:nth-child(4) { animation-delay: 2280ms; }
+
+.inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(3) {
+  animation: suave-in 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 2500ms;
+}
+
+.inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(2) {
+  animation: suave-in 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 2680ms;
+}
+
+.inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(1) .bloque-t {
+  animation: suave-in 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 1760ms;
+}
+
+/* El compositor llega ultimo y sin prisa. */
+.inicio[data-estado="idle"] .chat-caja { animation-delay: 3050ms; }
+
+/* El suelo de la cinta se ajusta al logo mas alto. */
+.inicio[data-estado="idle"] .feed { max-height: clamp(80px, calc(100vh - 730px), 380px); }

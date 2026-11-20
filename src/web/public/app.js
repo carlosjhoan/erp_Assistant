@@ -1041,7 +1041,7 @@ document.querySelectorAll(".pm").forEach(function (caja) {
   const pct = Math.max(0, Math.min(100, Number(caja.dataset.pct || 0)));
   const dash = ((pct / 100) * C).toFixed(1);
   const i = [...document.querySelectorAll(".pm")].indexOf(caja);
-  const espera = document.getElementById("inicio")?.dataset.estado === "idle" ? 1750 + i * 110 : 140 + i * 90;
+  const espera = document.getElementById("inicio")?.dataset.estado === "idle" ? 1900 + i * 130 : 140 + i * 90;
   setTimeout(function () {
     anillo.setAttribute("stroke-dasharray", dash + " " + C.toFixed(1));
   }, espera);
@@ -1081,7 +1081,7 @@ document.querySelectorAll(".pm").forEach(function (caja) {
     return;
   }
   const inicioCaja = document.getElementById("inicio");
-  const espera = inicioCaja && inicioCaja.dataset.estado === "idle" ? 2700 : 60;
+  const espera = inicioCaja && inicioCaja.dataset.estado === "idle" ? 3080 : 60;
   setTimeout(function () { caja.classList.add("abierto"); }, espera);
 })();
 
@@ -1196,7 +1196,7 @@ document.querySelectorAll(".pm").forEach(function (caja) {
   if (formChat) formChat.addEventListener("submit", liberar);
 
   const inicioFeed = document.getElementById("inicio");
-  const arranque = inicioFeed && inicioFeed.dataset.estado === "idle" ? 2500 : 400;
+  const arranque = inicioFeed && inicioFeed.dataset.estado === "idle" ? 2820 : 400;
   setTimeout(paso, arranque);
 })();
 
@@ -1217,7 +1217,7 @@ document.querySelectorAll(".pm").forEach(function (caja) {
   }
 
   let n = 0;
-  const paso = 38;
+  const paso = 44;
 
   function escribir() {
     if (n > TEXTO.length) return;
