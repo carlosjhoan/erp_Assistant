@@ -46,7 +46,6 @@ export function pagina(p: Pagina): string {
 <aside class="rail">
   <button type="button" class="rail-head" id="rail-toggle" aria-pressed="false" title="Ocultar menú" aria-label="Ocultar menú">
     <img class="brand-mark" src="/logo-mark.png" alt="Steel and Glass">
-    <svg class="rail-chevron" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M9.6 4.2 5.8 8l3.8 3.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </button>
   <nav class="nav">${nav}</nav>
 </aside>
