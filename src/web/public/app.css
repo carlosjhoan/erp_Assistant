@@ -4630,3 +4630,7 @@ body.rail-hidden .rail-toggle { align-self: center; margin: 0; }
   padding: 2px 8px;
   white-space: nowrap;
 }
+
+/* En /proyectos el estado es solo el punto vivo. */
+.tp-cabeza .vivo { margin-left: 9px; order: 2; }
+.tp-cabeza strong { order: 1; }

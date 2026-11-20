@@ -71,7 +71,7 @@ export function vistaProyectos(db: Db): Pagina {
         '<a class="tarjeta-proyecto ' + tono(i) + '" href="/proyecto/' + p.proyectoId + '">',
         '<div class="tp-cabeza">',
         "<strong>" + esc(p.nombre) + "</strong>",
-        '<span class="badge-estado ' + p.estado + '">' + esc(p.estado) + "</span>",
+        '<i class="vivo" aria-label="' + esc(p.estado) + '"></i>',
         "</div>",
         '<p class="tp-desc">' + esc(descripcion(p.nombre)) + "</p>",
         '<div class="tp-avance">',
