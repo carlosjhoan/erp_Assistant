@@ -992,11 +992,33 @@ if (formConsulta) {
     }
   }
 
-  function pintar() {
+  // Turno de espera: el usuario ya se ve, el asistente ocupa su lugar.
+  function esqueleto() {
+    const bot = document.createElement("div");
+    bot.className = "msg bot esqueleto";
+    bot.innerHTML =
+      '<div class="msg-avatar"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M12 3.4l1.9 4.7 4.7 1.9-4.7 1.9L12 16.6l-1.9-4.7L5.4 10l4.7-1.9z" fill="currentColor"/></svg></div>' +
+      '<div class="msg-bloque">' +
+      '<div class="msg-cabeza"><strong>Asistente</strong></div>' +
+      '<div class="msg-cuerpo esq"><span class="esq-l" style="width:92%"></span><span class="esq-l" style="width:78%"></span><span class="esq-l" style="width:54%"></span></div>' +
+      "</div>";
+    return bot;
+  }
+
+  // Baja el hilo para que la respuesta empiece arriba de todo.
+  function mostrarDesde(el) {
+    if (!el) return;
+    const y = el.offsetTop - 8;
+    hilo.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+  }
+
+  function pintar(desde) {
     hilo.textContent = "";
     turnos.forEach(function (t) { hilo.appendChild(tarjetaTurno(t)); });
-    // El hilo scrollea solo: se baja al ultimo turno.
-    hilo.scrollTo({ top: hilo.scrollHeight, behavior: "smooth" });
+    // Si se pide, el hilo se ubica donde arranca esa respuesta.
+    const ultimo = hilo.querySelector(".turno:last-child .msg.bot");
+    mostrarDesde(desde && ultimo ? ultimo : null);
+    if (!desde) hilo.scrollTo({ top: hilo.scrollHeight, behavior: "smooth" });
   }
 
   const inicio = document.getElementById("inicio");
@@ -1015,6 +1037,15 @@ if (formConsulta) {
     const textoEnviado = entrada.value;
     entrada.value = "";
     ajustarAlto();
+
+    // El turno del usuario aparece de inmediato, con su esqueleto abajo.
+    const provisional = document.createElement("div");
+    provisional.className = "turno";
+    provisional.appendChild(tarjetaTurno({ pregunta: pregunta, at: Date.now() }).querySelector(".msg.user"));
+    const carga = esqueleto();
+    provisional.appendChild(carga);
+    hilo.appendChild(provisional);
+    mostrarDesde(carga);
 
     boton.disabled = true;
     entrada.disabled = true;
@@ -1060,8 +1091,9 @@ if (formConsulta) {
         at: Date.now(),
       };
 
+      provisional.remove();
       turnos.push(turno);
-      pintar();
+      pintar(true);
       entrada.value = "";
       ajustarAlto();
     } catch (err) {
@@ -1323,7 +1355,27 @@ function montarDictado(micro, entrada) {
   let reconocido = "";
   let reinicio = null;
 
-  function pintar() {
+  // Turno de espera: el usuario ya se ve, el asistente ocupa su lugar.
+  function esqueleto() {
+    const bot = document.createElement("div");
+    bot.className = "msg bot esqueleto";
+    bot.innerHTML =
+      '<div class="msg-avatar"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M12 3.4l1.9 4.7 4.7 1.9-4.7 1.9L12 16.6l-1.9-4.7L5.4 10l4.7-1.9z" fill="currentColor"/></svg></div>' +
+      '<div class="msg-bloque">' +
+      '<div class="msg-cabeza"><strong>Asistente</strong></div>' +
+      '<div class="msg-cuerpo esq"><span class="esq-l" style="width:92%"></span><span class="esq-l" style="width:78%"></span><span class="esq-l" style="width:54%"></span></div>' +
+      "</div>";
+    return bot;
+  }
+
+  // Baja el hilo para que la respuesta empiece arriba de todo.
+  function mostrarDesde(el) {
+    if (!el) return;
+    const y = el.offsetTop - 8;
+    hilo.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+  }
+
+  function pintar(desde) {
     entrada.value = (base + " " + reconocido).replace(/s+/g, " ").trim();
   }
 

@@ -4908,3 +4908,39 @@ dialog.modal-diag header { padding: 18px 22px 14px; }
 
 /* El ultimo turno respira contra el compositor, no lo toca. */
 .inicio[data-estado="chat"] .turno:last-child { margin-bottom: 0; }
+
+/* ============================================================
+   Esqueleto con shimmer mientras el asistente responde.
+   ============================================================ */
+
+.msg-cuerpo.esq {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 16px 15px;
+}
+
+.esq-l {
+  display: block;
+  height: 9px;
+  border-radius: 999px;
+  background: linear-gradient(
+    100deg,
+    rgba(226, 232, 242, 0.75) 30%,
+    rgba(244, 248, 253, 0.95) 50%,
+    rgba(226, 232, 242, 0.75) 70%
+  );
+  background-size: 300% 100%;
+  animation: shimmer-linea 1400ms linear infinite;
+}
+
+@keyframes shimmer-linea {
+  from { background-position: 150% 0; }
+  to   { background-position: -50% 0; }
+}
+
+.msg.esqueleto .msg-cabeza { opacity: 0.6; }
+
+@media (prefers-reduced-motion: reduce) {
+  .esq-l { animation: none; }
+}
