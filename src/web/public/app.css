@@ -3497,3 +3497,32 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
 }
 
 .perfil:hover { transform: scale(1.22); }
+
+/* Foto mas grande y todo el bloque pegado arriba. */
+.contenido:has(#inicio[data-estado="idle"]) { padding-top: 8px; }
+
+.inicio[data-estado="idle"] {
+  padding-top: 0;
+  gap: 10px;
+}
+
+.saludo {
+  gap: 6px;
+  padding-top: 0;
+  margin-top: -6px;
+}
+
+.perfil {
+  width: 96px;
+  height: 96px;
+  transform: scale(1.3);
+}
+
+.perfil:hover { transform: scale(1.36); }
+
+.saludo .entrada {
+  font-size: 23px;
+  margin-top: 2px;
+}
+
+.inicio[data-estado="idle"] .feed { max-height: calc(100vh - 600px); min-height: 110px; }
