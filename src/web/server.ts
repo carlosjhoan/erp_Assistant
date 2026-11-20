@@ -606,6 +606,70 @@ function filaTema(
 ${dialog}`;
 }
 
+type TemaTarjeta = {
+  id: string;
+  title: string;
+  description: string | null;
+  scopeSignal: string | null;
+  verifyScore: number | null;
+  status: string;
+};
+
+/** Tablero de triaje: una columna por estado. */
+function tableroTemas(temas: TemaTarjeta[], editable: boolean): string {
+  const columnas: { estado: string; titulo: string; clase: string }[] = [
+    { estado: "proposed", titulo: "Sin calificar", clase: "pendiente" },
+    { estado: "selected", titulo: "Seleccionadas", clase: "seleccionada" },
+    { estado: "parked", titulo: "Postergadas", clase: "postergada" },
+    { estado: "discarded", titulo: "Descartadas", clase: "descartada" },
+  ];
+
+  const tarjeta = (t: TemaTarjeta) => {
+    const confianza = t.verifyScore != null ? Math.round(t.verifyScore * 100) : null;
+    const esAlcance = t.scopeSignal === "likely_scope";
+    const idModal = `desc-${t.id.slice(0, 8)}`;
+
+    return `<article class="tarjeta-kanban estado-${t.status}" draggable="${editable}" data-id="${t.id}">
+  <div class="kanban-marcas">
+    <span class="marca ${esAlcance ? "alcance" : "idea"}">${esAlcance ? "ALCANCE" : "IDEA"}</span>
+    ${confianza != null ? `<span class="jev">${confianza}%</span>` : ""}
+  </div>
+  <h4>${esc(t.title)}</h4>
+  ${t.description ? `<button type="button" class="kanban-ver" data-abrir-modal="${idModal}">ver más</button>` : ""}
+  ${
+    editable
+      ? `<select class="kanban-select" data-campo="estado" aria-label="Decisión: ${esc(t.title)}">${opciones(ESTADOS, t.status)}</select>`
+      : ""
+  }
+</article>
+<dialog id="${idModal}" class="modal modal-desc" closedby="any">
+  <header>
+    <h2>${esc(t.title)}</h2>
+    <button class="cerrar" data-cerrar-modal="${idModal}" aria-label="Cerrar">✕</button>
+  </header>
+  ${t.description ? `<div class="markdown"><p>${esc(t.description)}</p></div>` : `<div class="markdown"><p class="nota">Sin descripción.</p></div>`}
+  <footer class="modal-pie"><a class="boton secundario" href="/tema/${t.id}">Abrir tema</a></footer>
+</dialog>`;
+  };
+
+  return `<div class="tablero">
+${columnas
+  .map((c) => {
+    const propias = temas.filter((t) => t.status === c.estado);
+    return `<section class="columna ${c.clase}">
+  <header class="columna-head">
+    <h3>${c.titulo}</h3>
+    <span class="columna-cuenta" data-cuenta="${c.estado}">${propias.length}</span>
+  </header>
+  <div class="columna-lista" data-drop="${c.estado}">
+    ${propias.map(tarjeta).join("\n") || `<p class="columna-vacia">—</p>`}
+  </div>
+</section>`;
+  })
+  .join("\n")}
+</div>`;
+}
+
 function bloqueRubricaReunion(meetingId: string): string {
   const temas = db.select().from(topic).where(eq(topic.meetingId, meetingId)).all();
   const ids = temas.map((t) => t.id);
@@ -689,7 +753,6 @@ function vistaReunion(id: string, tab?: string, vista: "temas" | "rubrica" = "te
   };
 
   // Por defecto, la pestaña donde hay trabajo: sin calificar si queda algo.
-  const activa = tab ?? "todas";
 
   const pestañas: { id: string; texto: string; n: number }[] = [
     { id: "todas", texto: "Todas", n: cuenta.todas },
@@ -699,26 +762,9 @@ function vistaReunion(id: string, tab?: string, vista: "temas" | "rubrica" = "te
     { id: "proposed", texto: "Sin calificar", n: cuenta.proposed },
   ];
 
-  const navegacion = pestañas
-    .map(
-      (p) =>
-        `<a class="pestana estado-${p.id}${activa === p.id ? " activa" : ""}" href="/reunion/${m.id}?tab=${p.id}" data-conteo="${p.id}">${p.texto} <b>${p.n}</b></a>`
-    )
-    .join("");
+  const editable = vista === "temas";
 
-  const visibles = activa === "todas" ? temas : temas.filter((t) => t.status === activa);
-  const editable = activa === "todas";
-
-  const lista =
-    visibles.length > 0
-      ? visibles.map((t) => filaTema(t, editable)).join("\n")
-      : `<div class="vacio-mini">${
-          activa === "proposed"
-            ? "No queda nada sin calificar."
-            : activa === "todas"
-              ? "Esta reunión no tiene temas todavía."
-              : "No hay temas en este estado."
-        }</div>`;
+  const lista = tableroTemas(temas, editable);
 
   const modal = notas
     ? `<dialog id="modal-notas" class="modal" closedby="any">
@@ -790,12 +836,7 @@ function vistaReunion(id: string, tab?: string, vista: "temas" | "rubrica" = "te
       </div>
     </header>
 
-    <nav class="pestanas">${navegacion}</nav>
-
-    <div class="lista-temas" data-tab="${activa}">
-    ${editable ? "" : "<p class=\"aviso-lectura\">Solo lectura. Para cambiar la decisión, usá la pestaña Todas.</p>"}
-      ${lista}
-    </div>
+    ${lista}
   </section>`
   }
 </div>

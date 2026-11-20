@@ -465,3 +465,78 @@ document.addEventListener("keydown", function (e) {
 });
 
 })();
+
+/* ---------- tablero: arrastrar y soltar entre columnas ---------- */
+
+let arrastrada = null;
+
+document.addEventListener("dragstart", function (e) {
+  const card = e.target.closest(".tarjeta-kanban");
+  if (!card || card.getAttribute("draggable") !== "true") return;
+  arrastrada = card;
+  card.classList.add("arrastrando");
+  e.dataTransfer.effectAllowed = "move";
+  e.dataTransfer.setData("text/plain", card.dataset.id);
+});
+
+document.addEventListener("dragend", function () {
+  document.querySelectorAll(".tarjeta-kanban.arrastrando").forEach(function (c) {
+    c.classList.remove("arrastrando");
+  });
+  document.querySelectorAll(".columna-lista.encima").forEach(function (l) {
+    l.classList.remove("encima");
+  });
+  arrastrada = null;
+});
+
+document.addEventListener("dragover", function (e) {
+  const lista = e.target.closest(".columna-lista");
+  if (!lista || !arrastrada) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "move";
+  document.querySelectorAll(".columna-lista.encima").forEach(function (l) {
+    if (l !== lista) l.classList.remove("encima");
+  });
+  lista.classList.add("encima");
+});
+
+document.addEventListener("drop", async function (e) {
+  const lista = e.target.closest(".columna-lista");
+  if (!lista || !arrastrada) return;
+  e.preventDefault();
+
+  const destino = lista.dataset.drop;
+  const card = arrastrada;
+  const id = card.dataset.id;
+  const origen = card.closest(".columna-lista");
+
+  lista.classList.remove("encima");
+  if (origen === lista) return;
+
+  try {
+    await pedir("/accion/" + id + "/estado/" + destino);
+
+    // Mueve la tarjeta y refresca los contadores de las dos columnas.
+    card.classList.remove("estado-proposed", "estado-selected", "estado-parked", "estado-discarded");
+    card.classList.add("estado-" + destino);
+    const select = card.querySelector(".kanban-select");
+    if (select) select.value = destino;
+
+    lista.appendChild(card);
+    card.classList.add("entrando");
+    setTimeout(function () { card.classList.remove("entrando"); }, 220);
+
+    contar(lista);
+    if (origen) contar(origen);
+  } catch (err) {
+    fallar(err);
+  }
+});
+
+function contar(lista) {
+  const columna = lista.closest(".columna");
+  if (!columna) return;
+  const globo = columna.querySelector(".columna-cuenta");
+  const tarjetas = lista.querySelectorAll(".tarjeta-kanban").length;
+  if (globo) globo.textContent = String(tarjetas);
+}
