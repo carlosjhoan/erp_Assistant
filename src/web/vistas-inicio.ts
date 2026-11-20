@@ -33,7 +33,7 @@ export function vistaInicio(db: Db): Pagina {
 
   const aro = (proyId: string, pct: number | null, color: string, etiqueta: string, medida: string) => `
         <span class="pm" data-proy="${proyId}" data-medida="${medida}" data-pct="${pct ?? 0}">
-          <svg class="pm-ring" viewBox="0 0 32 32" width="20" height="20" aria-hidden="true">
+          <svg class="pm-ring" viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
             <circle class="pm-bg" cx="16" cy="16" r="13" />
             <circle class="pm-fg ${color}" cx="16" cy="16" r="13" stroke-dasharray="0 81.7" />
           </svg>
@@ -138,13 +138,14 @@ export function vistaInicio(db: Db): Pagina {
     </div>
   </section>
 
-  <header class="saludo">
+  <div class="autor" aria-label="Steel and Glass — Carlos">
     <img class="marca" src="/logo-mark.png" alt="Steel and Glass">
-    <img class="perfil" src="/profile.jpg" alt="Carlos" width="96" height="96">
-    <h1 class="entrada" id="entrada">
-      <span id="maquina" aria-label="Así van las cosas con Carlos ..."></span><i class="caret" aria-hidden="true"></i>
-    </h1>
-  </header>
+    <img class="perfil" src="/profile.jpg" alt="Carlos" width="64" height="64">
+  </div>
+
+  <h1 class="entrada" id="entrada">
+    <span id="maquina" aria-label="Así van las cosas con Carlos ..."></span><i class="caret" aria-hidden="true"></i>
+  </h1>
 
   <aside class="panel">
     <div class="panel-bloque">

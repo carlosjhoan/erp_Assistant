@@ -3752,3 +3752,79 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
 }
 
 .inicio[data-estado="idle"] .saludo { margin-bottom: 2px; }
+
+/* ============================================================
+   Autor fijo arriba a la derecha; el copy queda libre arriba.
+   ============================================================ */
+
+.autor {
+  position: fixed;
+  top: 20px;
+  right: 26px;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(10px) saturate(1.2);
+  -webkit-backdrop-filter: blur(10px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 10px 26px -22px rgba(25, 35, 62, 0.55);
+  animation: suave-in 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 80ms;
+}
+
+.autor .marca { height: 30px; margin: 0; animation: none; }
+
+.autor .perfil {
+  width: 46px;
+  height: 46px;
+  transform: none;
+  animation: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95), 0 0 0 3px var(--line);
+}
+
+.autor .perfil:hover { transform: none; }
+
+/* El copy arranca arriba a la izquierda, con aire. */
+.inicio[data-estado="idle"] .entrada {
+  position: fixed;
+  top: 30px;
+  left: calc(var(--rail-w) + 28px);
+  z-index: 20;
+  font-size: 26px;
+  margin: 0;
+  max-width: calc(100vw - var(--rail-w) - 360px);
+  animation: suave-in 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 120ms;
+}
+
+/* Sin imagen arriba, el panel sube y gana espacio. */
+.inicio[data-estado="idle"] {
+  padding-top: 92px;
+  padding-bottom: 200px;
+}
+
+/* El panel deja el centro a las cards. */
+.inicio[data-estado="idle"] .panel {
+  grid-template-columns: 168px minmax(0, 1fr) 224px;
+  gap: 14px 16px;
+}
+
+/* ---------- cards legibles ---------- */
+
+.inicio[data-estado="idle"] .pcard {
+  min-height: 148px;
+  padding: 16px 18px 18px;
+}
+
+.inicio[data-estado="idle"] .pcard-n { font-size: 13.5px; letter-spacing: 0.07em; }
+
+.inicio[data-estado="idle"] .pm b { font-size: 17px; font-weight: 700; }
+.inicio[data-estado="idle"] .pm i { font-size: 9.5px; }
+.inicio[data-estado="idle"] .pcard-metricas { gap: 16px; margin-top: auto; }
+.inicio[data-estado="idle"] .pm-sep { height: 30px; }
+
+.inicio[data-estado="idle"] .feed { max-height: clamp(80px, calc(100vh - 640px), 360px); }
