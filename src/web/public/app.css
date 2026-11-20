@@ -4634,3 +4634,18 @@ body.rail-hidden .rail-toggle { align-self: center; margin: 0; }
 /* En /proyectos el estado es solo el punto vivo. */
 .tp-cabeza .vivo { margin-left: 9px; order: 2; }
 .tp-cabeza strong { order: 1; }
+
+/* El punto vivo va en la esquina superior derecha de la tarjeta. */
+.tarjeta-proyecto { position: relative; }
+
+.tarjeta-proyecto .tp-cabeza { position: static; }
+
+.tarjeta-proyecto .tp-cabeza .vivo {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  order: 0;
+  margin: 0;
+  width: 8px;
+  height: 8px;
+}
