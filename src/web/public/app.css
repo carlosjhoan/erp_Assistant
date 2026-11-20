@@ -3627,3 +3627,13 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
 .inicio[data-estado="idle"] .feed {
   max-height: clamp(80px, calc(100vh - 680px), 400px);
 }
+
+/* El sello NUEVO ahora vive arriba a la derecha. */
+.badge-nuevo {
+  top: 10px;
+  bottom: auto;
+  right: 11px;
+}
+
+/* Se reserva el lugar para que un nombre largo no lo pise. */
+.inicio[data-estado="idle"] .pcard-cabeza { padding-right: 58px; }
