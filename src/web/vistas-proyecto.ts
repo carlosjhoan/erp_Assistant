@@ -12,6 +12,19 @@ const barra = (pct: number, clase = "") =>
 
 const tono = (i: number) => ["verde", "tinta", "ambar", "malva"][i % 4];
 
+/** Mini grafico de la serie semanal. Lee de viejo a nuevo. */
+function sparkline(puntos: number[]): string {
+  if (puntos.length < 2) return "";
+  const serie = [...puntos].reverse();
+  const w = 260;
+  const h = 34;
+  const paso = w / (serie.length - 1);
+  const xy = serie.map((v, i) => [i * paso, h - (Math.max(0, Math.min(100, v)) / 100) * h] as const);
+  const linea = xy.map(([x, y]) => x.toFixed(1) + "," + y.toFixed(1)).join(" ");
+  const area = "0," + h + " " + linea + " " + w + "," + h;
+  return "<svg class=\"spark\" viewBox=\"0 0 " + w + " " + h + "\" preserveAspectRatio=\"none\" aria-hidden=\"true\"><polygon points=\"" + area + "\" fill=\"currentColor\" opacity=\"0.07\"/><polyline points=\"" + linea + "\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"/></svg>";
+}
+
 function conteo(db: Db) {
   return createTopicRepo(db).bandeja().length;
 }
@@ -28,7 +41,7 @@ export function vistaProyectos(db: Db): Pagina {
       return `<a class="tarjeta-proyecto ${tono(i)}" href="/proyecto/${p.proyectoId}">
   <div class="tp-cabeza">
     <strong>${esc(p.nombre)}</strong>
-    <span class="tp-estado">activo</span>
+    <span class="badge-estado ${p.estado}">${esc(p.estado)}</span>
   </div>
   <p class="tp-desc">${esc(descripcionDe(db, p.proyectoId))}</p>
   <p class="tp-meta">${p.repos} repo(s) · ${esc(diag)}</p>
@@ -78,6 +91,24 @@ function modalProyecto(): string {
 </dialog>`;
 }
 
+/** Resumen por semana de los items de un proyecto. */
+function filasSemanaDe(todos: SemanaResumen[], mios: (typeof rubricItem.$inferSelect)[]) {
+  return todos
+    .filter((s) => mios.some((i) => i.rubricId === s.id))
+    .map((s) => {
+      const propios = mios.filter((i) => i.rubricId === s.id && i.status !== "dropped");
+      const hechos = propios.filter((i) => i.status === "done").length;
+      return {
+        id: s.id,
+        desde: s.desde,
+        hasta: s.hasta,
+        pct: propios.length > 0 ? Math.round((hechos / propios.length) * 100) : 0,
+        hechos,
+        vivos: propios.length,
+      };
+    });
+}
+
 export function vistaProyecto(db: Db, id: string): Pagina {
   const p = db.select().from(project).where(eq(project.id, id)).all()[0];
   if (!p) return { titulo: "Proyecto", seccion: "proyectos", cuerpo: `<div class="vacio"><h2>No existe</h2></div>` };
@@ -125,19 +156,55 @@ ${propios.map((i) => filaItem(i)).join("")}
     .map((v) => db.select().from(repoTable).where(eq(repoTable.id, v.repoId)).all()[0])
     .filter(Boolean);
 
+  const serie = todos
+    .filter((x) => mios.some((i) => i.rubricId === x.id))
+    .map((x) => {
+      const propios = mios.filter((i) => i.rubricId === x.id && i.status !== "dropped");
+      const h = propios.filter((i) => i.status === "done").length;
+      return propios.length > 0 ? Math.round((h / propios.length) * 100) : 0;
+    });
+
+  const semana = filasSemanaDe(todos, mios)[0];
+
   return {
     titulo: p.name,
     seccion: "proyectos",
     conteoBandeja: conteo(db),
     cuerpo: `<a class="volver" href="/">← Proyectos</a>
-<div class="pj-cabeza">
-  <h2>${esc(p.name)}</h2>
-  <span class="pj-estado">${esc(p.status)}</span>
-  <p class="tp-desc">${esc(p.description ?? "Sin descripción.")}</p>
-  <p class="tp-meta">${esc(p.path)} · ${repos.length} repo(s)</p>
+
+<header class="pj-hero">
+  <div class="pj-titulo">
+    <h2>${esc(p.name)}</h2>
+    <span class="badge-estado ${p.status}">${esc(p.status)}</span>
+  </div>
+  <p class="pj-desc">${esc(p.description ?? "Sin descripción.")}</p>
+  <p class="pj-ruta"><code>${esc(p.path)}</code> · ${repos.length} repo(s)</p>
+</header>
+
+<div class="pj-stats">
+  <div class="stat">
+    <span class="stat-etq">Esta semana</span>
+    <b class="stat-num">${semana ? `${semana.pct}%` : "—"}</b>
+    <span class="stat-nota">${semana ? `${semana.hechos} de ${semana.vivos} ítems` : "sin ítems"}</span>
+  </div>
+  <div class="stat">
+    <span class="stat-etq">Acumulado</span>
+    <b class="stat-num">${pct}%</b>
+    <span class="stat-nota">${hechos} de ${vivos} ítems</span>
+  </div>
+  <div class="stat">
+    <span class="stat-etq">Repos</span>
+    <b class="stat-num">${repos.length}</b>
+    <span class="stat-nota">vinculados</span>
+  </div>
+  <div class="stat">
+    <span class="stat-etq">Diagnóstico</span>
+    <b class="stat-num">${diag ? `${diag.businessPct ?? "—"}/${diag.technicalPct ?? "—"}` : "—"}</b>
+    <span class="stat-nota">${diag ? "negocio / técnico" : "sin cargar"}</span>
+  </div>
 </div>
 
-<section class="bloque">
+<section class="bloque tarjeta-glass">
   <h3 class="bloque-t">Diagnóstico${
     diag
       ? `<span class="bloque-fecha">desde ${new Date(diag.measuredAt).toLocaleDateString("es-CO", { day: "numeric", month: "short" })}</span>`
@@ -145,23 +212,30 @@ ${propios.map((i) => filaItem(i)).join("")}
   }</h3>
   ${
     diag
-      ? `<div class="av-fila"><span class="av-rango">Negocio</span>${barra(diag.businessPct ?? 0, "verde")}<b>${diag.businessPct ?? "—"}%</b></div>
-         <div class="av-fila"><span class="av-rango">Técnico</span>${barra(diag.technicalPct ?? 0, "tinta")}<b>${diag.technicalPct ?? "—"}%</b></div>
+      ? `<div class="diag-fila"><span class="diag-etq">Negocio</span>${barra(diag.businessPct ?? 0, "verde")}<b>${diag.businessPct ?? "—"}%</b></div>
+         <div class="diag-fila"><span class="diag-etq">Técnico</span>${barra(diag.technicalPct ?? 0, "tinta")}<b>${diag.technicalPct ?? "—"}%</b></div>
          ${diag.summary ? `<p class="nota">${esc(diag.summary)}</p>` : ""}`
       : `<p class="nota">Este proyecto no tiene diagnóstico cargado.</p>`
   }
 </section>
 
-<section class="bloque">
-  <h3 class="bloque-t">Avance<span class="bloque-fecha">${pct}% acumulado · ${hechos} de ${vivos} ítems</span></h3>
+<section class="bloque tarjeta-glass">
+  <h3 class="bloque-t">Avance<span class="bloque-fecha">${pct}% acumulado</span></h3>
+  ${
+    serie.length > 1
+      ? `<div class="spark-caja">${sparkline(serie)}<span class="spark-pie">${serie.length} semanas</span></div>`
+      : ""
+  }
   ${filasSemana || `<p class="nota">Todavía no hay ítems imputados a este proyecto.</p>`}
 </section>
 
-<section class="bloque">
+<section class="bloque tarjeta-glass">
   <h3 class="bloque-t">Repos<span class="bloque-fecha">${repos.length}</span></h3>
   ${
     repos.length > 0
-      ? repos.map((r) => `<div class="repo-fila"><code>${esc(r!.name)}</code></div>`).join("")
+      ? `<div class="repos-grid">${repos
+          .map((r) => `<div class="repo-chip"><code>${esc(r!.name)}</code></div>`)
+          .join("")}</div>`
       : `<p class="nota">Sin repos vinculados.</p>`
   }
 </section>`,
