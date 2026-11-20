@@ -3526,3 +3526,23 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
 }
 
 .inicio[data-estado="idle"] .feed { max-height: calc(100vh - 600px); min-height: 110px; }
+
+/* La foto es el autor: manda en la composicion. */
+.perfil {
+  width: 120px;
+  height: 120px;
+  transform: scale(1.35);
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.95),
+    0 0 0 4px var(--line),
+    0 22px 44px -22px rgba(25, 35, 62, 0.6);
+}
+
+.perfil:hover { transform: scale(1.40); }
+
+.saludo { margin-top: -10px; }
+.saludo .entrada { font-size: 24px; }
+
+.inicio[data-estado="idle"] .feed {
+  max-height: clamp(90px, calc(100vh - 720px), 420px);
+}
