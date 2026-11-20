@@ -1,6 +1,6 @@
 import { asc, eq } from "drizzle-orm";
 import type { Db } from "../infra/db/client.ts";
-import { project, projectDiagnosis, rubric, rubricItem, topic, topicProject } from "../infra/db/schema.ts";
+import { project, projectCapability, rubric, rubricItem, topic, topicProject } from "../infra/db/schema.ts";
 
 /**
  * Un ítem cuenta como hecho si su estado es `done`. Los `dropped` salen del
@@ -20,7 +20,7 @@ export interface ProgresoProyecto {
   total: number;
   hechos: number;
   pct: number;
-  diagnostico: { negocio: number | null; tecnico: number | null; desde: Date } | null;
+  diagnostico: { negocio: number; tecnico: number; estado: string; base: number } | null;
   repos: number;
   semana: { total: number; hechos: number; pct: number };
 }
@@ -49,13 +49,9 @@ export function progresoPorProyecto(db: Db, semanaId?: string): ProgresoProyecto
       // El proyecto del ítem manda; si no lo tiene, se hereda del tema.
       const mios = items.filter((i) => i.projectId === p.id || (!i.projectId && i.topicId && idsTemas.has(i.topicId)));
 
-      const diag = db
-        .select()
-        .from(projectDiagnosis)
-        .where(eq(projectDiagnosis.projectId, p.id))
-        .orderBy(asc(projectDiagnosis.measuredAt))
-        .all()
-        .at(-1);
+      // El diagnóstico se calcula desde las capacidades importadas.
+      const caps = db.select().from(projectCapability).where(eq(projectCapability.projectId, p.id)).all();
+      const diag = caps.length > 0 ? veredicto(caps) : null;
 
       return {
         proyectoId: p.id,
@@ -63,11 +59,7 @@ export function progresoPorProyecto(db: Db, semanaId?: string): ProgresoProyecto
         estado: p.status,
         ...contar(mios),
         diagnostico: diag
-          ? {
-              negocio: diag.businessPct,
-              tecnico: diag.technicalPct,
-              desde: new Date(diag.measuredAt),
-            }
+          ? { negocio: diag.negocio, tecnico: diag.produccion, estado: diag.estado, base: diag.base }
           : null,
         repos: vinculos.filter((v) => v.projectId === p.id).length,
         semana: contar(deLaSemana.filter((i) => i.projectId === p.id || (!i.projectId && i.topicId && idsTemas.has(i.topicId)))),
@@ -121,4 +113,72 @@ export function rango(desde: string, hasta: string | null): string {
   if (!hasta) return inicio;
   const h = new Date(`${hasta}T12:00:00`);
   return `${inicio} – ${h.getDate()} ${MESES[h.getMonth()]}`;
+}
+
+/* ---------- diagnóstico: mismas fórmulas que el prototipo ---------- */
+
+export interface Veredicto {
+  negocio: number;
+  produccion: number;
+  robustez: number;
+  estado: "solido" | "aceptable" | "atencion" | "critico" | "sin-diagnostico";
+  base: number;
+  completos: number;
+  parciales: number;
+  ausentes: number;
+  confiables: number;
+}
+
+type Cap = {
+  scope: string;
+  outsideRubric: boolean;
+  integration: string;
+  reliability: string;
+  quality: string | null;
+};
+
+/** Solo lo pedido entra al denominador. */
+const enRubrica = (cs: Cap[]) => cs.filter((c) => c.scope !== "futuro" && !c.outsideRubric);
+
+/**
+ * Negocio: cuánto puede usar el área hoy. Integrado vale 1, parcial 0,5.
+ * Producción: cuánto además aguanta fallos (I3 y F2 o F3).
+ */
+export function veredicto(capacidades: Cap[]): Veredicto {
+  const base = enRubrica(capacidades);
+  if (base.length === 0) {
+    return {
+      negocio: 0,
+      produccion: 0,
+      robustez: 0,
+      estado: "sin-diagnostico",
+      base: 0,
+      completos: 0,
+      parciales: 0,
+      ausentes: 0,
+      confiables: 0,
+    };
+  }
+
+  const puntos = base.reduce((a, c) => a + (c.integration === "I3" ? 1 : c.integration === "I2" ? 0.5 : 0), 0);
+  const confiables = base.filter((c) => c.integration === "I3" && (c.reliability === "F2" || c.reliability === "F3"));
+
+  const Q: Record<string, number> = { Q3: 3, Q2: 2, Q1: 1 };
+  const conCalidad = base.filter((c) => c.quality && c.quality in Q);
+  const suma = conCalidad.reduce((a, c) => a + (Q[c.quality as string] ?? 0), 0);
+  const escala = conCalidad.length > 0 ? suma / conCalidad.length / 3 : 0;
+
+  const estado = escala >= 0.8 ? "solido" : escala >= 0.55 ? "aceptable" : escala >= 0.34 ? "atencion" : "critico";
+
+  return {
+    negocio: Math.round((puntos / base.length) * 100),
+    produccion: Math.round((confiables.length / base.length) * 100),
+    robustez: Math.round(escala * 100),
+    estado,
+    base: base.length,
+    completos: base.filter((c) => c.integration === "I3").length,
+    parciales: base.filter((c) => c.integration === "I2").length,
+    ausentes: base.filter((c) => c.integration === "I0").length,
+    confiables: confiables.length,
+  };
 }

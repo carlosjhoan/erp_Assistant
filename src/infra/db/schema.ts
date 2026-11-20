@@ -189,6 +189,53 @@ export const rubricItem = sqliteTable(
   ]
 );
 
+
+/* ---------- capacidades del diagnóstico ---------- */
+
+/**
+ * Un nodo del diagnóstico: una capacidad concreta del proyecto con su estado
+ * medido. Se reimporta desde el JSON del prototipo, así que el ERP nunca
+ * edita estas filas: solo las lee y calcula porcentajes.
+ */
+export const projectCapability = sqliteTable(
+  "project_capability",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => project.id),
+    /** Identificador del nodo en el diagnóstico, por ejemplo G01. */
+    key: text("key").notNull(),
+    title: text("title").notNull(),
+    summary: text("summary"),
+    stage: text("stage"),
+    sortOrder: integer("sort_order").notNull().default(0),
+
+    /** Actual o Futuro. Solo lo actual entra en los porcentajes. */
+    scope: text("scope", { enum: ["actual", "futuro"] }).notNull().default("actual"),
+
+    /** I3 existe y conectado · I2 parcial · I0 ausente. */
+    integration: text("integration", { enum: ["I0", "I1", "I2", "I3"] }).notNull().default("I0"),
+
+    /** F3 robusto · F2 funciona · F1 frágil · F0 no funciona. */
+    reliability: text("reliability", { enum: ["F0", "F1", "F2", "F3"] }).notNull().default("F0"),
+
+    /** Q3 sólido · Q2 aceptable · Q1 a mejorar. */
+    quality: text("quality", { enum: ["Q1", "Q2", "Q3"] }),
+
+    /** Capacidad propuesta que no se le pidió al proyecto: fuera del denominador. */
+    outsideRubric: integer("outside_rubric", { mode: "boolean" }).notNull().default(false),
+
+    good: text("good", { mode: "json" }).$type<string[]>(),
+    improve: text("improve", { mode: "json" }).$type<string[]>(),
+    evidence: text("evidence", { mode: "json" }).$type<string[]>(),
+    affected: text("affected", { mode: "json" }).$type<string[]>(),
+
+    importedAt: integer("imported_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (t) => [uniqueIndex("capability_project_key").on(t.projectId, t.key), index("capability_project").on(t.projectId)]
+);
+
 /* ---------- log append-only ---------- */
 
 export const itemEvent = sqliteTable(

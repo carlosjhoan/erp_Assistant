@@ -2,8 +2,8 @@
 
 import { asc, eq } from "drizzle-orm";
 import type { Db } from "../infra/db/client.ts";
-import { progresoPorProyecto, rango, semanas, type SemanaResumen } from "../app/progreso.ts";
-import { project, projectDiagnosis, projectRepository, repo as repoTable, rubric, rubricItem } from "../infra/db/schema.ts";
+import { progresoPorProyecto, rango, semanas, veredicto, type SemanaResumen } from "../app/progreso.ts";
+import { project, projectCapability, projectRepository, repo as repoTable, rubric, rubricItem } from "../infra/db/schema.ts";
 import { esc, type Pagina } from "./render.ts";
 import { createTopicRepo } from "../infra/db/topic-repo.ts";
 
@@ -114,13 +114,15 @@ export function vistaProyecto(db: Db, id: string): Pagina {
   if (!p) return { titulo: "Proyecto", seccion: "proyectos", cuerpo: `<div class="vacio"><h2>No existe</h2></div>` };
 
   const todos = semanas(db);
-  const diag = db
+  // El diagnóstico se calcula desde las capacidades importadas del prototipo.
+  const caps = db
     .select()
-    .from(projectDiagnosis)
-    .where(eq(projectDiagnosis.projectId, id))
-    .orderBy(asc(projectDiagnosis.measuredAt))
+    .from(projectCapability)
+    .where(eq(projectCapability.projectId, id))
     .all()
-    .at(-1);
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+  const v = veredicto(caps);
+  const diag = caps.length > 0 ? v : null;
 
   const items = db.select().from(rubricItem).all();
   const mios = items.filter((i) => i.projectId === id).sort((a, b) => a.position - b.position);
@@ -185,21 +187,42 @@ ${propios.map((i) => filaItem(i)).join("")}
       <div class="kpi"><span>Esta semana</span><b>${semana ? `${semana.pct}%` : "—"}</b><i>${semana ? `${semana.hechos} de ${semana.vivos}` : "sin ítems"}</i></div>
       <div class="kpi"><span>Acumulado</span><b>${pct}%</b><i>${hechos} de ${vivos}</i></div>
       <div class="kpi"><span>Repos</span><b>${repos.length}</b><i>vinculados</i></div>
+      <div class="kpi"><span>Negocio</span><b>${diag ? diag.negocio + "%" : "—"}</b><i>${diag ? diag.base + " capacidades" : "sin diagnóstico"}</i></div>
+      <div class="kpi"><span>Producción</span><b>${diag ? diag.produccion + "%" : "—"}</b><i>${diag ? diag.estado : ""}</i></div>
     </div>
 
     <div class="pj-diag">
-      <h3 class="bloque-t">Diagnóstico${
-        diag
-          ? `<span class="bloque-fecha">desde ${new Date(diag.measuredAt).toLocaleDateString("es-CO", { day: "numeric", month: "short" })}</span>`
-          : ""
-      }</h3>
+      <h3 class="bloque-t">Diagnóstico${diag ? `<span class="bloque-fecha">${diag.estado}</span>` : ""}</h3>
       ${
         diag
-          ? `<div class="diag-fila"><span class="diag-etq">Negocio</span>${barra(diag.businessPct ?? 0, "verde")}<b>${diag.businessPct ?? "—"}%</b></div>
-             <div class="diag-fila"><span class="diag-etq">Técnico</span>${barra(diag.technicalPct ?? 0, "tinta")}<b>${diag.technicalPct ?? "—"}%</b></div>`
+          ? `<div class="diag-fila"><span class="diag-etq">Negocio</span>${barra(diag.negocio, "verde")}<b>${diag.negocio}%</b></div>
+             <div class="diag-fila"><span class="diag-etq">Producción</span>${barra(diag.produccion, "tinta")}<b>${diag.produccion}%</b></div>
+             <p class="nota">${diag.completos} integradas · ${diag.parciales} parciales · ${diag.ausentes} ausentes de ${diag.base}</p>`
           : `<p class="nota">Sin diagnóstico cargado.</p>`
       }
     </div>
+
+    ${
+      // Capacidades medidas, con lo bueno y lo que falta de cada una.
+      caps.length > 0
+        ? `<div class="caps">
+      ${caps
+        .filter((c) => c.scope !== "futuro" && !c.outsideRubric)
+        .map(
+          (c) => `<details class="cap ${c.integration === "I3" ? "ok" : c.integration === "I2" ? "parcial" : "ausente"}">
+        <summary>
+          <span class="cap-dot"></span>
+          <span class="cap-t">${esc(c.title)}</span>
+          <span class="cap-e">${esc(c.integration)}</span>
+        </summary>
+        ${(c.good ?? []).map((g) => `<p class="cap-g">${esc(g)}</p>`).join("")}
+        ${(c.improve ?? []).map((g) => `<p class="cap-m">${esc(g)}</p>`).join("")}
+      </details>`,
+        )
+        .join("")}
+    </div>`
+        : ""
+    }
 
     ${
       repos.length > 0

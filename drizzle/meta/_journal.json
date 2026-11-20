@@ -134,6 +134,13 @@
       "when": 1795145163856,
       "tag": "0018_item_proyecto",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1795148332764,
+      "tag": "0019_capacidades",
+      "breakpoints": true
     }
   ]
 }

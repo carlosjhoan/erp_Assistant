@@ -23,7 +23,8 @@
     "repos:seed": "node --env-file-if-exists=.env --import tsx scripts/seed-repos.ts",
     "plan": "node --env-file-if-exists=.env --import tsx src/cli/plan.ts",
     "broadcast": "node --env-file-if-exists=.env --import tsx src/cli/broadcast.ts",
-    "web": "node --env-file-if-exists=.env --import tsx src/web/server.ts"
+    "web": "node --env-file-if-exists=.env --import tsx src/web/server.ts",
+    "diag:importar": "tsx src/app/importar-diagnostico.ts"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^3.0.87",
