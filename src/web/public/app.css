@@ -4107,3 +4107,6 @@ body.rail-hidden .rail-toggle { align-self: center; margin: 0; }
 
 .inicio[data-estado="chat"] .panel { gap: 14px; padding-bottom: 0; }
 .inicio[data-estado="chat"] .panel-bloque { margin: 0; }
+
+/* La semana estatica es solo del rail; el dashboard conserva su cinta. */
+.inicio[data-estado="idle"] .semana-h { display: none; }
