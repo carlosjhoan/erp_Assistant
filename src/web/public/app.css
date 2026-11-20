@@ -3431,3 +3431,27 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
 .turno-vista .volver { display: none; }
 .turno-vista > .pj-cabeza { margin-bottom: 14px; }
 .turno-vista > .pj-hero { margin: 0 0 14px; }
+
+/* ---------- saludo con foto de perfil ---------- */
+
+.saludo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+.perfil {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 8px 18px -12px rgba(25, 35, 62, 0.6);
+  animation: pcard-in 420ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+
+.saludo .entrada { margin: 0; }

@@ -108,9 +108,12 @@ export function vistaInicio(db: Db): Pagina {
     </div>
   </section>
 
-  <h1 class="entrada" id="entrada">
-    <span id="maquina" aria-label="Así van las cosas con Carlos"></span><i class="caret" aria-hidden="true"></i>
-  </h1>
+  <header class="saludo">
+    <img class="perfil" src="/profile.jpg" alt="Carlos" width="46" height="46">
+    <h1 class="entrada" id="entrada">
+      <span id="maquina" aria-label="Así van las cosas con Carlos ..."></span><i class="caret" aria-hidden="true"></i>
+    </h1>
+  </header>
 
   <aside class="panel">
     <div class="panel-bloque">

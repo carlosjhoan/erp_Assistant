@@ -1177,7 +1177,7 @@ document.querySelectorAll(".pm").forEach(function (caja) {
   const inicio = document.getElementById("inicio");
   if (!maquina || !inicio) return;
 
-  const TEXTO = "Así van las cosas con Carlos";
+  const TEXTO = "Así van las cosas con Carlos ...";
   const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   if (reduce) {

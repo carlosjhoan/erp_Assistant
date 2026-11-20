@@ -33,6 +33,10 @@ const MIME: Record<string, string> = {
   ".js": "text/javascript; charset=utf-8",
   ".png": "image/png",
   ".svg": "image/svg+xml",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".jfif": "image/jpeg",
+  ".webp": "image/webp",
 };
 
 const ESTADOS = [
@@ -1011,7 +1015,8 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
   const url = new URL(req.url ?? "/", `http://127.0.0.1:${process.env.WEB_PORT ?? 4599}`);
   const ruta = url.pathname;
 
-  if (/^\/(app\.css|app\.js|logo-mark\.png)$/.test(ruta)) {
+  // Archivos estaticos: solo nombres simples, sin barras, y tipos conocidos.
+  if (/^\/[a-z0-9._-]+$/i.test(ruta) && MIME[extname(ruta)]) {
     const archivo = join(PUBLICO, ruta.slice(1));
     if (existsSync(archivo)) {
       responder(res, 200, readFileSync(archivo), MIME[extname(archivo)] ?? "application/octet-stream");
