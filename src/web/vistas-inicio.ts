@@ -2,7 +2,7 @@
 
 import type { Db } from "../infra/db/client.ts";
 import { llmCall, meeting, projectCapability, rubricItem, topic } from "../infra/db/schema.ts";
-import { capacidadesEfectivas, progresoPorProyecto, rango, semanas, veredicto } from "../app/progreso.ts";
+import { capacidadesEfectivas, progresoPorProyecto, rango, semanaEnCurso, semanas, veredicto } from "../app/progreso.ts";
 import { esc, type Pagina } from "./render.ts";
 
 const CHECK = `<svg class="feed-check" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M3.4 8.4l3 3 6.2-6.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -58,7 +58,7 @@ const NOMBRE_TEC: Record<string, string> = { deepseek: "DeepSeek", jev: "Jev · 
 
 export function vistaInicio(db: Db): Pagina {
   const ss = semanas(db);
-  const actual = ss[0];
+  const actual = semanaEnCurso(ss);
 
   const proyectos = progresoPorProyecto(db);
   const reuniones = db.select().from(meeting).all();

@@ -2,7 +2,7 @@
 
 import { asc, eq } from "drizzle-orm";
 import type { Db } from "../infra/db/client.ts";
-import { capacidadesEfectivas, progresoPorProyecto, rango, semanas, veredicto, type SemanaResumen } from "../app/progreso.ts";
+import { capacidadesEfectivas, progresoPorProyecto, rango, semanaEnCurso, semanas, veredicto, type SemanaResumen } from "../app/progreso.ts";
 import { project, projectCapability, projectRepository, repo as repoTable, rubric, rubricItem } from "../infra/db/schema.ts";
 import { esc, type Pagina } from "./render.ts";
 import { createTopicRepo } from "../infra/db/topic-repo.ts";
@@ -334,7 +334,9 @@ export function vistaRubricas(db: Db): Pagina {
     };
   }
 
-  const [actual, ...anteriores] = todas as [SemanaResumen, ...SemanaResumen[]];
+  const enCurso = semanaEnCurso(todas);
+  const actual = (enCurso ?? todas[0]) as SemanaResumen;
+  const anteriores = todas.filter((s) => s.id !== actual.id);
 
   const detalle = (s: SemanaResumen) =>
     s.porProyecto

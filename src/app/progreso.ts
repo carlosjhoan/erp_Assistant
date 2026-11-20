@@ -36,9 +36,11 @@ export function progresoPorProyecto(db: Db, semanaId?: string): ProgresoProyecto
   const rubricas = db.select().from(rubric).all();
 
   // La semana por defecto es la rúbrica más reciente.
+  const ordenadas = rubricas.sort((a, b) => b.weekStart.localeCompare(a.weekStart));
+  const hoyISO = new Date().toISOString().slice(0, 10);
   const semana = semanaId
     ? rubricas.find((r) => r.id === semanaId)
-    : rubricas.sort((a, b) => b.weekStart.localeCompare(a.weekStart))[0];
+    : (ordenadas.find((r) => r.weekStart <= hoyISO && (r.deadline ?? r.weekStart) >= hoyISO) ?? ordenadas[0]);
 
   const deLaSemana = semana ? items.filter((i) => i.rubricId === semana.id) : [];
 
@@ -108,6 +110,20 @@ export function semanas(db: Db): SemanaResumen[] {
       };
     })
     .sort((a, b) => b.desde.localeCompare(a.desde));
+}
+
+/** La semana que contiene la fecha de hoy; si no hay, la última que empezó. */
+export function semanaEnCurso(ss: SemanaResumen[]): SemanaResumen | undefined {
+  const hoy = new Date().toISOString().slice(0, 10);
+  const dentro = ss.find((s) => s.desde <= hoy && (s.hasta ?? s.desde) >= hoy);
+  if (dentro) return dentro;
+  return ss.find((s) => s.desde <= hoy);
+}
+
+/** La próxima semana que todavía no empezó. */
+export function semanaProxima(ss: SemanaResumen[]): SemanaResumen | undefined {
+  const hoy = new Date().toISOString().slice(0, 10);
+  return [...ss].reverse().find((s) => s.desde > hoy);
 }
 
 /** Rango legible: "12 – 18 nov" o "29 oct – 04 nov". */

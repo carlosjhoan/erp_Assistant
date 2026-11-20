@@ -9,7 +9,7 @@
 import { z } from "zod";
 import type { Db } from "../infra/db/client.ts";
 import { meeting, project, rubricItem, topic } from "../infra/db/schema.ts";
-import { progresoPorProyecto, rango, semanas } from "./progreso.ts";
+import { progresoPorProyecto, rango, semanaEnCurso, semanaProxima, semanas } from "./progreso.ts";
 import { startRun, finishRun } from "../infra/llm/trace.ts";
 import type { Providers } from "../infra/llm/providers.ts";
 
@@ -84,7 +84,8 @@ const resumenCatalogo = () =>
 export function foto(db: Db): string {
   const proyectos = progresoPorProyecto(db);
   const ss = semanas(db);
-  const actual = ss[0];
+  const actual = semanaEnCurso(ss);
+  const proxima = semanaProxima(ss);
 
   const pendientes = actual
     ? db
@@ -112,6 +113,17 @@ export function foto(db: Db): string {
       ? `RÚBRICA DE LA SEMANA EN CURSO [id ${actual.id}]: ${rango(actual.desde, actual.hasta)} — ${actual.pct}% (${actual.hechos}/${actual.total} ítems hechos)`
       : "RÚBRICA DE LA SEMANA EN CURSO: no hay ninguna abierta",
     `Semanas de rúbrica registradas: ${ss.length}`,
+    proxima
+      ? `PRÓXIMA SEMANA [id ${proxima.id}]: ${rango(proxima.desde, proxima.hasta)} — ${proxima.total} ítems planificados, ${proxima.pct}% hecho`
+      : "PRÓXIMA SEMANA: no hay una planificada",
+    ...(proxima
+      ? db
+          .select()
+          .from(rubricItem)
+          .all()
+          .filter((i) => i.rubricId === proxima.id)
+          .map((i) => `  - ${i.projectId ? (proyectos.find((p) => p.proyectoId === i.projectId)?.nombre ?? "sin proyecto") : "sin proyecto"}: ${i.title}`)
+      : []),
     "",
     `REUNIONES: ${reuniones.length} · temas sin calificar: ${sinCalificar}`,
     "",
@@ -150,6 +162,7 @@ export async function consultar(
         "No inventes cifras. Máximo tres frases. Si conviene, indicá una ruta para ver el detalle. " +
         "Cuando la pregunta sea sobre un proyecto, la semana o las reuniones, llena 'mostrar' con la vista y el id exacto de la foto, " +
         "para que el usuario vea el detalle renderizado. Si la pregunta es general, deja 'mostrar' en null. " +
+        "Si habla de la próxima semana, la otra semana o lo que viene, usa la sección PRÓXIMA SEMANA y su id. " +
         "Si la pregunta trata del catálogo de cotizaciones, cita las cifras de la foto y llena 'enlace' con " +
         '{texto: "Abrir el catálogo", url: "' +
         CATALOGO.visor +
