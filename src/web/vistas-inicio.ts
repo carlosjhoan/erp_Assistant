@@ -1,43 +1,20 @@
-/** Inicio agéntico: el chat al centro y el estado del portafolio al costado. */
+/** Asistente: el chat al centro y el estado del portafolio al costado. */
 
-import { desc } from "drizzle-orm";
 import type { Db } from "../infra/db/client.ts";
-import { agentRun, llmCall, meeting, topic } from "../infra/db/schema.ts";
+import { meeting, topic } from "../infra/db/schema.ts";
 import { progresoPorProyecto, rango, semanas } from "../app/progreso.ts";
 import { esc, type Pagina } from "./render.ts";
-
-/** Costo de hoy. Se calcula desde las llamadas, no se guarda aparte. */
-export function costoHoy(db: Db): { usd: number; llamadas: number } {
-  const hoy = new Date().toDateString();
-  const filas = db.select().from(llmCall).all().filter((c) => new Date(c.createdAt).toDateString() === hoy);
-  return { usd: filas.reduce((a, c) => a + (c.costUsd ?? 0), 0), llamadas: filas.length };
-}
-
-const usd = (v: number) => (v === 0 ? "—" : `$${v.toFixed(4)}`);
-
-const hace = (fecha: Date) => {
-  const min = Math.round((Date.now() - fecha.getTime()) / 60000);
-  if (min < 1) return "ahora";
-  if (min < 60) return `${min} min`;
-  const h = Math.round(min / 60);
-  if (h < 24) return `${h} h`;
-  return `${Math.round(h / 24)} d`;
-};
 
 export function vistaInicio(db: Db): Pagina {
   const ss = semanas(db);
   const actual = ss[0];
-  const costo = costoHoy(db);
 
   const proyectos = progresoPorProyecto(db);
   const reuniones = db.select().from(meeting).all();
   const temas = db.select().from(topic).all();
   const sinCalificar = temas.filter((t) => t.status === "proposed").length;
 
-  const runs = db.select().from(agentRun).orderBy(desc(agentRun.createdAt)).all().slice(0, 5);
-  const costos = new Map(db.select().from(llmCall).all().map((c) => [c.runId, c.costUsd ?? 0]));
-
-  // Card glass con la descripción y los dos aros del diagnóstico.
+  // Cada proyecto con su descripción y los dos aros del diagnóstico.
   const filasProyecto = proyectos
     .map((p, i) => {
       const tono = ["verde", "tinta", "ambar", "malva"][i % 4];
@@ -70,35 +47,19 @@ export function vistaInicio(db: Db): Pagina {
     })
     .join("");
 
-  const actividad = runs
-    .map((r) => {
-      const etq = r.tool === "consulta" ? "Consulta" : r.tool.replaceAll("_", " ");
-      return `<div class="act-fila">
-  <i class="pt ${r.outcome === "ok" ? "verde" : "ambar"}"></i>
-  <span class="act-n">${esc(etq)}</span>
-  <span class="act-t">${hace(new Date(r.createdAt))}</span>
-  <span class="act-c">${usd(costos.get(r.id) ?? 0)}</span>
-</div>`;
-    })
-    .join("");
-
   return {
     titulo: "Asistente",
     seccion: "inicio",
     conteoBandeja: sinCalificar,
     cuerpo: `<div class="inicio" id="inicio" data-estado="idle">
   <section class="chat" id="chat">
-    <div class="hero" id="hero">
-      <h2 class="hero-t">¿Qué querés saber?</h2>
-      <p class="hero-s">Preguntá por el avance de un proyecto, la rúbrica de la semana o lo que falta.</p>
-    </div>
     <div class="chat-hilo" id="hilo" aria-live="polite"></div>
 
     <form class="chat-caja" id="form-consulta" autocomplete="off">
       <span class="hoja hoja-i" aria-hidden="true"></span>
       <span class="hoja hoja-d" aria-hidden="true"></span>
       <textarea id="pregunta" name="pregunta" rows="1" maxlength="300"
-        placeholder="Preguntá lo que quieras: cómo va Comercial, qué falta esta semana, cuánto costó hoy…"></textarea>
+        placeholder="Pregunta lo que quieras: cómo va Comercial, qué falta esta semana, cuánto costó hoy…"></textarea>
       <div class="chat-acciones">
         <button type="button" class="mic" id="mic" aria-label="Dictar" title="Dictar">
           <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
@@ -145,11 +106,6 @@ export function vistaInicio(db: Db): Pagina {
         <span>${sinCalificar} tema(s) sin calificar</span>
         <span class="mini-flecha">→</span>
       </a>
-    </div>
-
-    <div class="panel-bloque">
-      <h3 class="bloque-t">Actividad<span class="bloque-fecha">${usd(costo.usd)} hoy</span></h3>
-      ${actividad || `<p class="nota">Sin actividad registrada.</p>`}
     </div>
   </aside>
 </div>`,
