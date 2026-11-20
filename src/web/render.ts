@@ -29,7 +29,7 @@ const ENTRADAS = [
 export function pagina(p: Pagina): string {
   const nav = ENTRADAS.map((e) => {
     const activo = e.id === p.seccion ? " activo" : "";
-    const conteo = e.id === "reuniones" && p.conteoBandeja ? `<span class="conteo">${p.conteoBandeja}</span>` : "";
+    const conteo = "";
     return `<a href="${e.href}" class="${e.id}${activo}"><i class="nav-i">${e.icono}</i><span>${e.nombre}</span>${conteo}</a>`;
   }).join("\n");
 
@@ -44,11 +44,9 @@ export function pagina(p: Pagina): string {
 </head>
 <body>
 <aside class="rail">
-  <div class="rail-head">
+  <button type="button" class="rail-head" id="rail-toggle" aria-pressed="false" title="Ocultar menú" aria-label="Ocultar menú">
     <img class="brand-mark" src="/logo-mark.png" alt="Steel and Glass">
-  </div>
-  <button type="button" class="rail-toggle" id="rail-toggle" aria-pressed="false" title="Ocultar menú" aria-label="Ocultar menú">
-    <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M9.6 4.2 5.8 8l3.8 3.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <svg class="rail-chevron" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M9.6 4.2 5.8 8l3.8 3.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </button>
   <nav class="nav">${nav}</nav>
 </aside>
