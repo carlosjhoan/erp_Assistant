@@ -4261,3 +4261,16 @@ body.rail-hidden .rail-toggle { align-self: center; margin: 0; }
 
 /* El dashboard de inicio conserva su propio padding y su bloque de autor. */
 .inicio[data-estado="idle"] .autor { display: flex; }
+
+/* El aside estira sus hijos: las filas llegan al borde derecho. */
+.inicio[data-estado="chat"] .panel { align-items: stretch; }
+.inicio[data-estado="chat"] .panel-bloque { width: 100%; }
+
+/* El compositor vive dentro de la columna del chat, no sobre el rail. */
+.inicio[data-estado="chat"] .chat-caja {
+  left: calc(var(--rail-w) + 28px);
+  right: calc(384px + 24px);
+  width: auto;
+  max-width: none;
+  margin: 0;
+}
