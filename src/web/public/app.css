@@ -4718,3 +4718,23 @@ body.rail-hidden .rail-toggle { align-self: center; margin: 0; }
 
 /* El punto vivo del proyecto acompaña al titulo. */
 .pj-titulo .vivo { margin-left: 8px; }
+
+/* Los repos del proyecto, al pie de la columna y a la derecha. */
+.pj-repos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--soft);
+}
+
+/* El punto de partida, bajo cada cifra del resumen. */
+.md-resumen i {
+  display: block;
+  font-style: normal;
+  font-size: 9px;
+  color: var(--olive);
+  margin-top: 1px;
+}

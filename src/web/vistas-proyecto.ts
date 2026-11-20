@@ -155,6 +155,7 @@ export function vistaProyecto(db: Db, id: string): Pagina {
     .all()
     .sort((a, b) => a.sortOrder - b.sortOrder);
   const capsEf = capacidadesEfectivas(caps, db.select().from(rubricItem).all());
+  const vBase = veredicto(caps);
   const v = veredicto(capsEf);
   const diag = caps.length > 0 ? v : null;
 
@@ -230,8 +231,17 @@ ${propios.map((i) => filaItem(i)).join("")}
              </button>`
           : `<p class="nota">Sin diagnóstico cargado.</p>`
       }
+
+      ${
+        repos.length > 0
+          ? `<div class="pj-repos">${repos
+              .map((r) => `<span class="repo-badge">${esc(r!.name)}</span>`)
+              .join("")}</div>`
+          : ""
+      }
     </div>
   </aside>
+
 
   <dialog id="modal-diag" class="modal modal-diag">
     <header>
@@ -241,9 +251,9 @@ ${propios.map((i) => filaItem(i)).join("")}
     ${
       diag
         ? `<div class="md-resumen">
-      <div><span>Negocio</span><b>${diag.negocio}%</b></div>
-      <div><span>Producción</span><b>${diag.produccion}%</b></div>
-      <div><span>Estado</span><b>${diag.estado}</b></div>
+      <div><span>Negocio</span><b>${diag.negocio}%</b><i>desde ${vBase.negocio}%</i></div>
+      <div><span>Producción</span><b>${diag.produccion}%</b><i>desde ${vBase.produccion}%</i></div>
+      <div><span>Estado</span><b>${diag.estado}</b><i>${diag.completos} de ${diag.base}</i></div>
     </div>
     <p class="md-nota">${diag.completos} integradas · ${diag.parciales} parciales · ${diag.ausentes} ausentes de ${diag.base}</p>
     <div class="md-caps">
