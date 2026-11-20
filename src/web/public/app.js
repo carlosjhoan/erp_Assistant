@@ -368,6 +368,29 @@ function btnDeshabilitar(b, si) {
 
 /* ---------- chips de proyecto por tema ---------- */
 
+/* ---------- resumen de proyectos: siempre en badges ---------- */
+
+function pintarResumen(detalle) {
+  const resumen = detalle.querySelector(".multi-resumen");
+  if (!resumen) return;
+
+  const marcados = [...detalle.querySelectorAll("input[data-toggle-proyecto]:checked")];
+  resumen.textContent = "";
+
+  if (marcados.length === 0) {
+    resumen.textContent = "Sin proyecto";
+    return;
+  }
+
+  marcados.forEach(function (i) {
+    const nombre = i.closest("label").querySelector("span");
+    const badge = document.createElement("span");
+    badge.className = "chip-proyecto";
+    badge.textContent = nombre ? nombre.textContent : "";
+    resumen.appendChild(badge);
+  });
+}
+
 document.querySelectorAll("input[data-toggle-proyecto]").forEach(function (chip) {
   chip.addEventListener("click", async function (e) {
     e.preventDefault();
@@ -390,14 +413,13 @@ document.querySelectorAll("input[data-toggle-proyecto]").forEach(function (chip)
         if (ninguno) ninguno.checked = false;
       }
 
-      // El resumen del desplegable refleja cuantos quedaron marcados.
-      const resumen = detalle ? detalle.querySelector(".multi-resumen") : null;
-      if (detalle && resumen) {
-        const n = detalle.querySelectorAll("input[data-toggle-proyecto]:checked").length;
-        resumen.textContent = n === 0 ? "Sin proyecto" : n === 1 ? "1 proyecto" : n + " proyectos";
+      // El resumen se repinta con badges, no con un conteo.
+      if (detalle) {
+        pintarResumen(detalle);
 
         // Si ya no queda ninguno, "Sin proyecto" vuelve a estar marcado.
         const ninguno = detalle.querySelector("input[data-sin-proyecto]");
+        const n = detalle.querySelectorAll("input[data-toggle-proyecto]:checked").length;
         if (ninguno) ninguno.checked = n === 0;
       }
     } catch (err) {
@@ -422,8 +444,7 @@ document.querySelectorAll("[data-sin-proyecto]").forEach(function (chk) {
       detalle.querySelectorAll("input[data-toggle-proyecto]").forEach(function (i) { i.checked = false; });
       chk.checked = true;
 
-      const resumen = detalle.querySelector(".multi-resumen");
-      if (resumen) resumen.textContent = "Sin proyecto";
+      pintarResumen(detalle);
     } catch (err) {
       fallar(err);
     }
