@@ -2883,3 +2883,38 @@ label.inline {
     0 3px 10px -4px rgba(25, 35, 62, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 1);
 }
+
+/* ---------- riel que se pliega ---------- */
+
+.rail {
+  transition: width 240ms cubic-bezier(0.22, 0.8, 0.3, 1), padding 240ms cubic-bezier(0.22, 0.8, 0.3, 1);
+  overflow: hidden;
+}
+
+.rail-toggle {
+  align-self: flex-end;
+  width: 24px;
+  height: 24px;
+  margin-top: 2px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--olive);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 120ms, color 120ms, transform 240ms cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+.rail-toggle:hover { background: #e6ebf4; color: var(--ink); }
+
+body.rail-hidden { --rail-w: 62px; }
+body.rail-hidden .rail { padding-left: 8px; padding-right: 8px; align-items: center; }
+body.rail-hidden .rail-toggle { align-self: center; transform: rotate(180deg); }
+body.rail-hidden .nav a span,
+body.rail-hidden .nav .conteo { display: none; }
+body.rail-hidden .nav a { justify-content: center; padding: 9px 0; width: 100%; }
+body.rail-hidden .nav-i { opacity: 0.85; }
+body.rail-hidden .principal { padding-left: 26px; padding-right: 26px; }
+
+body.rail-hidden .nav a.activo { background: #fff; }

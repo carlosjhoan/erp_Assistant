@@ -1040,4 +1040,29 @@ document.querySelectorAll(".pm").forEach(function (caja) {
     anillo.setAttribute("stroke-dasharray", dash + " " + C.toFixed(1));
   }, 140 + i * 90);
 });
+
+/* ---------- plegar el riel: la conversación gana el ancho ---------- */
+(function () {
+  const btn = document.getElementById("rail-toggle");
+  if (!btn) return;
+
+  const CLAVE = "my_erp.rail";
+  let oculto = false;
+  try { oculto = localStorage.getItem(CLAVE) === "0"; } catch {}
+
+  function aplicar(o) {
+    document.body.classList.toggle("rail-hidden", o);
+    btn.setAttribute("aria-pressed", String(o));
+    btn.title = o ? "Mostrar menú" : "Ocultar menú";
+    btn.setAttribute("aria-label", btn.title);
+    try { localStorage.setItem(CLAVE, o ? "0" : "1"); } catch {}
+  }
+
+  aplicar(oculto);
+  btn.addEventListener("click", function () {
+    oculto = !document.body.classList.contains("rail-hidden");
+    aplicar(oculto);
+  });
+})();
+
 })();
