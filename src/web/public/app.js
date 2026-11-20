@@ -1123,9 +1123,18 @@ document.querySelectorAll(".pm").forEach(function (caja) {
       const aro = document.querySelector('.pm[data-proy="' + proy + '"][data-medida="' + medida + '"]');
       if (!aro) continue;
       const pct = Math.max(0, Math.min(100, Number(valor)));
-      const anillo = aro.querySelector(".pm-fg");
       const C = 2 * Math.PI * 13;
-      if (anillo) anillo.setAttribute("stroke-dasharray", ((pct / 100) * C).toFixed(1) + " " + C.toFixed(1));
+      const base = Math.max(0, Math.min(100, Number(aro.dataset.pct || 0)));
+      const desde = (base / 100) * C;
+      const hasta = (pct / 100) * C;
+      const anillo = aro.querySelector(".pm-fg");
+      const avance = aro.querySelector(".pm-avance");
+      if (anillo) anillo.setAttribute("stroke-dasharray", desde.toFixed(1) + " " + C.toFixed(1));
+      if (avance) {
+        const tramo = Math.max(0, hasta - desde);
+        avance.setAttribute("stroke-dasharray", tramo.toFixed(1) + " " + C.toFixed(1));
+        avance.setAttribute("stroke-dashoffset", (-desde).toFixed(1));
+      }
       const num = aro.querySelector("b");
       if (num) num.textContent = pct + "%";
     }
@@ -1138,8 +1147,10 @@ document.querySelectorAll(".pm").forEach(function (caja) {
     document.querySelectorAll(".pm").forEach(function (aro) {
       const pct = Number(aro.dataset.pct || 0);
       const anillo = aro.querySelector(".pm-fg");
+      const tramo = aro.querySelector(".pm-avance");
       const C = 2 * Math.PI * 13;
       if (anillo) anillo.setAttribute("stroke-dasharray", ((pct / 100) * C).toFixed(1) + " " + C.toFixed(1));
+      if (tramo) tramo.setAttribute("stroke-dasharray", "0 " + C.toFixed(1));
       const num = aro.querySelector("b");
       if (num) num.textContent = pct + "%";
     });

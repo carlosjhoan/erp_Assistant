@@ -36,6 +36,7 @@ export function vistaInicio(db: Db): Pagina {
           <svg class="pm-ring" viewBox="0 0 32 32" width="44" height="44" aria-hidden="true">
             <circle class="pm-bg" cx="16" cy="16" r="13" />
             <circle class="pm-fg ${color}" cx="16" cy="16" r="13" stroke-dasharray="0 81.7" />
+            <circle class="pm-avance" cx="16" cy="16" r="13" stroke-dasharray="0 81.7" />
           </svg>
           <b>${pct === null ? "—" : pct + "%"}</b>
           <i>${etiqueta}</i>

@@ -3920,3 +3920,16 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
 
 /* Las cards ganan alto para la pila vertical. */
 .inicio[data-estado="idle"] .pcard { min-height: 176px; }
+
+/* ---------- tramo de avance del aro, en azul claro ---------- */
+
+.pm-avance {
+  fill: none;
+  stroke: #7fb6ee;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dasharray 720ms cubic-bezier(0.22, 0.8, 0.3, 1),
+              stroke-dashoffset 720ms cubic-bezier(0.22, 0.8, 0.3, 1);
+}
