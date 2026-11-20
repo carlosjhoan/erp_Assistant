@@ -1065,4 +1065,16 @@ document.querySelectorAll(".pm").forEach(function (caja) {
   });
 })();
 
+
+/* ---------- apertura en vidrio: dos hojas que se corren ---------- */
+(function () {
+  const caja = document.getElementById("form-consulta");
+  if (!caja) return;
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    caja.classList.add("abierto");
+    return;
+  }
+  setTimeout(function () { caja.classList.add("abierto"); }, 60);
+})();
+
 })();

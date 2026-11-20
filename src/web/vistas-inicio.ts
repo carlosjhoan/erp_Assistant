@@ -95,6 +95,8 @@ export function vistaInicio(db: Db): Pagina {
     <div class="chat-hilo" id="hilo" aria-live="polite"></div>
 
     <form class="chat-caja" id="form-consulta" autocomplete="off">
+      <span class="hoja hoja-i" aria-hidden="true"></span>
+      <span class="hoja hoja-d" aria-hidden="true"></span>
       <textarea id="pregunta" name="pregunta" rows="1" maxlength="300"
         placeholder="Preguntá lo que quieras: cómo va Comercial, qué falta esta semana, cuánto costó hoy…"></textarea>
       <div class="chat-acciones">
