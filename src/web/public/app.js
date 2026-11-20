@@ -1144,28 +1144,15 @@ document.querySelectorAll(".pm").forEach(function (caja) {
     filas.forEach(function (f) { f.classList.remove("visible"); });
     feed.scrollTo({ top: 0, behavior: "smooth" });
     pintarProgreso(0);
-    document.querySelectorAll(".pm").forEach(function (aro) {
-      const pct = Number(aro.dataset.pct || 0);
-      const anillo = aro.querySelector(".pm-fg");
-      const tramo = aro.querySelector(".pm-avance");
-      const C = 2 * Math.PI * 13;
-      if (anillo) anillo.setAttribute("stroke-dasharray", ((pct / 100) * C).toFixed(1) + " " + C.toFixed(1));
-      if (tramo) tramo.setAttribute("stroke-dasharray", "0 " + C.toFixed(1));
-      const num = aro.querySelector("b");
-      if (num) num.textContent = pct + "%";
-    });
     i = 0;
   }
 
   function paso() {
     if (detenido) return;
     if (i >= filas.length) {
+      // Fin del recorrido: no se reinicia. Los aros quedan en el cierre.
       detenido = true;
-      ciclo = setTimeout(function () {
-        detenido = false;
-        reiniciar();
-        paso();
-      }, FINAL);
+      feed.classList.add("completo");
       return;
     }
     filas[i].classList.add("visible");

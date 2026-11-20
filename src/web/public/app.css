@@ -4394,3 +4394,34 @@ body.rail-hidden .rail-toggle { align-self: center; margin: 0; }
 
 .prog.doble .t-base { transition: width 720ms cubic-bezier(0.22, 0.8, 0.3, 1); }
 .prog.doble .t-avance { transition: width 720ms cubic-bezier(0.22, 0.8, 0.3, 1); }
+
+/* ============================================================
+   Separacion del aside: superficie propia y canto.
+   ============================================================ */
+
+/* La conversacion queda en papel claro. */
+.inicio[data-estado="chat"] .chat {
+  background: #fbfcfe;
+}
+
+/* El aside se hunde: superficie mas fria y canto interno. */
+.inicio[data-estado="chat"] .panel {
+  background: #e4ebf7;
+  border-left: 1px solid #cfd9e9;
+  box-shadow:
+    inset 14px 0 26px -22px rgba(25, 35, 62, 0.35),
+    -1px 0 0 rgba(255, 255, 255, 0.8);
+}
+
+/* El head del aside cierra con una linea mas marcada. */
+.inicio[data-estado="chat"] .rail-cabeza {
+  border-bottom: 1px solid #cfd9e9;
+  padding-bottom: 14px;
+}
+
+/* Cada grupo arranca con su etiqueta y un hairline arriba. */
+.inicio[data-estado="chat"] .panel-bloque:not(:first-of-type) > .bloque-t {
+  border-top: 1px solid #d3dcea;
+  padding-top: 12px;
+  margin-top: 2px;
+}
