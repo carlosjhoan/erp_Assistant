@@ -3028,3 +3028,44 @@ body.rail-hidden .chat-caja { left: calc(var(--rail-w) + 24px); }
 
 /* Solo aparece scroll cuando el texto supera el alto maximo. */
 .chat-caja textarea.con-scroll { overflow-y: auto; }
+
+/* ============================================================
+   El compositor ocupa el 70% del ancho disponible del lienzo.
+   ============================================================ */
+
+.chat-caja {
+  left: var(--rail-w);
+  right: 0;
+  width: 72%;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.inicio[data-estado="idle"] .chat-caja {
+  width: 70%;
+  max-width: 980px;
+}
+
+/* En conversación tambien manda el 70%: el panel se corre abajo del input. */
+.inicio[data-estado="chat"] .chat-caja {
+  left: var(--rail-w);
+  right: 0;
+  width: 72%;
+  max-width: none;
+}
+
+/* El panel deja aire para que el compositor no tape su ultimo bloque. */
+.inicio[data-estado="chat"] .panel { padding-bottom: 132px; }
+
+body.rail-hidden .chat-caja { left: var(--rail-w); }
+
+/* En pantallas angostas, el 70% no alcanza: se asegura un minimo legible. */
+@media (max-width: 1100px) {
+  .chat-caja,
+  .inicio[data-estado="idle"] .chat-caja,
+  .inicio[data-estado="chat"] .chat-caja {
+    width: calc(100% - 2 * 20px);
+    left: 20px;
+    right: 20px;
+  }
+}
