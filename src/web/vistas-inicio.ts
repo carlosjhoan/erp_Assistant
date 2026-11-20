@@ -1,7 +1,7 @@
 /** Asistente: el chat al centro y el estado del portafolio al costado. */
 
 import type { Db } from "../infra/db/client.ts";
-import { meeting, projectCapability, rubricItem } from "../infra/db/schema.ts";
+import { meeting, projectCapability, rubricItem, topic } from "../infra/db/schema.ts";
 import { capacidadesEfectivas, progresoPorProyecto, rango, semanas, veredicto } from "../app/progreso.ts";
 import { esc, type Pagina } from "./render.ts";
 
@@ -14,6 +14,8 @@ export function vistaInicio(db: Db): Pagina {
 
   const proyectos = progresoPorProyecto(db);
   const reuniones = db.select().from(meeting).all();
+  const temas = db.select().from(topic).all();
+  const temasDe = (id: string) => temas.filter((t) => t.meetingId === id).length;
 
   const todasCaps = db.select().from(projectCapability).all();
   const todosItems = db.select().from(rubricItem).all();
@@ -173,9 +175,16 @@ export function vistaInicio(db: Db): Pagina {
         ${reuniones
           .map(
             (m) =>
-              `<a class="reunion-fila" href="/reunion/${m.id}">
-          <span class="reunion-f">${new Date(m.occurredAt).toLocaleDateString("es-CO", { day: "2-digit", month: "short" })}</span>
-          <span class="reunion-a">${new Date(m.occurredAt).getFullYear()}</span>
+              `<a class="reunion-card" href="/reunion/${m.id}">
+          <span class="reunion-cabeza">
+            <span class="reunion-f">${new Date(m.occurredAt).toLocaleDateString("es-CO", { day: "2-digit", month: "short" })}</span>
+            <span class="reunion-a">${new Date(m.occurredAt).getFullYear()}</span>
+          </span>
+          <span class="reunion-fuente">
+            <svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><path d="M3.5 2.5h6l3 3v8h-9z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M5.5 7h5M5.5 9.5h3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            1 nota de Granola
+          </span>
+          <span class="reunion-temas"><i></i>${temasDe(m.id)} temas detectados</span>
         </a>`,
           )
           .join("")}

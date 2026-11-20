@@ -3933,3 +3933,52 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
   transition: stroke-dasharray 720ms cubic-bezier(0.22, 0.8, 0.3, 1),
               stroke-dashoffset 720ms cubic-bezier(0.22, 0.8, 0.3, 1);
 }
+
+/* ---------- tarjeta de reunión: fuente y temas ---------- */
+
+.reunion-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #fff;
+  background-image: linear-gradient(180deg, rgba(90, 106, 140, 0.05), transparent 55%);
+  border: 1px solid var(--line);
+  border-left: 3px solid #19233e;
+  border-radius: 10px;
+  padding: 10px 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 120ms, border-color 120ms;
+}
+
+.reunion-card:hover { transform: translateX(2px); border-color: var(--accent-soft); }
+
+.reunion-cabeza { display: flex; align-items: baseline; gap: 6px; }
+.reunion-f { font-size: 13px; font-weight: 650; color: var(--ink); font-variant-numeric: tabular-nums; }
+.reunion-a { font-size: 9px; color: var(--olive); font-family: ui-monospace, monospace; }
+
+.reunion-fuente {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  color: var(--olive);
+}
+
+.reunion-temas {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5px;
+  color: var(--stone);
+  padding-top: 4px;
+  border-top: 1px solid var(--soft);
+}
+
+.reunion-temas i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #2f6b4f;
+  flex: none;
+}
