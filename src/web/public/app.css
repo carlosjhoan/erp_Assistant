@@ -2735,3 +2735,151 @@ label.inline {
 .turno-pie { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
 .turno-pie .u { display: inline-flex; align-items: center; gap: 4px; font-size: 9.5px; color: var(--olive); font-family: ui-monospace, monospace; }
 .turno-pie svg { opacity: 0.6; }
+
+/* ============================================================
+   Asistente: dos estados. En reposo es un hero centrado; al
+   preguntar, el panel se va al rail derecho.
+   ============================================================ */
+
+.nav a { display: flex; align-items: center; gap: 9px; }
+.nav-i { display: inline-flex; opacity: 0.7; }
+.nav a.activo .nav-i { opacity: 1; }
+
+.hero { text-align: center; }
+.hero-t { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; margin: 0 0 6px; }
+.hero-s { font-size: 12.5px; color: var(--olive); margin: 0; }
+
+/* ---------- estado reposo ---------- */
+
+.inicio[data-estado="idle"] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  max-width: 880px;
+  margin: 7vh auto 0;
+  animation: hero-abre 520ms cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+@keyframes hero-abre {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); filter: blur(4px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+
+.inicio[data-estado="idle"] .chat,
+.inicio[data-estado="idle"] .chat-caja { width: 100%; }
+
+.inicio[data-estado="idle"] .chat-caja {
+  padding: 18px 20px;
+  border-radius: 22px;
+}
+
+.inicio[data-estado="idle"] .chat-caja textarea {
+  font-size: 19px;
+  padding: 10px 0;
+  min-height: 30px;
+}
+
+.inicio[data-estado="idle"] .agente-enviar { width: 40px; height: 40px; font-size: 17px; }
+.inicio[data-estado="idle"] .mic { width: 38px; height: 38px; }
+
+.inicio[data-estado="idle"] .panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+.inicio[data-estado="idle"] .panel-bloque { margin: 0; }
+.inicio[data-estado="idle"] .panel-bloque:first-child { grid-column: 1 / -1; }
+
+.inicio[data-estado="idle"] .pproy-lista {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ---------- estado conversación ---------- */
+
+.inicio[data-estado="chat"] {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  align-items: start;
+}
+
+.inicio[data-estado="chat"] .hero { display: none; }
+.inicio[data-estado="chat"] .chat-caja textarea { font-size: 14px; }
+
+/* Las cards entran escalonadas cuando aparece el panel. */
+.inicio[data-estado="idle"] .pcard { animation: pcard-in 520ms cubic-bezier(0.22, 0.8, 0.3, 1) both; }
+.inicio[data-estado="idle"] .pcard:nth-child(1) { animation-delay: 90ms; }
+.inicio[data-estado="idle"] .pcard:nth-child(2) { animation-delay: 150ms; }
+.inicio[data-estado="idle"] .pcard:nth-child(3) { animation-delay: 210ms; }
+.inicio[data-estado="idle"] .pcard:nth-child(4) { animation-delay: 270ms; }
+
+@keyframes pcard-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.99); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- vidrio de verdad, como en el prototipo ---------- */
+
+.chat-caja,
+.pcard,
+.rub-mini,
+.mini-fila {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background:
+    radial-gradient(130% 95% at 10% 0%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 58%),
+    radial-gradient(90% 70% at 100% 100%, rgba(139, 158, 190, 0.22), rgba(255, 255, 255, 0) 62%),
+    linear-gradient(158deg, rgba(255, 255, 255, 0.72) 0%, rgba(241, 245, 252, 0.58) 52%, rgba(228, 235, 247, 0.52) 100%);
+  backdrop-filter: blur(16px) saturate(1.35);
+  -webkit-backdrop-filter: blur(16px) saturate(1.35);
+  box-shadow:
+    0 18px 40px -28px rgba(25, 35, 62, 0.55),
+    0 2px 6px -3px rgba(25, 35, 62, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.45);
+}
+
+/* el brillo de canto: la lámina tiene espesor */
+.chat-caja::before,
+.pcard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.95), rgba(139, 158, 190, 0.35) 38%, rgba(255, 255, 255, 0.1) 62%, rgba(255, 255, 255, 0.85));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* el reflejo que cruza al pasar el mouse */
+.pcard::after {
+  content: "";
+  position: absolute;
+  inset: -60% -20% auto -20%;
+  height: 120%;
+  background: linear-gradient(102deg, transparent 34%, rgba(255, 255, 255, 0.55) 48%, transparent 62%);
+  transform: translateX(-40%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.9s ease;
+}
+
+.pcard:hover::after { opacity: 1; transform: translateX(40%); }
+
+.pcard:hover {
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 26px 50px -28px rgba(25, 35, 62, 0.55),
+    0 3px 10px -4px rgba(25, 35, 62, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}

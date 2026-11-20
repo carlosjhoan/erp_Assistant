@@ -83,11 +83,15 @@ export function vistaInicio(db: Db): Pagina {
     .join("");
 
   return {
-    titulo: "Inicio",
+    titulo: "Asistente",
     seccion: "inicio",
     conteoBandeja: sinCalificar,
-    cuerpo: `<div class="inicio">
+    cuerpo: `<div class="inicio" id="inicio" data-estado="idle">
   <section class="chat" id="chat">
+    <div class="hero" id="hero">
+      <h2 class="hero-t">¿Qué querés saber?</h2>
+      <p class="hero-s">Preguntá por el avance de un proyecto, la rúbrica de la semana o lo que falta.</p>
+    </div>
     <div class="chat-hilo" id="hilo" aria-live="polite"></div>
 
     <form class="chat-caja" id="form-consulta" autocomplete="off">

@@ -904,9 +904,16 @@ if (formConsulta) {
     hilo.scrollTop = hilo.scrollHeight;
   }
 
+  const inicio = document.getElementById("inicio");
+
   async function preguntar(texto) {
     const pregunta = String(texto || "").trim();
     if (!pregunta) return;
+
+    // El primer turno abre el asistente: el hero se retira y el panel va al rail.
+    if (inicio && inicio.dataset.estado !== "chat") {
+      inicio.dataset.estado = "chat";
+    }
 
     boton.disabled = true;
     entrada.disabled = true;

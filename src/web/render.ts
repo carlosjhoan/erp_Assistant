@@ -20,17 +20,17 @@ export interface Pagina {
 }
 
 const ENTRADAS = [
-  { id: "inicio", nombre: "Inicio", href: "/" },
-  { id: "proyectos", nombre: "Proyectos", href: "/proyectos" },
-  { id: "reuniones", nombre: "Reuniones", href: "/reuniones" },
-  { id: "rubrica", nombre: "Rúbricas", href: "/rubrica" },
+  { id: "inicio", nombre: "Asistente", href: "/", icono: `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 2.2l1.3 3.1 3.1 1.3-3.1 1.3L8 11l-1.3-3.1L3.6 6.6l3.1-1.3z" fill="currentColor"/><circle cx="12.4" cy="11.6" r="1.2" fill="currentColor" opacity=".55"/></svg>` },
+  { id: "proyectos", nombre: "Proyectos", href: "/proyectos", icono: `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="2.5" y="2.5" width="4.5" height="4.5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2.5" width="4.5" height="4.5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.3"/><rect x="2.5" y="9" width="4.5" height="4.5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="4.5" height="4.5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".5"/></svg>` },
+  { id: "reuniones", nombre: "Reuniones", href: "/reuniones", icono: `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="10" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 6.6h11M5.6 2v3M10.4 2v3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>` },
+  { id: "rubrica", nombre: "Rúbricas", href: "/rubrica", icono: `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 4.6l1.3 1.3L6.6 3.6M3 9.6l1.3 1.3 2.3-2.3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.6 5h4.4M8.6 10h4.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>` },
 ];
 
 export function pagina(p: Pagina): string {
   const nav = ENTRADAS.map((e) => {
     const activo = e.id === p.seccion ? " activo" : "";
     const conteo = e.id === "reuniones" && p.conteoBandeja ? `<span class="conteo">${p.conteoBandeja}</span>` : "";
-    return `<a href="${e.href}" class="${e.id}${activo}">${e.nombre}${conteo}</a>`;
+    return `<a href="${e.href}" class="${e.id}${activo}"><i class="nav-i">${e.icono}</i><span>${e.nombre}</span>${conteo}</a>`;
   }).join("\n");
 
   return `<!doctype html>
