@@ -236,11 +236,7 @@ export function vistaInicio(db: Db): Pagina {
     </form>
 
     <div class="chat-estado" id="estado" hidden>
-      <span class="paso" data-paso="entendiendo"><i></i>entendiendo</span>
-      <span class="flecha">→</span>
-      <span class="paso" data-paso="consultando"><i></i>consultando datos</span>
-      <span class="flecha">→</span>
-      <span class="paso" data-paso="listo"><i></i>listo</span>
+      <span class="paso activo" id="paso-actual"><i></i><span id="paso-texto">entendiendo</span></span>
       <span class="agente-meta" id="meta"></span>
     </div>
   </section>
@@ -308,6 +304,16 @@ export function vistaInicio(db: Db): Pagina {
       </div>
     </div>
   </aside>
+
+  <dialog id="modal-etapas" class="modal modal-etapas">
+    <header>
+      <h2>Etapas del procesamiento</h2>
+      <button class="cerrar" data-cerrar-modal="modal-etapas" aria-label="Cerrar">✕</button>
+    </header>
+    <div class="etapas" id="etapas-lista"></div>
+    <p class="etapas-nota">Los tiempos son los que reportó el servidor en ese turno.</p>
+  </dialog>
+
   ${modalUso}
 </div>`,
   };

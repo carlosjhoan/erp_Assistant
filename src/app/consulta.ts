@@ -112,11 +112,15 @@ export async function consultar(
   db: Db,
   proveedores: Providers,
   pregunta: string,
-): Promise<{ datos: Consulta; runId: string; ms: number; modelo: string }> {
+): Promise<{ datos: Consulta; runId: string; ms: number; modelo: string; msDatos: number; msModelo: number }> {
   const runId = startRun(db, { kind: "summary", tool: "consulta", input: pregunta });
   // Las llamadas del proveedor se cuelgan de esta operacion.
   proveedores.setRun(runId);
   const desde = Date.now();
+  // Se mide la foto aparte: es trabajo del servidor, no del modelo.
+  const fotoArmada = foto(db);
+  const msDatos = Date.now() - desde;
+  const tModelo = Date.now();
 
   try {
     const r = await proveedores.llm.generate({
@@ -137,7 +141,7 @@ export async function consultar(
     });
 
     finishRun(db, runId, { outcome: "ok", intentos: r.intentos, tokens: r.tokens, durationMs: r.durationMs });
-    return { datos: r.data, runId, ms: Date.now() - desde, modelo: r.model };
+    return { datos: r.data, runId, ms: Date.now() - desde, modelo: r.model, msDatos, msModelo: Date.now() - tModelo };
   } catch (err) {
     finishRun(db, runId, {
       outcome: "failed",

@@ -4787,3 +4787,70 @@ dialog.modal-diag header { padding: 18px 22px 14px; }
 .msg-enlace a:hover { border-color: var(--accent-soft); transform: translateX(2px); }
 
 .msg-enlace a::after { content: "↗"; font-size: 10px; color: var(--olive); }
+
+/* ---------- chat: foto del usuario y metadata limpia ---------- */
+
+.msg-avatar-user {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.msg.user .msg-cabeza { gap: 8px; }
+
+.msg-pie { display: flex; align-items: center; gap: 12px; }
+.msg-pie > span { display: inline-flex; align-items: center; gap: 4px; }
+.msg-pie svg { opacity: 0.6; }
+
+.msg-etapas {
+  font-family: inherit;
+  font-size: 9px;
+  color: var(--olive);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 8px;
+  cursor: pointer;
+  transition: color 120ms, border-color 120ms;
+}
+
+.msg-etapas:hover { color: var(--ink); border-color: var(--accent-soft); }
+
+/* El estado del turno: un solo paso, grande y claro. */
+.chat-estado { gap: 10px; font-size: 11.5px; }
+.chat-estado .paso { font-size: 11.5px; letter-spacing: 0.02em; }
+.chat-estado .paso.activo { color: var(--ink); }
+
+/* ---------- modal de etapas ---------- */
+
+.modal-etapas { max-width: 420px; }
+.etapas { padding: 18px 22px 8px; display: flex; flex-direction: column; gap: 8px; }
+
+.etapa {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  background: #fbfcfe;
+  border: 1px solid var(--soft);
+  border-radius: 8px;
+  padding: 9px 12px;
+}
+
+.etapa-n {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  font-size: 9px;
+  display: grid;
+  place-items: center;
+}
+
+.etapa-t { font-size: 11.5px; color: var(--ink); }
+.etapa-ms { font-family: ui-monospace, monospace; font-size: 10px; color: var(--olive); }
+
+.etapas-nota { padding: 0 22px 18px; margin: 6px 0 0; font-size: 9.5px; color: var(--olive); }

@@ -1102,7 +1102,7 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
       const r = await consultar(db, proveedores, pregunta);
       const gastado = db.select().from(llmCall).all().filter((c) => c.runId === r.runId).reduce((a, c) => a + (c.costUsd ?? 0), 0);
       const total = db.select().from(llmCall).all().filter((c) => new Date(c.createdAt).toDateString() === new Date().toDateString()).reduce((a, c) => a + (c.costUsd ?? 0), 0);
-      return json(res, 200, { ok: true, ...r.datos, modelo: r.modelo, ms: Date.now() - antes, costo: gastado, costoHoy: total });
+      return json(res, 200, { ok: true, ...r.datos, modelo: r.modelo, ms: Date.now() - antes, msDatos: r.msDatos, msModelo: r.msModelo, costo: gastado, costoHoy: total });
     } catch (err) {
       return json(res, 200, { ok: false, error: err instanceof Error ? err.message : String(err) });
     }

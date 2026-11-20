@@ -827,23 +827,35 @@ if (formConsulta) {
   // La sesión arranca vacía siempre: nada de localStorage.
   const turnos = [];
 
-  const pasos = {
-    entendiendo: estado.querySelector('[data-paso="entendiendo"]'),
-    consultando: estado.querySelector('[data-paso="consultando"]'),
-    listo: estado.querySelector('[data-paso="listo"]'),
-  };
+  const pasoTexto = document.getElementById("paso-texto");
+  const pasoActual = document.getElementById("paso-actual");
 
-  function marcar(nombre, clase) {
-    const el = pasos[nombre];
-    if (!el) return;
-    el.classList.remove("activo", "hecho");
-    if (clase) el.classList.add(clase);
+  // Un solo estado a la vez: el que corresponde ahora.
+  function setPaso(texto) {
+    if (pasoTexto) pasoTexto.textContent = texto;
+    if (pasoActual) pasoActual.classList.add("activo");
   }
 
   function reiniciarPasos() {
-    Object.keys(pasos).forEach(function (k) {
-      if (pasos[k]) pasos[k].className = "paso";
+    if (pasoActual) pasoActual.classList.remove("activo");
+  }
+
+  // Modal con la secuencia y los tiempos reales del turno.
+  function abrirEtapas(t) {
+    const modal = document.getElementById("modal-etapas");
+    const lista = document.getElementById("etapas-lista");
+    if (!modal || !lista || !t.etapas) return;
+    lista.innerHTML = "";
+    t.etapas.forEach(function (e, i) {
+      const fila = document.createElement("div");
+      fila.className = "etapa";
+      fila.innerHTML =
+        '<span class="etapa-n">' + (i + 1) + "</span>" +
+        '<span class="etapa-t">' + e.nombre + "</span>" +
+        '<span class="etapa-ms">' + e.ms + " ms</span>";
+      lista.appendChild(fila);
     });
+    if (modal.showModal) modal.showModal();
   }
 
   const hora = (d) => new Date(d).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: false });
@@ -855,7 +867,7 @@ if (formConsulta) {
     const usuario = document.createElement("div");
     usuario.className = "msg user";
     usuario.innerHTML =
-      '<div class="msg-cabeza"><time>' + hora(cuando) + '</time><span>Carlos</span></div>' +
+      '<div class="msg-cabeza"><time>' + hora(cuando) + '</time><img class="msg-avatar-user" src="/profile.jpg" alt="Carlos"></div>' +
       '<div class="msg-cuerpo"></div>';
     usuario.querySelector(".msg-cuerpo").textContent = t.pregunta;
 
@@ -916,11 +928,29 @@ if (formConsulta) {
 
     const pie = document.createElement("div");
     pie.className = "msg-pie";
-    const partes = [];
-    if (t.ms) partes.push((t.ms / 1000).toFixed(2) + " s");
-    if (typeof t.costo === "number") partes.push("$" + t.costo.toFixed(5));
-    if (t.modelo) partes.push(t.modelo);
-    pie.textContent = partes.join(" · ");
+
+    if (t.ms) {
+      const reloj = document.createElement("span");
+      reloj.innerHTML =
+        '<svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 4.8V8l2.2 1.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
+      reloj.appendChild(document.createTextNode((t.ms / 1000).toFixed(2) + " s"));
+      pie.appendChild(reloj);
+    }
+
+    if (typeof t.costo === "number") {
+      const precio = document.createElement("span");
+      precio.textContent = "US$" + t.costo.toFixed(5);
+      pie.appendChild(precio);
+    }
+
+    if (t.etapas) {
+      const ver = document.createElement("button");
+      ver.type = "button";
+      ver.className = "msg-etapas";
+      ver.textContent = "ver etapas";
+      ver.addEventListener("click", function () { abrirEtapas(t); });
+      pie.appendChild(ver);
+    }
 
     bloque.appendChild(cabeza);
     bloque.appendChild(cuerpo);
@@ -980,15 +1010,10 @@ if (formConsulta) {
     reiniciarPasos();
     estado.hidden = false;
     meta.textContent = "";
-    marcar("entendiendo", "activo");
+    setPaso("entendiendo");
 
     const t0 = performance.now();
-    setTimeout(function () {
-      if (pasos.entendiendo && pasos.entendiendo.classList.contains("activo")) {
-        marcar("entendiendo", "hecho");
-        marcar("consultando", "activo");
-      }
-    }, 260);
+    setTimeout(function () { setPaso("consultando datos"); }, 260);
 
     try {
       const r = await fetch("/consulta", {
@@ -999,9 +1024,8 @@ if (formConsulta) {
       const datos = await r.json();
       const ms = Math.round(performance.now() - t0);
 
-      marcar("consultando", "hecho");
-      marcar("listo", "hecho");
-      meta.textContent = ms + " ms";
+      setPaso("listo");
+      meta.textContent = "";
 
       const turno = {
         pregunta: pregunta,
@@ -1010,6 +1034,10 @@ if (formConsulta) {
         ruta: datos.ruta || "",
         vista: datos.mostrar && datos.mostrar.vista ? datos.mostrar : null,
         enlace: datos.enlace && datos.enlace.url ? datos.enlace : null,
+        etapas: [
+          { nombre: "Preparar el contexto", ms: datos.msDatos || 0 },
+          { nombre: "Consultar el modelo", ms: datos.msModelo || 0 },
+        ],
         siguiente: datos.siguiente || "",
         ms: ms,
         costo: typeof datos.costo === "number" ? datos.costo : null,
