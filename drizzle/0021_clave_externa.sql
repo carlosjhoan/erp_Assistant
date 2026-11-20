@@ -1,0 +1,1 @@
+ALTER TABLE `rubric_item` ADD `external_key` text;

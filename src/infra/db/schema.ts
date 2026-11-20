@@ -167,6 +167,8 @@ export const rubricItem = sqliteTable(
     capabilityEffect: text("capability_effect", { enum: ["none", "avanza", "cierra"] }).notNull().default("none"),
     // Si lo editaste vos, regenerar los ítems del agente no lo puede pisar.
     humanEdited: integer("human_edited", { mode: "boolean" }).notNull().default(false),
+    /** Clave en el documento de origen (D6, w1-exit-1). Evita duplicar al reimportar. */
+    externalKey: text("external_key"),
     title: text("title").notNull(),
     description: text("description"),
     acceptanceCriteria: text("acceptance_criteria").notNull(),

@@ -148,6 +148,13 @@
       "when": 1795149030889,
       "tag": "0020_item_capacidad",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1795150365951,
+      "tag": "0021_clave_externa",
+      "breakpoints": true
     }
   ]
 }
