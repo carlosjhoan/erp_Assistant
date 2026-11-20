@@ -8,13 +8,19 @@ import { esc, type Pagina } from "./render.ts";
 const CHECK = `<svg class="feed-check" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M3.4 8.4l3 3 6.2-6.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const CIRCULO = `<span class="feed-circulo"></span>`;
 
-/** Cuánto se movió el eje desde el diagnóstico. */
-const delta = (desde: number | undefined, hasta: number | undefined) => {
-  if (desde == null || hasta == null) return "";
-  const d = hasta - desde;
-  if (d === 0) return "";
-  return `<i class="bf-delta">${d > 0 ? "+" : ""}${d}</i>`;
-};
+/**
+ * Barra de dos tramos: el diagnostico en su color y el avance de la semana
+ * en azul claro, igual que los aros del dashboard.
+ */
+function barraDoble(desde: number | undefined, hasta: number | undefined, color: string): string {
+  const base = Math.max(0, Math.min(100, desde ?? 0));
+  const fin = Math.max(base, Math.min(100, hasta ?? base));
+  const avance = fin - base;
+  return `<div class="prog doble ${color}">
+    <span class="t-base" style="width:${base}%"></span>
+    <span class="t-avance" style="left:${base}%; width:${avance}%"></span>
+  </div>`;
+}
 
 export function vistaInicio(db: Db): Pagina {
   const ss = semanas(db);
@@ -73,8 +79,8 @@ export function vistaInicio(db: Db): Pagina {
     ${aro(p.proyectoId, tecnico, "tinta", "técnico", "tecnico")}
   </div>
   <div class="pcard-barras">
-    <div class="bf"><span>negocio</span><div class="prog verde"><span style="width:${hasta?.negocio ?? 0}%"></span></div><b>${p.diagnostico ? (hasta?.negocio ?? 0) + "%" : "—"}</b>${delta(desde?.negocio, hasta?.negocio)}</div>
-    <div class="bf"><span>técnico</span><div class="prog tinta"><span style="width:${hasta?.produccion ?? 0}%"></span></div><b>${p.diagnostico ? (hasta?.produccion ?? 0) + "%" : "—"}</b>${delta(desde?.produccion, hasta?.produccion)}</div>
+    <div class="bf"><span>negocio</span>${barraDoble(desde?.negocio, hasta?.negocio, "verde")}<b>${p.diagnostico ? (hasta?.negocio ?? 0) + "%" : "—"}</b></div>
+    <div class="bf"><span>técnico</span>${barraDoble(desde?.produccion, hasta?.produccion, "tinta")}<b>${p.diagnostico ? (hasta?.produccion ?? 0) + "%" : "—"}</b></div>
   </div>
   ${nuevo ? '<span class="badge-nuevo">NUEVO</span>' : ""}
 </a>`;

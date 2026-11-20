@@ -4372,3 +4372,25 @@ body.rail-hidden .rail-toggle { align-self: center; margin: 0; }
   font-variant-numeric: tabular-nums;
   line-height: 1.3;
 }
+
+/* ---------- barra de dos tramos en el rail ---------- */
+
+.bf { grid-template-columns: 50px 1fr 38px; }
+
+.prog.doble { position: relative; background: #e3e9f3; }
+
+.prog.doble .t-base,
+.prog.doble .t-avance {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+}
+
+.prog.doble.verde .t-base { background: #2f6b4f; }
+.prog.doble.tinta .t-base { background: #19233e; }
+
+.prog.doble .t-avance { background: #7fb6ee; }
+
+.prog.doble .t-base { transition: width 720ms cubic-bezier(0.22, 0.8, 0.3, 1); }
+.prog.doble .t-avance { transition: width 720ms cubic-bezier(0.22, 0.8, 0.3, 1); }
