@@ -507,6 +507,11 @@ function iconoArchivar(): string {
   return `<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true"><rect x="1.8" y="2.6" width="12.4" height="3" rx="0.8"/><path d="M3 5.6v6.9a0.9 0.9 0 0 0 .9.9h8.2a0.9 0.9 0 0 0 .9-.9V5.6"/><path d="M5.9 8.7h4.2"/></svg>`;
 }
 
+/** Varita: marca la acción que llama al modelo. */
+function iconoMagia(): string {
+  return `<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.6 13.4 10 6"/><path d="M9.4 2.6l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z"/><path d="M13 9.6l.5 1.2 1.2.5-1.2.5-.5 1.2-.5-1.2-1.2-.5 1.2-.5z"/></svg>`;
+}
+
 function iconoTemas(): string {
   return `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h8"/></svg>`;
 }
@@ -612,35 +617,57 @@ type TemaTarjeta = {
   description: string | null;
   scopeSignal: string | null;
   verifyScore: number | null;
+  owner: string | null;
   status: string;
 };
 
 /** Tablero de triaje: una columna por estado. */
 function tableroTemas(temas: TemaTarjeta[], editable: boolean): string {
-  const columnas: { estado: string; titulo: string; clase: string }[] = [
+  const columnas = [
     { estado: "proposed", titulo: "Sin calificar", clase: "pendiente" },
     { estado: "selected", titulo: "Seleccionadas", clase: "seleccionada" },
     { estado: "parked", titulo: "Postergadas", clase: "postergada" },
     { estado: "discarded", titulo: "Descartadas", clase: "descartada" },
-  ];
+  ] as const;
+
+  const VISIBLES = 6;
 
   const tarjeta = (t: TemaTarjeta) => {
     const confianza = t.verifyScore != null ? Math.round(t.verifyScore * 100) : null;
     const esAlcance = t.scopeSignal === "likely_scope";
     const idModal = `desc-${t.id.slice(0, 8)}`;
+    const nombres = proyectosDeTema({ db }, t.id)
+      .map((id) => db.select().from(project).all().find((p) => p.id === id)?.name)
+      .filter(Boolean)
+      .join(", ");
 
     return `<article class="tarjeta-kanban estado-${t.status}" draggable="${editable}" data-id="${t.id}">
   <div class="kanban-marcas">
     <span class="marca ${esAlcance ? "alcance" : "idea"}">${esAlcance ? "ALCANCE" : "IDEA"}</span>
-    ${confianza != null ? `<span class="jev">${confianza}%</span>` : ""}
+    ${confianza != null ? `<span class="jev" title="Confianza de Jev en que esto se habló en la reunión">Jev ${confianza}%</span>` : ""}
   </div>
+
   <h4>${esc(t.title)}</h4>
-  ${t.description ? `<button type="button" class="kanban-ver" data-abrir-modal="${idModal}">ver más</button>` : ""}
-  ${
-    editable
-      ? `<select class="kanban-select" data-campo="estado" aria-label="Decisión: ${esc(t.title)}">${opciones(ESTADOS, t.status)}</select>`
-      : ""
-  }
+
+  ${t.description ? `<p class="kanban-desc">${esc(t.description)}</p><button type="button" class="kanban-ver" data-abrir-modal="${idModal}">ver más</button>` : ""}
+
+  <div class="kanban-pie">
+    ${
+      editable
+        ? `<select class="chip-select" data-campo="owner" aria-label="Responsable">${opciones(DUENOS, t.owner ?? "")}</select>`
+        : `<span class="chip">${t.owner === "opencode" ? "Código" : t.owner === "me" ? "Mío" : "Sin asignar"}</span>`
+    }
+    ${
+      editable
+        ? multiProyectos(t.id, proyectosDeTema({ db }, t.id))
+        : `<span class="chip">${nombres || "Sin proyecto"}</span>`
+    }
+    ${
+      editable
+        ? `<select class="chip-mover" data-campo="estado" aria-label="Mover a otra columna" title="Mover a otra columna">${opciones(ESTADOS, t.status)}</select>`
+        : ""
+    }
+  </div>
 </article>
 <dialog id="${idModal}" class="modal modal-desc" closedby="any">
   <header>
@@ -656,14 +683,22 @@ function tableroTemas(temas: TemaTarjeta[], editable: boolean): string {
 ${columnas
   .map((c) => {
     const propias = temas.filter((t) => t.status === c.estado);
+    const primeras = propias.slice(0, VISIBLES);
+    const resto = propias.slice(VISIBLES);
+
+    const lista = primeras.map(tarjeta).join("\n");
+    const ocultas = resto.length > 0 ? resto.map(tarjeta).join("\n") : "";
+
     return `<section class="columna ${c.clase}">
   <header class="columna-head">
+    <span class="punto" aria-hidden="true"></span>
     <h3>${c.titulo}</h3>
     <span class="columna-cuenta" data-cuenta="${c.estado}">${propias.length}</span>
   </header>
   <div class="columna-lista" data-drop="${c.estado}">
-    ${propias.map(tarjeta).join("\n") || `<p class="columna-vacia">—</p>`}
+    ${lista || `<p class="columna-vacia">Arrastrá un tema acá</p>`}
   </div>
+  ${ocultas ? `<details class="columna-resto"><summary>+ ${resto.length} más</summary><div class="columna-lista" data-drop="${c.estado}">${ocultas}</div></details>` : ""}
 </section>`;
   })
   .join("\n")}
@@ -831,7 +866,7 @@ function vistaReunion(id: string, tab?: string, vista: "temas" | "rubrica" = "te
         </p>
       </div>
       <div class="bloque-accion">
-        <button class="boton" data-detectar-temas="${m.id}">Detectar temas</button>
+        <button class="boton" data-detectar-temas="${m.id}">${iconoMagia()} Detectar temas</button>
         <span class="cargando" hidden>extrayendo… puede tardar</span>
       </div>
     </header>

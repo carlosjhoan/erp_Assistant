@@ -1642,3 +1642,120 @@ label.inline {
   background-repeat: no-repeat;
   background-position: right 6px center;
 }
+
+/* ---------- columnas con color sólido y punto ---------- */
+
+.columna { background-color: #f6f8fb; background-image: none; }
+
+.columna-head {
+  border-radius: 8px;
+  padding: 7px 9px;
+  margin-bottom: 8px;
+  border: 1px solid transparent;
+}
+
+.punto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  display: block;
+}
+
+.columna.pendiente .columna-head { background: #e9edf5; border-color: #d6dee9; }
+.columna.pendiente .punto { background: #5a6a8c; }
+
+.columna.seleccionada .columna-head { background: #e6f2ea; border-color: #c4dfcd; }
+.columna.seleccionada .punto { background: #2f6b4f; }
+
+.columna.postergada .columna-head { background: #fbf1e0; border-color: #e8d5ae; }
+.columna.postergada .punto { background: #96620f; }
+
+.columna.descartada .columna-head { background: #f4eaee; border-color: #e0c9d3; }
+.columna.descartada .punto { background: #8c4a63; }
+
+.columna-cuenta { background: rgba(255, 255, 255, 0.8); }
+
+/* ---------- tarjeta del tablero, con descripción y pie de chips ---------- */
+
+.kanban-desc {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--stone);
+  margin: 5px 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.kanban-pie {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 9px;
+}
+
+/* Los controles leen como chips, no como formulario. */
+.chip,
+.chip-select,
+.multi-mini > summary {
+  font-family: inherit;
+  font-size: 10px;
+  color: var(--stone);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 8px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip-select,
+.multi-mini > summary {
+  cursor: pointer;
+  appearance: none;
+  background-image: none;
+  padding-right: 8px;
+}
+.chip-select:hover { border-color: var(--accent-soft); }
+
+.chip-mover {
+  margin-left: auto;
+  font-family: inherit;
+  font-size: 10px;
+  color: var(--olive);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 2px 4px;
+  cursor: pointer;
+  appearance: none;
+  width: 18px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 16 16' fill='none' stroke='%235a6a8c' stroke-width='1.6'><path d='M4 6l4-4 4 4M4 10l4 4 4-4'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  text-indent: -999px;
+}
+.chip-mover:hover { background-color: var(--soft); border-color: var(--line); }
+
+.multi-mini { display: inline-flex; }
+.multi-mini .multi-lista {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+}
+
+.columna-resto { margin-top: 8px; }
+.columna-resto > summary {
+  font-size: 11px;
+  color: var(--olive);
+  cursor: pointer;
+  padding: 4px 2px;
+}
+.columna-resto .columna-lista { margin-top: 6px; }
+
+.columna-vacia { color: var(--olive); font-size: 11px; opacity: 0.7; }
