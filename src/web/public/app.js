@@ -1082,4 +1082,70 @@ document.querySelectorAll(".pm").forEach(function (caja) {
   setTimeout(function () { caja.classList.add("abierto"); }, 60);
 })();
 
+
+/* ---------- feed de la semana: aparece una por una y cicla ---------- */
+(function () {
+  const feed = document.getElementById("feed");
+  if (!feed) return;
+
+  const filas = [...feed.querySelectorAll(".feed-fila")];
+  if (filas.length === 0) return;
+
+  const PAUSA = 950;      // entre una fila y la siguiente
+  const FINAL = 1600;     // al terminar, antes de reiniciar
+  let i = 0;
+  let timer = null;
+  let ciclo = null;
+  let detenido = false;
+
+  function reiniciar() {
+    filas.forEach(function (f) { f.classList.remove("visible"); });
+    i = 0;
+  }
+
+  function paso() {
+    if (detenido) return;
+    if (i >= filas.length) {
+      detenido = true;
+      ciclo = setTimeout(function () {
+        detenido = false;
+        reiniciar();
+        paso();
+      }, FINAL);
+      return;
+    }
+    filas[i].classList.add("visible");
+    i++;
+    timer = setTimeout(paso, PAUSA);
+  }
+
+  const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) {
+    filas.forEach(function (f) { f.classList.add("visible"); });
+    return;
+  }
+
+  // Al escribir, el feed se detiene y muestra todo: el espacio queda libre.
+  function liberar() {
+    detenido = true;
+    clearTimeout(timer);
+    clearTimeout(ciclo);
+    filas.forEach(function (f) { f.classList.add("visible"); });
+    feed.classList.add("quieto");
+  }
+
+  const entradaChat = document.getElementById("pregunta");
+  if (entradaChat) {
+    entradaChat.addEventListener("focus", liberar, { once: true });
+    entradaChat.addEventListener("input", function () {
+      if (entradaChat.value.trim()) liberar();
+    });
+  }
+
+  const formChat = document.getElementById("form-consulta");
+  if (formChat) formChat.addEventListener("submit", liberar);
+
+  setTimeout(paso, 500);
+})();
+
 })();

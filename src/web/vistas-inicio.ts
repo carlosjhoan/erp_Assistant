@@ -1,7 +1,7 @@
 /** Asistente: el chat al centro y el estado del portafolio al costado. */
 
 import type { Db } from "../infra/db/client.ts";
-import { meeting, topic } from "../infra/db/schema.ts";
+import { meeting, rubricItem, topic } from "../infra/db/schema.ts";
 import { progresoPorProyecto, rango, semanas } from "../app/progreso.ts";
 import { esc, type Pagina } from "./render.ts";
 
@@ -13,6 +13,26 @@ export function vistaInicio(db: Db): Pagina {
   const reuniones = db.select().from(meeting).all();
   const temas = db.select().from(topic).all();
   const sinCalificar = temas.filter((t) => t.status === "proposed").length;
+
+  // Los items de la semana, agrupados por proyecto: el feed del panel.
+  const itemsSemana = actual ? db.select().from(rubricItem).all().filter((i) => i.rubricId === actual.id) : [];
+  const nombreProy = new Map(proyectos.map((p) => [p.proyectoId, p.nombre]));
+  const ordenProyecto = new Map(proyectos.map((p, i) => [p.proyectoId, i]));
+
+  const feed = [...itemsSemana]
+    .sort((a, b) => {
+      const pa = ordenProyecto.get(a.projectId ?? "") ?? 99;
+      const pb = ordenProyecto.get(b.projectId ?? "") ?? 99;
+      return pa - pb || a.position - b.position;
+    })
+    .map(
+      (i, n) => `<div class="feed-fila" data-n="${n}">
+    <i class="pt ${i.status === "done" ? "verde" : "ambar"}"></i>
+    <span class="feed-p">${esc(nombreProy.get(i.projectId ?? "") ?? "Sin proyecto")}</span>
+    <span class="feed-t">${esc(i.title)}</span>
+  </div>`,
+    )
+    .join("");
 
   // Cada proyecto con su descripción y los dos aros del diagnóstico.
   const filasProyecto = proyectos
@@ -88,16 +108,8 @@ export function vistaInicio(db: Db): Pagina {
     </div>
 
     <div class="panel-bloque">
-      <h3 class="bloque-t">Rúbrica<span class="bloque-fecha">${actual ? rango(actual.desde, actual.hasta) : "sin abrir"}</span></h3>
-      ${
-        actual
-          ? `<a class="rub-mini" href="/rubrica/${actual.id}">
-        <span class="rub-mini-p">${actual.pct}%</span>
-        <span class="rub-mini-n">${actual.hechos} de ${actual.total} ítems</span>
-        <div class="prog verde"><span style="width:${actual.pct}%"></span></div>
-      </a>`
-          : `<p class="nota">No hay semana abierta.</p>`
-      }
+      <h3 class="bloque-t">En la semana<span class="bloque-fecha">${actual ? rango(actual.desde, actual.hasta) : "sin abrir"}</span></h3>
+      ${actual ? `<div class="feed" id="feed">${feed}</div>` : `<p class="nota">No hay semana abierta.</p>`}
     </div>
 
     <div class="panel-bloque">
