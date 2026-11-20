@@ -2891,25 +2891,36 @@ label.inline {
   overflow: hidden;
 }
 
-/* El logo no se mueve nunca. Lo unico que se mueve es el menu. */
+/* ---------- rail: head fijo, menu plegable ---------- */
+
+/* El logo vive en su propio bloque: no se anima ni se centra. */
 .rail-head {
-  width: 100%;
   display: flex;
   align-items: center;
-  background: none;
-  border: none;
   padding: 0;
-  cursor: pointer;
-  color: var(--olive);
-  transition: opacity 120ms;
+  flex: none;
 }
 
-.rail-head:hover { opacity: 0.7; }
+/* El chevron va debajo del head y es lo unico que controla el menu. */
+.rail-toggle {
+  align-self: flex-end;
+  width: 26px;
+  height: 26px;
+  margin: 2px 0 4px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--olive);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex: none;
+  transition: background 120ms, color 120ms, transform 220ms cubic-bezier(0.22, 0.8, 0.3, 1);
+}
 
-/* El ancho del riel no cambia: el logo queda clavado. */
-body.rail-hidden { --rail-w: 200px; }
+.rail-toggle:hover { background: #e6ebf4; color: var(--ink); }
 
-/* El menu se pliega: alto a cero, fundido y corrimiento. */
+/* El menu se pliega con alto, fundido y corrimiento. */
 .nav {
   transition: opacity 180ms cubic-bezier(0.2, 0, 0.2, 1),
               transform 200ms cubic-bezier(0.2, 0, 0.2, 1),
@@ -2917,11 +2928,10 @@ body.rail-hidden { --rail-w: 200px; }
   max-height: 400px;
 }
 
-body.rail-hidden .nav {
-  opacity: 0;
-  transform: translateY(-6px);
-  max-height: 0;
-  overflow: hidden;
-  pointer-events: none;
-  margin-top: 0;
-}
+/* Colapsado: el riel se angosta y solo queda el chevron. */
+body.rail-hidden { --rail-w: 48px; }
+body.rail-hidden .rail { padding: 18px 10px 14px; align-items: center; }
+body.rail-hidden .rail-head { display: none; }
+body.rail-hidden .rail > *:not(.rail-toggle) { display: none; }
+body.rail-hidden .rail-toggle { align-self: center; margin-top: 0; transform: rotate(180deg); }
+body.rail-hidden .principal { padding-left: 30px; padding-right: 30px; }
