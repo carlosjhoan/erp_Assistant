@@ -3132,9 +3132,9 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
   align-items: start;
 }
 
-.panel > .panel-bloque:nth-child(1) { grid-column: 1; grid-row: 1; }
-.panel > .panel-bloque:nth-child(2) { grid-column: 2; grid-row: 1; }
-.panel > .panel-bloque:nth-child(3) { grid-column: 1 / -1; grid-row: 2; }
+.panel > .panel-bloque:nth-of-type(1) { grid-column: 1; grid-row: 1; }
+.panel > .panel-bloque:nth-of-type(2) { grid-column: 2; grid-row: 1; }
+.panel > .panel-bloque:nth-of-type(3) { grid-column: 1 / -1; grid-row: 2; }
 
 /* La franja de la semana: alto fijo, filas que entran de abajo. */
 .feed {
@@ -3163,9 +3163,9 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
   width: 100%;
 }
 
-.inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(1) { grid-column: 1; grid-row: 1; }
-.inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(2) { grid-column: 2; grid-row: 1; }
-.inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(3) { grid-column: 1 / -1; grid-row: 2; }
+.inicio[data-estado="idle"] .panel > .panel-bloque:nth-of-type(1) { grid-column: 1; grid-row: 1; }
+.inicio[data-estado="idle"] .panel > .panel-bloque:nth-of-type(2) { grid-column: 2; grid-row: 1; }
+.inicio[data-estado="idle"] .panel > .panel-bloque:nth-of-type(3) { grid-column: 1 / -1; grid-row: 2; }
 
 /* Las cards de proyecto se acomodan en dos columnas dentro de su franja. */
 .inicio[data-estado="idle"] .pproy-lista {
@@ -3289,12 +3289,12 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
   align-items: start;
 }
 
-.inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(1) { grid-column: 2; grid-row: 1; }
-.inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(2) { grid-column: 3; grid-row: 1; }
-.inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(3) { grid-column: 1; grid-row: 1; }
+.inicio[data-estado="idle"] .panel > .panel-bloque:nth-of-type(1) { grid-column: 2; grid-row: 1; }
+.inicio[data-estado="idle"] .panel > .panel-bloque:nth-of-type(2) { grid-column: 3; grid-row: 1; }
+.inicio[data-estado="idle"] .panel > .panel-bloque:nth-of-type(3) { grid-column: 1; grid-row: 1; }
 
 /* La franja de reuniones se separa con una linea, como la de la semana. */
-.inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(3) {
+.inicio[data-estado="idle"] .panel > .panel-bloque:nth-of-type(3) {
   border-right: 1px solid var(--soft);
   padding-right: 14px;
 }
@@ -3303,9 +3303,9 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
   .inicio[data-estado="idle"] .panel {
     grid-template-columns: 1fr 220px;
   }
-  .inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(1) { grid-column: 1; grid-row: 1; }
-  .inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(3) { grid-column: 1; grid-row: 2; border-right: none; padding-right: 0; }
-  .inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(2) { grid-column: 2; grid-row: 1 / span 2; }
+  .inicio[data-estado="idle"] .panel > .panel-bloque:nth-of-type(1) { grid-column: 1; grid-row: 1; }
+  .inicio[data-estado="idle"] .panel > .panel-bloque:nth-of-type(3) { grid-column: 1; grid-row: 2; border-right: none; padding-right: 0; }
+  .inicio[data-estado="idle"] .panel > .panel-bloque:nth-of-type(2) { grid-column: 2; grid-row: 1 / span 2; }
 }
 
 /* ============================================================
@@ -3357,17 +3357,17 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
 .inicio[data-estado="idle"] .pcard:nth-child(4) { animation-delay: 1950ms; }
 
 /* Reuniones, luego la semana, luego el input. */
-.inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(3) {
+.inicio[data-estado="idle"] .panel > .panel-bloque:nth-of-type(3) {
   animation: pcard-in 440ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
   animation-delay: 2150ms;
 }
 
-.inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(2) {
+.inicio[data-estado="idle"] .panel > .panel-bloque:nth-of-type(2) {
   animation: pcard-in 440ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
   animation-delay: 2350ms;
 }
 
-.inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(1) .bloque-t {
+.inicio[data-estado="idle"] .panel > .panel-bloque:nth-of-type(1) .bloque-t {
   animation: pcard-in 380ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
   animation-delay: 1600ms;
 }
@@ -3719,17 +3719,17 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
 .inicio[data-estado="idle"] .pcard:nth-child(3) { animation-delay: 2120ms; }
 .inicio[data-estado="idle"] .pcard:nth-child(4) { animation-delay: 2280ms; }
 
-.inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(3) {
+.inicio[data-estado="idle"] .panel > .panel-bloque:nth-of-type(3) {
   animation: suave-in 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: 2500ms;
 }
 
-.inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(2) {
+.inicio[data-estado="idle"] .panel > .panel-bloque:nth-of-type(2) {
   animation: suave-in 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: 2680ms;
 }
 
-.inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(1) .bloque-t {
+.inicio[data-estado="idle"] .panel > .panel-bloque:nth-of-type(1) .bloque-t {
   animation: suave-in 560ms cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: 1760ms;
 }
@@ -4255,3 +4255,9 @@ body.rail-hidden .rail-toggle { align-self: center; margin: 0; }
 
 /* Sin padding inferior en la columna: el scroll lo maneja el aside. */
 .inicio[data-estado="chat"] .chat { padding-bottom: 110px; }
+
+/* El head del rail existe solo en modo conversacion. */
+.inicio[data-estado="idle"] .rail-cabeza { display: none; }
+
+/* El dashboard de inicio conserva su propio padding y su bloque de autor. */
+.inicio[data-estado="idle"] .autor { display: flex; }
