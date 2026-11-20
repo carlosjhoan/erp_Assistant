@@ -30,11 +30,39 @@ const Respuesta = z.object({
       id: z.string().nullable(),
     })
     .nullable(),
+  /** Enlace externo para abrir en otra pestaña. Solo si la pregunta lo pide. */
+  enlace: z
+    .object({
+      texto: z.string(),
+      url: z.string(),
+    })
+    .nullable(),
 });
 
 export type Consulta = z.infer<typeof Respuesta>;
 
 const RUTAS = ["/proyectos", "/reuniones", "/rubrica"] as const;
+
+/**
+ * Hechos del catálogo de cotizaciones. No viven en la base: son el resultado
+ * de la ingesta y se citan tal cual. El visor corre aparte.
+ */
+const CATALOGO = {
+  ingeridas: 64,
+  validas: 61,
+  conError: 3,
+  proyectos: 55,
+  visor: "http://localhost:5080/",
+};
+
+const resumenCatalogo = () =>
+  [
+    "CATÁLOGO DE COTIZACIONES:",
+    `- Se hizo una ingesta de ${CATALOGO.ingeridas} cotizaciones.`,
+    `- ${CATALOGO.validas} fueron reconocidas como válidas y ${CATALOGO.conError} dieron error.`,
+    `- En total son ${CATALOGO.proyectos} proyectos diferentes.`,
+    `- El visor del catálogo está en ${CATALOGO.visor} (abre en otra pestaña).`,
+  ].join(String.fromCharCode(10));
 
 /** Foto compacta del estado. Es todo lo que el modelo puede afirmar. */
 export function foto(db: Db): string {
@@ -73,6 +101,8 @@ export function foto(db: Db): string {
     "",
     pendientes.length > 0 ? `ÍTEMS PENDIENTES (${pendientes.length}):` : "ÍTEMS PENDIENTES: ninguno",
     ...pendientes.slice(0, 40).map((t) => `- ${t}`),
+    "",
+    resumenCatalogo(),
   ];
 
   return lineas.join("\n");
@@ -97,7 +127,11 @@ export async function consultar(
         "Solo podés afirmar lo que dice la foto de datos que recibís; si algo no está, decilo. " +
         "No inventes cifras. Máximo tres frases. Si conviene, indicá una ruta para ver el detalle. " +
         "Cuando la pregunta sea sobre un proyecto, la semana o las reuniones, llena 'mostrar' con la vista y el id exacto de la foto, " +
-        "para que el usuario vea el detalle renderizado. Si la pregunta es general, deja 'mostrar' en null.",
+        "para que el usuario vea el detalle renderizado. Si la pregunta es general, deja 'mostrar' en null. " +
+        "Si la pregunta trata del catálogo de cotizaciones, cita las cifras de la foto y llena 'enlace' con " +
+        '{texto: "Abrir el catálogo", url: "' +
+        CATALOGO.visor +
+        '}. En cualquier otro caso deja enlace en null.',
       prompt: `PREGUNTA: ${pregunta}\n\nFOTO DEL ESTADO:\n${foto(db)}`,
       schema: Respuesta,
     });

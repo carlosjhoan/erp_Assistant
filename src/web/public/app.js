@@ -894,6 +894,18 @@ if (formConsulta) {
       cargarVista(caja);
     }
 
+    if (t.enlace) {
+      const caja = document.createElement("div");
+      caja.className = "msg-enlace";
+      const a = document.createElement("a");
+      a.href = t.enlace.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = t.enlace.texto || "Abrir";
+      caja.appendChild(a);
+      cuerpo.appendChild(caja);
+    }
+
     if (t.ruta) {
       const a = document.createElement("a");
       a.className = "msg-link";
@@ -997,6 +1009,7 @@ if (formConsulta) {
         error: datos.ok ? "" : datos.error || "sin respuesta",
         ruta: datos.ruta || "",
         vista: datos.mostrar && datos.mostrar.vista ? datos.mostrar : null,
+        enlace: datos.enlace && datos.enlace.url ? datos.enlace : null,
         siguiente: datos.siguiente || "",
         ms: ms,
         costo: typeof datos.costo === "number" ? datos.costo : null,
