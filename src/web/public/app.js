@@ -709,4 +709,37 @@ document.querySelectorAll("input[data-item]").forEach(function (chk) {
   });
 });
 
+
+/* ---------- declarar que capacidad mueve un item ---------- */
+document.querySelectorAll("select[data-cap]").forEach(function (sel) {
+  sel.addEventListener("change", async function () {
+    const id = sel.dataset.cap;
+    sel.disabled = true;
+    try {
+      await pedir("/item/" + id + "/capacidad/" + (sel.value || ""));
+      // Sin recargar: el avance se recalcula al volver a entrar.
+      const fila = sel.closest(".it-fila");
+      const efecto = fila ? fila.querySelector(".it-efecto") : null;
+      if (!sel.value && efecto) efecto.remove();
+    } catch (err) {
+      fallar(err);
+    } finally {
+      sel.disabled = false;
+    }
+  });
+});
+
+document.querySelectorAll("select[data-efecto]").forEach(function (sel) {
+  sel.addEventListener("change", async function () {
+    sel.disabled = true;
+    try {
+      await pedir("/item/" + sel.dataset.efecto + "/efecto/" + sel.value);
+    } catch (err) {
+      fallar(err);
+    } finally {
+      sel.disabled = false;
+    }
+  });
+});
+
 })();

@@ -1054,6 +1054,25 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
     return;
   }
 
+  // Declarar que un item mueve una capacidad del diagnostico.
+  const itemCap = ruta.match(/^\/item\/([a-f0-9-]{36})\/capacidad\/([a-f0-9-]{36})?$/);
+  if (itemCap?.[1] && req.method === "POST") {
+    const cap = itemCap[2] || null;
+    db.update(rubricItem)
+      .set({ capabilityId: cap, capabilityEffect: cap ? "avanza" : "none" })
+      .where(eq(rubricItem.id, itemCap[1]))
+      .run();
+    return json(res, 200, { ok: true, capabilityId: cap });
+  }
+
+  // Cambiar como mueve la capacidad: avanza o cierra.
+  const itemEfecto = ruta.match(/^\/item\/([a-f0-9-]{36})\/efecto\/(\w+)$/);
+  if (itemEfecto?.[1] && itemEfecto[2] && req.method === "POST") {
+    const valido = itemEfecto[2] === "cierra" ? "cierra" : "avanza";
+    db.update(rubricItem).set({ capabilityEffect: valido }).where(eq(rubricItem.id, itemEfecto[1])).run();
+    return json(res, 200, { ok: true, efecto: valido });
+  }
+
   // Marcar un item de rubrica como hecho. Mueve el porcentaje y deja rastro.
   const itemHecho = ruta.match(/^\/item\/([a-f0-9-]{36})\/hecho$/);
   if (itemHecho?.[1] && req.method === "POST") {

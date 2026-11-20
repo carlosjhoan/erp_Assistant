@@ -2251,3 +2251,25 @@ label.inline {
 .cap-m { color: #96620f; }
 .cap-g::before { content: "✓ "; }
 .cap-m::before { content: "✗ "; }
+
+/* ---------- vinculo item ↔ capacidad ---------- */
+
+.it-fila { border-bottom: 1px solid var(--soft); padding: 2px 0; }
+.it-fila .it { border-bottom: none; }
+
+.it-cap, .it-efecto {
+  font-family: inherit;
+  font-size: 9.5px;
+  color: var(--olive);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 2px 4px;
+  max-width: 210px;
+}
+
+.it-fila:not(:hover) .it-cap:not(:focus),
+.it-fila:not(:hover) .it-efecto:not(:focus) {
+  opacity: 0.45;
+  transition: opacity 120ms;
+}

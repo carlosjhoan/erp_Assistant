@@ -2,7 +2,7 @@
 
 import { asc, eq } from "drizzle-orm";
 import type { Db } from "../infra/db/client.ts";
-import { progresoPorProyecto, rango, semanas, veredicto, type SemanaResumen } from "../app/progreso.ts";
+import { capacidadesEfectivas, progresoPorProyecto, rango, semanas, veredicto, type SemanaResumen } from "../app/progreso.ts";
 import { project, projectCapability, projectRepository, repo as repoTable, rubric, rubricItem } from "../infra/db/schema.ts";
 import { esc, type Pagina } from "./render.ts";
 import { createTopicRepo } from "../infra/db/topic-repo.ts";
@@ -121,7 +121,8 @@ export function vistaProyecto(db: Db, id: string): Pagina {
     .where(eq(projectCapability.projectId, id))
     .all()
     .sort((a, b) => a.sortOrder - b.sortOrder);
-  const v = veredicto(caps);
+  const capsEf = capacidadesEfectivas(caps, db.select().from(rubricItem).all());
+  const v = veredicto(capsEf);
   const diag = caps.length > 0 ? v : null;
 
   const items = db.select().from(rubricItem).all();
@@ -204,16 +205,16 @@ ${propios.map((i) => filaItem(i)).join("")}
 
     ${
       // Capacidades medidas, con lo bueno y lo que falta de cada una.
-      caps.length > 0
+      capsEf.length > 0
         ? `<div class="caps">
-      ${caps
+      ${capsEf
         .filter((c) => c.scope !== "futuro" && !c.outsideRubric)
         .map(
           (c) => `<details class="cap ${c.integration === "I3" ? "ok" : c.integration === "I2" ? "parcial" : "ausente"}">
         <summary>
           <span class="cap-dot"></span>
           <span class="cap-t">${esc(c.title)}</span>
-          <span class="cap-e">${esc(c.integration)}</span>
+          <span class="cap-e">${c.movidaPorItems ? `${esc(c.base)} → ${esc(c.integration)}` : esc(c.integration)}</span>
         </summary>
         ${(c.good ?? []).map((g) => `<p class="cap-g">${esc(g)}</p>`).join("")}
         ${(c.improve ?? []).map((g) => `<p class="cap-m">${esc(g)}</p>`).join("")}
@@ -243,12 +244,37 @@ ${propios.map((i) => filaItem(i)).join("")}
   };
 }
 
-function filaItem(i: typeof rubricItem.$inferSelect): string {
-  return `<label class="it">
-  <input type="checkbox" data-item="${i.id}"${i.status === "done" ? " checked" : ""}>
-  <span class="it-txt">${esc(i.title)}</span>
-  <span class="it-tipo">${esc(i.type)}</span>
-</label>`;
+type CapOpcion = { id: string; title: string; key: string };
+
+/**
+ * Una fila de ítem. Si el proyecto tiene diagnóstico, aparece el selector que
+ * declara qué capacidad mueve: sin eso, cerrar el ítem no cambia nada.
+ */
+function filaItem(i: typeof rubricItem.$inferSelect, caps: CapOpcion[] = []): string {
+  const opciones = [
+    '<option value="">— sin capacidad —</option>',
+    ...caps.map(
+      (c) =>
+        `<option value="${c.id}"${i.capabilityId === c.id ? " selected" : ""}>${esc(c.key)} · ${esc(c.title.slice(0, 38))}</option>`,
+    ),
+  ].join("");
+
+  const efecto = i.capabilityId
+    ? `<select class="it-efecto" data-efecto="${i.id}">
+        <option value="avanza"${i.capabilityEffect === "avanza" ? " selected" : ""}>avanza</option>
+        <option value="cierra"${i.capabilityEffect === "cierra" ? " selected" : ""}>cierra</option>
+      </select>`
+    : "";
+
+  return `<div class="it-fila">
+  <label class="it">
+    <input type="checkbox" data-item="${i.id}"${i.status === "done" ? " checked" : ""}>
+    <span class="it-txt">${esc(i.title)}</span>
+    <span class="it-tipo">${esc(i.type)}</span>
+  </label>
+  ${caps.length > 0 ? `<select class="it-cap" data-cap="${i.id}" aria-label="Capacidad que mueve">${opciones}</select>` : ""}
+  ${efecto}
+</div>`;
 }
 
 export function vistaRubricas(db: Db): Pagina {
@@ -308,6 +334,14 @@ export function vistaSemana(db: Db, id: string): Pagina {
 
   const items = db.select().from(rubricItem).where(eq(rubricItem.rubricId, id)).all();
   const proyectos = db.select().from(project).all().sort((a, b) => a.name.localeCompare(b.name));
+  const todasCaps = db.select().from(projectCapability).all();
+  const capsDe = (projectId: string | null) =>
+    projectId
+      ? todasCaps
+          .filter((c) => c.projectId === projectId && c.scope !== "futuro" && !c.outsideRubric)
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((c) => ({ id: c.id, title: c.title, key: c.key }))
+      : [];
 
   // Un ítem sin proyecto se agrupa aparte y no suma a ningún porcentaje.
   const grupos = [
@@ -335,7 +369,7 @@ export function vistaSemana(db: Db, id: string): Pagina {
         : `<span class="grupo-c">no suma al %</span>`
     }</span>
   </header>
-${propios.map((it) => filaItem(it)).join("")}
+${propios.map((it) => filaItem(it, capsDe(it.projectId))).join("")}
 </section>`;
     })
     .join("\n");

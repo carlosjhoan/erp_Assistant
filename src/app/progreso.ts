@@ -49,9 +49,10 @@ export function progresoPorProyecto(db: Db, semanaId?: string): ProgresoProyecto
       // El proyecto del ítem manda; si no lo tiene, se hereda del tema.
       const mios = items.filter((i) => i.projectId === p.id || (!i.projectId && i.topicId && idsTemas.has(i.topicId)));
 
-      // El diagnóstico se calcula desde las capacidades importadas.
+      // El diagnóstico se calcula desde las capacidades importadas, más lo
+      // que hayan avanzado los ítems cerrados de este proyecto.
       const caps = db.select().from(projectCapability).where(eq(projectCapability.projectId, p.id)).all();
-      const diag = caps.length > 0 ? veredicto(caps) : null;
+      const diag = caps.length > 0 ? veredicto(capacidadesEfectivas(caps, items)) : null;
 
       return {
         proyectoId: p.id,
@@ -181,4 +182,36 @@ export function veredicto(capacidades: Cap[]): Veredicto {
     ausentes: base.filter((c) => c.integration === "I0").length,
     confiables: confiables.length,
   };
+}
+
+/* ---------- estado efectivo de una capacidad ---------- */
+
+const RANGO: Record<string, number> = { I0: 0, I1: 1, I2: 2, I3: 3 };
+const NOMBRE = ["I0", "I1", "I2", "I3"] as const;
+
+type ItemAporte = { capabilityId: string | null; capabilityEffect: string; status: string };
+
+/**
+ * Una capacidad vale lo que dice el diagnóstico, o más si hay ítems cerrados
+ * que la empujan. Se calcula al leer: desmarcar un ítem revierte el avance
+ * solo, sin tocar la capacidad.
+ */
+export function efectiva(base: string, items: ItemAporte[], capabilityId: string): { actual: string; porItems: boolean } {
+  const aportes = items
+    .filter((i) => i.capabilityId === capabilityId && i.status === "done" && i.capabilityEffect !== "none")
+    .map((i) => (i.capabilityEffect === "cierra" ? 3 : 2));
+
+  const desdeItems = aportes.length > 0 ? Math.max(...aportes) : -1;
+  const desdeBase = RANGO[base] ?? 0;
+  const mejor = Math.max(desdeBase, desdeItems);
+
+  return { actual: NOMBRE[mejor] ?? base, porItems: desdeItems > desdeBase };
+}
+
+/** Aplica el avance de los ítems a todas las capacidades de un proyecto. */
+export function capacidadesEfectivas<T extends { id: string; integration: string }>(caps: T[], items: ItemAporte[]) {
+  return caps.map((c) => {
+    const e = efectiva(c.integration, items, c.id);
+    return { ...c, integration: e.actual, base: c.integration, movidaPorItems: e.porItems };
+  });
 }

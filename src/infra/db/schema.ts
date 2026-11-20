@@ -156,6 +156,15 @@ export const rubricItem = sqliteTable(
     repoId: text("repo_id").references(() => repo.id),
     /** Proyecto al que se imputa el ítem. Nulo = no suma a ningún porcentaje. */
     projectId: text("project_id").references(() => project.id),
+
+    /** Capacidad del diagnóstico que este ítem mueve, si declara alguna. */
+    capabilityId: text("capability_id").references(() => projectCapability.id),
+
+    /**
+     * Cuánto la mueve: `avanza` la deja al menos parcial, `cierra` la deja
+     * integrada. Se aplica al calcular, no se escribe en la capacidad.
+     */
+    capabilityEffect: text("capability_effect", { enum: ["none", "avanza", "cierra"] }).notNull().default("none"),
     // Si lo editaste vos, regenerar los ítems del agente no lo puede pisar.
     humanEdited: integer("human_edited", { mode: "boolean" }).notNull().default(false),
     title: text("title").notNull(),

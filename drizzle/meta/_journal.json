@@ -141,6 +141,13 @@
       "when": 1795148332764,
       "tag": "0019_capacidades",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1795149030889,
+      "tag": "0020_item_capacidad",
+      "breakpoints": true
     }
   ]
 }
