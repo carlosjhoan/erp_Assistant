@@ -44,9 +44,6 @@ export function pagina(p: Pagina): string {
 </head>
 <body>
 <aside class="rail">
-  <div class="rail-head">
-    <img class="brand-mark" src="/logo-mark.png" alt="Steel and Glass">
-  </div>
   <button type="button" class="rail-toggle" id="rail-toggle" aria-pressed="false" title="Ocultar menú" aria-label="Ocultar menú">
     <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M9.6 4.2 5.8 8l3.8 3.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </button>

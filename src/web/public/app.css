@@ -3982,3 +3982,53 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
   background: #2f6b4f;
   flex: none;
 }
+
+/* ============================================================
+   El riel queda como menu puro: el logo vive arriba a la derecha.
+   ============================================================ */
+
+.rail { padding-top: 14px; }
+
+.rail-toggle {
+  align-self: flex-end;
+  margin: 0 0 10px;
+}
+
+body.rail-hidden .rail-toggle { align-self: center; margin: 0; }
+
+/* ---------- estado conversacion: panel en columna derecha ---------- */
+
+.inicio[data-estado="chat"] .entrada { display: none; }
+
+.inicio[data-estado="chat"] {
+  padding-top: 96px;
+  gap: 0;
+}
+
+.inicio[data-estado="chat"] .panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-bottom: 150px;
+}
+
+/* En columna, las cards de proyecto se apilan y crecen. */
+.inicio[data-estado="chat"] .pproy-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inicio[data-estado="chat"] .pcard {
+  min-height: 0;
+  padding: 12px 14px 14px;
+}
+
+.inicio[data-estado="chat"] .pcard-metricas { margin-top: 8px; gap: 18px; }
+.inicio[data-estado="chat"] .pm-ring { width: 38px; height: 38px; }
+.inicio[data-estado="chat"] .pm b { font-size: 16px; }
+.inicio[data-estado="chat"] .pm i { font-size: 8px; }
+.inicio[data-estado="chat"] .pm-sep { height: 44px; }
+
+.inicio[data-estado="chat"] .feed { max-height: 240px; }
+.inicio[data-estado="chat"] .feed-fila { padding: 5px 0; }
