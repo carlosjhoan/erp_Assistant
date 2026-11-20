@@ -55,6 +55,22 @@ const CATALOGO = {
   visor: "http://localhost:5080/",
 };
 
+/**
+ * Reportes de inventario desde SIIGO. Tampoco vive en la base: es estado del
+ * proyecto y de lo que pidió el área contable.
+ */
+const SIIGO = {
+  visor: "http://localhost:8501/",
+};
+
+const resumenSiigo = () =>
+  [
+    "REPORTES DE INVENTARIO DESDE SIIGO:",
+    "- Con credenciales, el sistema se conecta a la API de SIIGO y descarga los reportes de inventario indicando una fecha de corte.",
+    "- A pedido de Leonardo, esa información se consolida en un reporte por categoría, con saldo y valor, para agilizar sus cierres.",
+    `- El visor del reporte está en ${SIIGO.visor} (abre en otra pestaña).`,
+  ].join(String.fromCharCode(10));
+
 const resumenCatalogo = () =>
   [
     "CATÁLOGO DE COTIZACIONES:",
@@ -103,6 +119,8 @@ export function foto(db: Db): string {
     ...pendientes.slice(0, 40).map((t) => `- ${t}`),
     "",
     resumenCatalogo(),
+    "",
+    resumenSiigo(),
   ];
 
   return lineas.join("\n");
@@ -135,8 +153,11 @@ export async function consultar(
         "Si la pregunta trata del catálogo de cotizaciones, cita las cifras de la foto y llena 'enlace' con " +
         '{texto: "Abrir el catálogo", url: "' +
         CATALOGO.visor +
-        '}. En cualquier otro caso deja enlace en null.',
-      prompt: `PREGUNTA: ${pregunta}\n\nFOTO DEL ESTADO:\n${foto(db)}`,
+        '"} . Si la pregunta trata de SIIGO o de los reportes de inventario, usa las cifras y el alcance de la foto ' +
+        'y llena enlace con {texto: "Abrir el reporte", url: "' +
+        SIIGO.visor +
+        '"}. En cualquier otro caso deja enlace en null.',
+      prompt: `PREGUNTA: ${pregunta}\n\nFOTO DEL ESTADO:\n${fotoArmada}`,
       schema: Respuesta,
     });
 
