@@ -251,11 +251,11 @@ ${propios.map((i) => filaItem(i)).join("")}
     ${
       diag
         ? `<div class="md-resumen">
-      <div><span>Negocio</span><b>${diag.negocio}%</b><i>desde ${vBase.negocio}%</i></div>
-      <div><span>Producción</span><b>${diag.produccion}%</b><i>desde ${vBase.produccion}%</i></div>
-      <div><span>Estado</span><b>${diag.estado}</b><i>${diag.completos} de ${diag.base}</i></div>
+      <div><span>Negocio</span><b>${vBase.negocio}%</b><i>hoy ${diag.negocio}%</i></div>
+      <div><span>Producción</span><b>${vBase.produccion}%</b><i>hoy ${diag.produccion}%</i></div>
+      <div><span>Estado</span><b>${vBase.estado}</b><i>${vBase.completos} de ${vBase.base}</i></div>
     </div>
-    <p class="md-nota">${diag.completos} integradas · ${diag.parciales} parciales · ${diag.ausentes} ausentes de ${diag.base}</p>
+    <p class="md-nota">Diagnóstico del 12 de noviembre: ${vBase.completos} integradas · ${vBase.parciales} parciales · ${vBase.ausentes} ausentes de ${vBase.base}. Hoy: ${diag.completos} integradas.</p>
     <div class="md-caps">
       ${capsEf
         .filter((c) => c.scope !== "futuro" && !c.outsideRubric)
