@@ -919,6 +919,7 @@ if (formConsulta) {
       const d = await r.json();
       if (d.ok && d.html) {
         caja.innerHTML = d.html;
+        caja.classList.remove("cargando");
         caja.classList.add("lista");
       } else {
         caja.remove();
