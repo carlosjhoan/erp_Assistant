@@ -1058,6 +1058,7 @@ if (formConsulta) {
       console.error(err);
       turnos.push({ pregunta: pregunta, error: "no pude conectar con el modelo", ms: Math.round(performance.now() - t0), at: Date.now() });
       pintar();
+      ocultarEstado = setTimeout(function () { estado.hidden = true; }, 900);
     } finally {
       boton.disabled = false;
       entrada.disabled = false;
