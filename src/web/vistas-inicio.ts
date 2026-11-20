@@ -27,7 +27,11 @@ export function vistaInicio(db: Db): Pagina {
     })
     .map(
       (i, n) => `<div class="feed-fila" data-n="${n}">
-    <i class="pt ${i.status === "done" ? "verde" : "ambar"}"></i>
+    ${
+      i.status === "done"
+        ? '<svg class="feed-check" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M3.4 8.4l3 3 6.2-6.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        : '<span class="feed-circulo"></span>'
+    }
     <span class="feed-p">${esc(nombreProy.get(i.projectId ?? "") ?? "Sin proyecto")}</span>
     <span class="feed-t">${esc(i.title)}</span>
   </div>`,

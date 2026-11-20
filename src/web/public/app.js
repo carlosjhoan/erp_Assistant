@@ -1100,6 +1100,7 @@ document.querySelectorAll(".pm").forEach(function (caja) {
 
   function reiniciar() {
     filas.forEach(function (f) { f.classList.remove("visible"); });
+    feed.scrollTo({ top: 0, behavior: "smooth" });
     i = 0;
   }
 
@@ -1115,6 +1116,9 @@ document.querySelectorAll(".pm").forEach(function (caja) {
       return;
     }
     filas[i].classList.add("visible");
+    // La cinta sigue al ultimo item.
+    const fila = filas[i];
+    feed.scrollTo({ top: fila.offsetTop - feed.clientHeight + fila.offsetHeight + 16, behavior: "smooth" });
     i++;
     timer = setTimeout(paso, PAUSA);
   }

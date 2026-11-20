@@ -3173,3 +3173,32 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
+
+/* ---------- la semana corre como cinta ---------- */
+
+.feed {
+  max-height: 286px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  border-left: 1px solid var(--soft);
+  padding-left: 12px;
+  /* el borde de arriba se desvanece: la cinta sigue */
+  mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 8px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 8px), transparent 100%);
+}
+
+.feed::-webkit-scrollbar { display: none; }
+
+.feed-check { color: #2f6b4f; flex: none; }
+
+.feed-circulo {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid #c9b07a;
+  flex: none;
+}
+
+.feed-fila { position: relative; }
