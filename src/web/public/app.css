@@ -4854,3 +4854,37 @@ dialog.modal-diag header { padding: 18px 22px 14px; }
 .etapa-ms { font-family: ui-monospace, monospace; font-size: 10px; color: var(--olive); }
 
 .etapas-nota { padding: 0 22px 18px; margin: 6px 0 0; font-size: 9.5px; color: var(--olive); }
+
+/* ============================================================
+   El hilo del chat scrollea solo; el compositor queda anclado.
+   ============================================================ */
+
+.inicio[data-estado="chat"] .chat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.inicio[data-estado="chat"] .chat-hilo {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 4px 132px 0;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+/* Barra discreta, acorde al resto. */
+.inicio[data-estado="chat"] .chat-hilo::-webkit-scrollbar { width: 6px; }
+.inicio[data-estado="chat"] .chat-hilo::-webkit-scrollbar-thumb {
+  background: #d5dce8;
+  border-radius: 999px;
+}
+.inicio[data-estado="chat"] .chat-hilo::-webkit-scrollbar-track { background: transparent; }
+
+/* Al llegar un turno nuevo, se ve el final. */
+.inicio[data-estado="chat"] .turno:last-child { scroll-margin-bottom: 132px; }

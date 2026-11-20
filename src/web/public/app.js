@@ -995,7 +995,8 @@ if (formConsulta) {
   function pintar() {
     hilo.textContent = "";
     turnos.forEach(function (t) { hilo.appendChild(tarjetaTurno(t)); });
-    hilo.scrollTop = hilo.scrollHeight;
+    // El hilo scrollea solo: se baja al ultimo turno.
+    hilo.scrollTo({ top: hilo.scrollHeight, behavior: "smooth" });
   }
 
   const inicio = document.getElementById("inicio");
