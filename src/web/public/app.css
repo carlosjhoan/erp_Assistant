@@ -2157,3 +2157,58 @@ label.inline {
 }
 
 .repo-chip code { font-size: 11px; color: var(--stone); }
+
+/* ---------- detalle de proyecto: split con panel sticky ---------- */
+
+.pj-split {
+  display: grid;
+  grid-template-columns: 38% 1fr;
+  gap: 28px;
+  align-items: start;
+}
+
+.pj-lado {
+  position: sticky;
+  top: 24px;
+  background: #fff;
+  background-image: linear-gradient(180deg, rgba(90, 106, 140, 0.06), transparent 40%);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.pj-lado .pj-titulo { margin-top: 10px; flex-wrap: wrap; }
+.pj-lado .pj-desc { margin: 8px 0 6px; }
+.pj-lado .pj-ruta { margin-bottom: 16px; }
+.pj-lado .pj-ruta code { font-size: 10px; word-break: break-all; }
+
+.kpis { border-top: 1px solid var(--soft); }
+
+.kpi {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--soft);
+}
+
+.kpi span {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--olive);
+}
+
+.kpi b { font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.kpi i { grid-column: 2; font-style: normal; font-size: 9.5px; color: var(--olive); text-align: right; }
+
+.pj-diag { margin-top: 18px; }
+.pj-diag .bloque-t { margin-bottom: 6px; }
+
+.pj-lado .repos-grid { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--soft); }
+
+.pj-lienzo { min-width: 0; }
+
+.pj-lienzo-head { margin-bottom: 6px; }
+.pj-lienzo-head .bloque-t { margin-bottom: 8px; }

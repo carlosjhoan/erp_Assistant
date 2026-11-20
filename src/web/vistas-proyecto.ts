@@ -170,75 +170,53 @@ ${propios.map((i) => filaItem(i)).join("")}
     titulo: p.name,
     seccion: "proyectos",
     conteoBandeja: conteo(db),
-    cuerpo: `<a class="volver" href="/">← Proyectos</a>
+    cuerpo: `<div class="pj-split">
 
-<header class="pj-hero">
-  <div class="pj-titulo">
-    <h2>${esc(p.name)}</h2>
-    <span class="badge-estado ${p.status}">${esc(p.status)}</span>
-  </div>
-  <p class="pj-desc">${esc(p.description ?? "Sin descripción.")}</p>
-  <p class="pj-ruta"><code>${esc(p.path)}</code> · ${repos.length} repo(s)</p>
-</header>
+  <aside class="pj-lado">
+    <a class="volver" href="/">← Proyectos</a>
+    <div class="pj-titulo">
+      <h2>${esc(p.name)}</h2>
+      <span class="badge-estado ${p.status}">${esc(p.status)}</span>
+    </div>
+    <p class="pj-desc">${esc(p.description ?? "Sin descripción.")}</p>
+    <p class="pj-ruta"><code>${esc(p.path)}</code></p>
 
-<div class="pj-stats">
-  <div class="stat">
-    <span class="stat-etq">Esta semana</span>
-    <b class="stat-num">${semana ? `${semana.pct}%` : "—"}</b>
-    <span class="stat-nota">${semana ? `${semana.hechos} de ${semana.vivos} ítems` : "sin ítems"}</span>
-  </div>
-  <div class="stat">
-    <span class="stat-etq">Acumulado</span>
-    <b class="stat-num">${pct}%</b>
-    <span class="stat-nota">${hechos} de ${vivos} ítems</span>
-  </div>
-  <div class="stat">
-    <span class="stat-etq">Repos</span>
-    <b class="stat-num">${repos.length}</b>
-    <span class="stat-nota">vinculados</span>
-  </div>
-  <div class="stat">
-    <span class="stat-etq">Diagnóstico</span>
-    <b class="stat-num">${diag ? `${diag.businessPct ?? "—"}/${diag.technicalPct ?? "—"}` : "—"}</b>
-    <span class="stat-nota">${diag ? "negocio / técnico" : "sin cargar"}</span>
-  </div>
-</div>
+    <div class="kpis">
+      <div class="kpi"><span>Esta semana</span><b>${semana ? `${semana.pct}%` : "—"}</b><i>${semana ? `${semana.hechos} de ${semana.vivos}` : "sin ítems"}</i></div>
+      <div class="kpi"><span>Acumulado</span><b>${pct}%</b><i>${hechos} de ${vivos}</i></div>
+      <div class="kpi"><span>Repos</span><b>${repos.length}</b><i>vinculados</i></div>
+    </div>
 
-<section class="bloque tarjeta-glass">
-  <h3 class="bloque-t">Diagnóstico${
-    diag
-      ? `<span class="bloque-fecha">desde ${new Date(diag.measuredAt).toLocaleDateString("es-CO", { day: "numeric", month: "short" })}</span>`
-      : ""
-  }</h3>
-  ${
-    diag
-      ? `<div class="diag-fila"><span class="diag-etq">Negocio</span>${barra(diag.businessPct ?? 0, "verde")}<b>${diag.businessPct ?? "—"}%</b></div>
-         <div class="diag-fila"><span class="diag-etq">Técnico</span>${barra(diag.technicalPct ?? 0, "tinta")}<b>${diag.technicalPct ?? "—"}%</b></div>
-         ${diag.summary ? `<p class="nota">${esc(diag.summary)}</p>` : ""}`
-      : `<p class="nota">Este proyecto no tiene diagnóstico cargado.</p>`
-  }
-</section>
+    <div class="pj-diag">
+      <h3 class="bloque-t">Diagnóstico${
+        diag
+          ? `<span class="bloque-fecha">desde ${new Date(diag.measuredAt).toLocaleDateString("es-CO", { day: "numeric", month: "short" })}</span>`
+          : ""
+      }</h3>
+      ${
+        diag
+          ? `<div class="diag-fila"><span class="diag-etq">Negocio</span>${barra(diag.businessPct ?? 0, "verde")}<b>${diag.businessPct ?? "—"}%</b></div>
+             <div class="diag-fila"><span class="diag-etq">Técnico</span>${barra(diag.technicalPct ?? 0, "tinta")}<b>${diag.technicalPct ?? "—"}%</b></div>`
+          : `<p class="nota">Sin diagnóstico cargado.</p>`
+      }
+    </div>
 
-<section class="bloque tarjeta-glass">
-  <h3 class="bloque-t">Avance<span class="bloque-fecha">${pct}% acumulado</span></h3>
-  ${
-    serie.length > 1
-      ? `<div class="spark-caja">${sparkline(serie)}<span class="spark-pie">${serie.length} semanas</span></div>`
-      : ""
-  }
-  ${filasSemana || `<p class="nota">Todavía no hay ítems imputados a este proyecto.</p>`}
-</section>
+    ${
+      repos.length > 0
+        ? `<div class="repos-grid">${repos.map((r) => `<div class="repo-chip"><code>${esc(r!.name)}</code></div>`).join("")}</div>`
+        : ""
+    }
+  </aside>
 
-<section class="bloque tarjeta-glass">
-  <h3 class="bloque-t">Repos<span class="bloque-fecha">${repos.length}</span></h3>
-  ${
-    repos.length > 0
-      ? `<div class="repos-grid">${repos
-          .map((r) => `<div class="repo-chip"><code>${esc(r!.name)}</code></div>`)
-          .join("")}</div>`
-      : `<p class="nota">Sin repos vinculados.</p>`
-  }
-</section>`,
+  <section class="pj-lienzo">
+    <div class="pj-lienzo-head">
+      <h3 class="bloque-t">Avance<span class="bloque-fecha">${pct}% acumulado</span></h3>
+      ${serie.length > 1 ? `<div class="spark-caja">${sparkline(serie)}<span class="spark-pie">${serie.length} semanas</span></div>` : ""}
+    </div>
+    ${filasSemana || `<p class="nota">Todavía no hay ítems imputados a este proyecto.</p>`}
+  </section>
+
+</div>`,
   };
 }
 
