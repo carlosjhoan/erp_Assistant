@@ -4032,3 +4032,78 @@ body.rail-hidden .rail-toggle { align-self: center; margin: 0; }
 
 .inicio[data-estado="chat"] .feed { max-height: 240px; }
 .inicio[data-estado="chat"] .feed-fila { padding: 5px 0; }
+
+/* ============================================================
+   Rail derecho en modo conversacion: barras, no aros.
+   ============================================================ */
+
+/* Las barras solo existen en columna. */
+.pcard-barras { display: none; }
+
+.inicio[data-estado="chat"] .pcard-barras {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.bf {
+  display: grid;
+  grid-template-columns: 52px 1fr 38px;
+  align-items: center;
+  gap: 7px;
+}
+
+.bf > span {
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--olive);
+}
+
+.bf b {
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--ink);
+}
+
+.bf .prog { height: 5px; }
+
+/* En columna se ocultan los aros. */
+.inicio[data-estado="chat"] .pcard-metricas { display: none; }
+
+/* ---------- la semana en horizontal ---------- */
+
+.semana-h {
+  background: #fff;
+  background-image: linear-gradient(180deg, rgba(90, 106, 140, 0.05), transparent 55%);
+  border: 1px solid var(--line);
+  border-left: 3px solid #2f6b4f;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.sh-fila { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+.sh-rango { font-size: 11px; color: var(--stone); font-variant-numeric: tabular-nums; }
+.sh-pct { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.semana-h .prog { height: 6px; }
+.sh-n { display: block; margin-top: 5px; font-size: 9px; color: var(--olive); }
+
+/* En columna no hay desglose item a item. */
+.inicio[data-estado="chat"] .feed,
+.inicio[data-estado="chat"] .feed-prog { display: none; }
+
+/* Todo el rail cabe sin scroll. */
+.inicio[data-estado="chat"] {
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  padding-bottom: 132px;
+}
+
+.contenido:has(#inicio[data-estado="chat"]) { overflow: hidden; }
+
+.inicio[data-estado="chat"] .panel { gap: 14px; padding-bottom: 0; }
+.inicio[data-estado="chat"] .panel-bloque { margin: 0; }

@@ -64,6 +64,10 @@ export function vistaInicio(db: Db): Pagina {
     <span class="pm-sep"></span>
     ${aro(p.proyectoId, tecnico, "tinta", "técnico", "tecnico")}
   </div>
+  <div class="pcard-barras">
+    <div class="bf"><span>negocio</span><div class="prog verde"><span style="width:${negocio ?? 0}%"></span></div><b>${negocio === null ? "—" : negocio + "%"}</b></div>
+    <div class="bf"><span>técnico</span><div class="prog tinta"><span style="width:${tecnico ?? 0}%"></span></div><b>${tecnico === null ? "—" : tecnico + "%"}</b></div>
+  </div>
   ${nuevo ? '<span class="badge-nuevo">NUEVO</span>' : ""}
 </a>`;
     })
@@ -160,7 +164,15 @@ export function vistaInicio(db: Db): Pagina {
       <h3 class="bloque-t">En la semana<span class="bloque-fecha">${actual ? rango(actual.desde, actual.hasta) : "sin abrir"}</span></h3>
       ${
         actual
-          ? `<div class="feed-prog">
+          ? `<div class="semana-h">
+        <div class="sh-fila">
+          <span class="sh-rango">${rango(actual.desde, actual.hasta)}</span>
+          <b class="sh-pct">${actual.pct}%</b>
+        </div>
+        <div class="prog verde"><span style="width:${actual.pct}%"></span></div>
+        <span class="sh-n">${actual.hechos} de ${actual.total} ítems</span>
+      </div>
+      <div class="feed-prog">
         <div class="feed-prog-barra"><span id="feed-barra"></span></div>
         <span class="feed-prog-n" id="feed-num">0/${itemsSemana.length}</span>
       </div>
