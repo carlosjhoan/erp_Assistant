@@ -1796,9 +1796,6 @@ label.inline {
   to   { transform: scale(1); }
 }
 
-/* Mientras se arrastra, las tarjetas hacen espacio con una curva corta. */
-.columna-lista .tarjeta-kanban { transition: transform 160ms cubic-bezier(0.2, 0, 0.2, 1); }
-
 /* La columna vacia deja de estorbar apenas entra una tarjeta. */
 .columna-lista:has(.tarjeta-kanban) .columna-vacia { display: none; }
 

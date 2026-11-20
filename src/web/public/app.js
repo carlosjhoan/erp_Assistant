@@ -502,14 +502,37 @@ function indiceEn(y) {
 }
 
 /** Mueve la tarjeta real al lugar donde va a caer: se ve donde queda. */
-function ubicar(lista, indice) {
-  if (indice === indiceActual && arrastrada.parentNode === lista) return;
+function ubicar(lista, indice, el) {
+  // Tras el await de un drop, dragend ya limpió arrastrada: se pasa la tarjeta aparte.
+  const card = el || arrastrada;
+  if (!card) return;
+  if (indice === indiceActual && card.parentNode === lista) return;
+
+  // FLIP: medir antes de tocar el DOM.
+  const antes = new Map();
+  [...lista.children].forEach(function (c) {
+    if (c !== card) antes.set(c, c.getBoundingClientRect().top);
+  });
+
   indiceActual = indice;
 
-  const tarjetas = [...lista.querySelectorAll(".tarjeta-kanban")].filter(function (c) { return c !== arrastrada; });
+  const tarjetas = [...lista.querySelectorAll(".tarjeta-kanban")].filter(function (c) { return c !== card; });
   const referencia = tarjetas[indice];
-  if (referencia) lista.insertBefore(arrastrada, referencia);
-  else lista.appendChild(arrastrada);
+  if (referencia) lista.insertBefore(card, referencia);
+  else lista.appendChild(card);
+
+  // FLIP: las tarjetas afectadas viajan desde donde estaban hasta donde quedan.
+  [...lista.children].forEach(function (c) {
+    if (c === card || !antes.has(c)) return;
+    const delta = antes.get(c) - c.getBoundingClientRect().top;
+    if (!delta) return;
+    c.style.transition = "none";
+    c.style.transform = "translateY(" + delta + "px)";
+    requestAnimationFrame(function () {
+      c.style.transition = "transform 180ms cubic-bezier(0.2, 0, 0.2, 1)";
+      c.style.transform = "";
+    });
+  });
 }
 
 document.addEventListener("dragstart", function (e) {
@@ -575,7 +598,7 @@ document.addEventListener("drop", async function (e) {
     const mover = card.querySelector(".chip-mover");
     if (mover) mover.value = destino;
 
-    ubicar(lista, indice);
+    ubicar(lista, indice, card);
     card.classList.add("asentando");
     setTimeout(function () { card.classList.remove("asentando"); }, 260);
 
