@@ -209,37 +209,44 @@ ${propios.map((i) => filaItem(i)).join("")}
     cuerpo: `<div class="pj-split">
 
   <aside class="pj-lado">
-    <a class="volver" href="/">← Proyectos</a>
+    <a class="volver" href="/proyectos">← Proyectos</a>
     <div class="pj-titulo">
       <h2>${esc(p.name)}</h2>
-      <span class="badge-estado ${p.status}">${esc(p.status)}</span>
+      <i class="vivo" aria-label="${esc(p.status)}"></i>
     </div>
-    <p class="pj-desc">${esc(p.description ?? "Sin descripción.")}</p>
+    <p class="pj-desc">${esc(descripcion(p.name))}</p>
     <p class="pj-ruta"><code>${esc(p.path)}</code></p>
 
-    <div class="kpis">
-      <div class="kpi"><span>Esta semana</span><b>${semana ? `${semana.pct}%` : "—"}</b><i>${semana ? `${semana.hechos} de ${semana.vivos}` : "sin ítems"}</i></div>
-      <div class="kpi"><span>Acumulado</span><b>${pct}%</b><i>${hechos} de ${vivos}</i></div>
-      <div class="kpi"><span>Repos</span><b>${repos.length}</b><i>vinculados</i></div>
-      <div class="kpi"><span>Negocio</span><b>${diag ? diag.negocio + "%" : "—"}</b><i>${diag ? diag.base + " capacidades" : "sin diagnóstico"}</i></div>
-      <div class="kpi"><span>Producción</span><b>${diag ? diag.produccion + "%" : "—"}</b><i>${diag ? diag.estado : ""}</i></div>
-    </div>
-
     <div class="pj-diag">
-      <h3 class="bloque-t">Diagnóstico${diag ? `<span class="bloque-fecha">${diag.estado}</span>` : ""}</h3>
       ${
         diag
           ? `<div class="diag-fila"><span class="diag-etq">Negocio</span>${barra(diag.negocio, "verde")}<b>${diag.negocio}%</b></div>
              <div class="diag-fila"><span class="diag-etq">Producción</span>${barra(diag.produccion, "tinta")}<b>${diag.produccion}%</b></div>
-             <p class="nota">${diag.completos} integradas · ${diag.parciales} parciales · ${diag.ausentes} ausentes de ${diag.base}</p>`
+
+             <button type="button" class="pill-diag" data-abrir="modal-diag">
+               <span class="pd-punto ${diag.estado}"></span>
+               Diagnóstico ${diag.estado}
+               <span class="pd-n">${diag.completos} de ${diag.base}</span>
+             </button>`
           : `<p class="nota">Sin diagnóstico cargado.</p>`
       }
     </div>
+  </aside>
 
+  <dialog id="modal-diag" class="modal modal-diag">
+    <header>
+      <h2>Diagnóstico · ${esc(p.name)}</h2>
+      <button class="cerrar" data-cerrar-modal="modal-diag" aria-label="Cerrar">✕</button>
+    </header>
     ${
-      // Capacidades medidas, con lo bueno y lo que falta de cada una.
-      capsEf.length > 0
-        ? `<div class="caps">
+      diag
+        ? `<div class="md-resumen">
+      <div><span>Negocio</span><b>${diag.negocio}%</b></div>
+      <div><span>Producción</span><b>${diag.produccion}%</b></div>
+      <div><span>Estado</span><b>${diag.estado}</b></div>
+    </div>
+    <p class="md-nota">${diag.completos} integradas · ${diag.parciales} parciales · ${diag.ausentes} ausentes de ${diag.base}</p>
+    <div class="md-caps">
       ${capsEf
         .filter((c) => c.scope !== "futuro" && !c.outsideRubric)
         .map(
@@ -255,15 +262,9 @@ ${propios.map((i) => filaItem(i)).join("")}
         )
         .join("")}
     </div>`
-        : ""
+        : `<p class="nota">Este proyecto todavía no tiene diagnóstico.</p>`
     }
-
-    ${
-      repos.length > 0
-        ? `<div class="repos-grid">${repos.map((r) => `<div class="repo-chip"><code>${esc(r!.name)}</code></div>`).join("")}</div>`
-        : ""
-    }
-  </aside>
+  </dialog>
 
   <section class="pj-lienzo">
     <div class="pj-lienzo-head">
