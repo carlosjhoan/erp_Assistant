@@ -65,8 +65,8 @@ export function vistaInicio(db: Db): Pagina {
     ${aro(p.proyectoId, tecnico, "tinta", "técnico", "tecnico")}
   </div>
   <div class="pcard-barras">
-    <div class="bf"><span>negocio</span><div class="prog verde"><span style="width:${negocio ?? 0}%"></span></div><b>${negocio === null ? "—" : negocio + "%"}</b></div>
-    <div class="bf"><span>técnico</span><div class="prog tinta"><span style="width:${tecnico ?? 0}%"></span></div><b>${tecnico === null ? "—" : tecnico + "%"}</b></div>
+    <div class="bf"><span>negocio</span><div class="prog verde"><span style="width:${hasta?.negocio ?? 0}%"></span></div><b>${p.diagnostico ? (hasta?.negocio ?? 0) + "%" : "—"}</b></div>
+    <div class="bf"><span>técnico</span><div class="prog tinta"><span style="width:${hasta?.produccion ?? 0}%"></span></div><b>${p.diagnostico ? (hasta?.produccion ?? 0) + "%" : "—"}</b></div>
   </div>
   ${nuevo ? '<span class="badge-nuevo">NUEVO</span>' : ""}
 </a>`;
