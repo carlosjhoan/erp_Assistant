@@ -266,12 +266,14 @@ function filaItem(i: typeof rubricItem.$inferSelect, caps: CapOpcion[] = []): st
       </select>`
     : "";
 
-  return `<div class="it-fila">
+  return `<div class="it-fila" data-fila="${i.id}">
   <label class="it">
     <input type="checkbox" data-item="${i.id}"${i.status === "done" ? " checked" : ""}>
     <span class="it-txt">${esc(i.title)}</span>
     <span class="it-tipo">${esc(i.type)}</span>
   </label>
+  <button type="button" class="it-accion" data-editar="${i.id}" title="Editar">editar</button>
+  <button type="button" class="it-accion peligro" data-borrar="${i.id}" title="Borrar">borrar</button>
   ${caps.length > 0 ? `<select class="it-cap" data-cap="${i.id}" aria-label="Capacidad que mueve">${opciones}</select>` : ""}
   ${efecto}
 </div>`;

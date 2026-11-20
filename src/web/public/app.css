@@ -2273,3 +2273,35 @@ label.inline {
   opacity: 0.45;
   transition: opacity 120ms;
 }
+
+/* ---------- editar y borrar items ---------- */
+
+.it-accion {
+  font-family: inherit;
+  font-size: 9.5px;
+  color: var(--olive);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 8px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms, color 120ms, border-color 120ms;
+}
+
+.it-fila:hover .it-accion,
+.it-accion:focus-visible { opacity: 1; }
+
+.it-accion:hover { color: var(--ink); border-color: var(--accent-soft); }
+.it-accion.peligro:hover { color: var(--bad); border-color: var(--bad); }
+
+.it-input {
+  flex: 1;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--accent-soft);
+  border-radius: 6px;
+  padding: 2px 6px;
+}

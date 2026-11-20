@@ -1055,6 +1055,30 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
   }
 
   // Declarar que un item mueve una capacidad del diagnostico.
+  // Editar el titulo y el criterio de un item. Queda marcado como editado a
+  // mano para que una reimportacion no lo pise.
+  const itemEditar = ruta.match(/^\/item\/([a-f0-9-]{36})\/editar$/);
+  if (itemEditar?.[1] && req.method === "POST") {
+    const f = await leerFormulario(req);
+    const titulo = (f.get("titulo") ?? "").trim();
+    const criterio = (f.get("criterio") ?? "").trim();
+    if (titulo) {
+      db.update(rubricItem)
+        .set({ title: titulo, ...(criterio ? { acceptanceCriteria: criterio } : {}), humanEdited: true })
+        .where(eq(rubricItem.id, itemEditar[1]))
+        .run();
+    }
+    return json(res, 200, { ok: true });
+  }
+
+  // Borrar un item. Se borra de verdad: un item mal cargado no es un descarte.
+  const itemBorrar = ruta.match(/^\/item\/([a-f0-9-]{36})\/borrar$/);
+  if (itemBorrar?.[1] && req.method === "POST") {
+    db.delete(itemEvent).where(eq(itemEvent.itemId, itemBorrar[1])).run();
+    db.delete(rubricItem).where(eq(rubricItem.id, itemBorrar[1])).run();
+    return json(res, 200, { ok: true });
+  }
+
   const itemCap = ruta.match(/^\/item\/([a-f0-9-]{36})\/capacidad\/([a-f0-9-]{36})?$/);
   if (itemCap?.[1] && req.method === "POST") {
     const cap = itemCap[2] || null;

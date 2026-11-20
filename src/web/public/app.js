@@ -742,4 +742,74 @@ document.querySelectorAll("select[data-efecto]").forEach(function (sel) {
   });
 });
 
+
+/* ---------- editar y borrar items de rubrica ---------- */
+document.querySelectorAll("[data-editar]").forEach(function (boton) {
+  boton.addEventListener("click", function () {
+    const fila = boton.closest(".it-fila");
+    const texto = fila.querySelector(".it-txt");
+    if (!texto || fila.querySelector(".it-input")) return;
+
+    const original = texto.textContent;
+    const input = document.createElement("input");
+    input.className = "it-input";
+    input.value = original;
+    texto.replaceWith(input);
+    input.focus();
+    input.select();
+
+    let guardando = false;
+
+    async function guardar() {
+      if (guardando) return;
+      const valor = input.value.trim();
+      if (!valor || valor === original) { cancelar(); return; }
+      guardando = true;
+      try {
+        await pedir(
+          "/item/" + boton.dataset.editar + "/editar",
+          "titulo=" + encodeURIComponent(valor),
+          "application/x-www-form-urlencoded",
+        );
+        location.reload();
+      } catch (err) {
+        guardando = false;
+        fallar(err);
+      }
+    }
+
+    function cancelar() {
+      const span = document.createElement("span");
+      span.className = "it-txt";
+      span.textContent = original;
+      input.replaceWith(span);
+    }
+
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); guardar(); }
+      if (e.key === "Escape") { e.preventDefault(); cancelar(); }
+    });
+    input.addEventListener("blur", guardar);
+  });
+});
+
+document.querySelectorAll("[data-borrar]").forEach(function (boton) {
+  boton.addEventListener("click", async function () {
+    const fila = boton.closest(".it-fila");
+    const texto = fila ? fila.querySelector(".it-txt") : null;
+    const nombre = texto ? texto.textContent : "este ítem";
+    if (!confirm("¿Borrar \"" + nombre + "\"? No se puede deshacer.")) return;
+
+    boton.disabled = true;
+    try {
+      await pedir("/item/" + boton.dataset.borrar + "/borrar");
+      // Recargar: los porcentajes del grupo tienen que decir la verdad.
+      location.reload();
+    } catch (err) {
+      boton.disabled = false;
+      fallar(err);
+    }
+  });
+});
+
 })();
