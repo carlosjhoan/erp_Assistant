@@ -827,6 +827,7 @@ if (formConsulta) {
   // La sesión arranca vacía siempre: nada de localStorage.
   const turnos = [];
 
+  let ocultarEstado = null;
   const pasoTexto = document.getElementById("paso-texto");
   const pasoActual = document.getElementById("paso-actual");
 
@@ -1008,6 +1009,7 @@ if (formConsulta) {
     boton.disabled = true;
     entrada.disabled = true;
     reiniciarPasos();
+    clearTimeout(ocultarEstado);
     estado.hidden = false;
     meta.textContent = "";
     setPaso("entendiendo");
@@ -1024,8 +1026,11 @@ if (formConsulta) {
       const datos = await r.json();
       const ms = Math.round(performance.now() - t0);
 
+      // "listo" se ve un instante y el estado se retira: la metadata
+      // del turno ya dice todo lo que hace falta.
       setPaso("listo");
       meta.textContent = "";
+      ocultarEstado = setTimeout(function () { estado.hidden = true; }, 650);
 
       const turno = {
         pregunta: pregunta,
