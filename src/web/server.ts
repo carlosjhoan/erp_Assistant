@@ -638,8 +638,6 @@ function tableroTemas(temas: TemaTarjeta[], editable: boolean): string {
     { estado: "discarded", titulo: "Descartadas", clase: "descartada" },
   ] as const;
 
-  const VISIBLES = 6;
-
   const tarjeta = (t: TemaTarjeta) => {
     const confianza = t.verifyScore != null ? Math.round(t.verifyScore * 100) : null;
     const esAlcance = t.scopeSignal === "likely_scope";
@@ -697,11 +695,7 @@ function tableroTemas(temas: TemaTarjeta[], editable: boolean): string {
 ${columnas
   .map((c) => {
     const propias = temas.filter((t) => t.status === c.estado);
-    const primeras = propias.slice(0, VISIBLES);
-    const resto = propias.slice(VISIBLES);
-
-    const lista = primeras.map(tarjeta).join("\n");
-    const ocultas = resto.length > 0 ? resto.map(tarjeta).join("\n") : "";
+    const lista = propias.map(tarjeta).join("\n");
 
     return `<section class="columna ${c.clase}">
   <header class="columna-head">
@@ -712,7 +706,6 @@ ${columnas
   <div class="columna-lista" data-drop="${c.estado}">
     ${lista || `<p class="columna-vacia">Arrastrá un tema acá</p>`}
   </div>
-  ${ocultas ? `<details class="columna-resto"><summary>+ ${resto.length} más</summary><div class="columna-lista" data-drop="${c.estado}">${ocultas}</div></details>` : ""}
 </section>`;
   })
   .join("\n")}

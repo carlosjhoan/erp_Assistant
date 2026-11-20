@@ -465,22 +465,24 @@ document.addEventListener("keydown", function (e) {
 });
 
 
-/* ---------- tablero: arrastrar con hueco estable ---------- */
+/* ---------- tablero: la tarjeta ocupa su lugar mientras se arrastra ---------- */
 
 let arrastrada = null;
-let hueco = null;
 let indiceActual = -1;
-// Foto de las posiciones tomada al entrar en la columna, antes de abrir el hueco.
+// Foto de las posiciones tomada al entrar en la columna, sin la tarjeta movida.
 let foto = null;
+// Para devolver la tarjeta si se cancela el arrastre.
+let origenLista = null;
+let origenSiguiente = null;
 
-function limpiarHueco() {
-  if (hueco && hueco.parentNode) hueco.remove();
-  hueco = null;
+function limpiarArrastre() {
   indiceActual = -1;
   foto = null;
+  origenLista = null;
+  origenSiguiente = null;
 }
 
-/** Congela las posiciones de la columna: asi el hueco no altera su propia medicion. */
+/** Congela las posiciones: la tarjeta en movimiento no altera su propia medicion. */
 function tomarFoto(lista) {
   foto = [...lista.querySelectorAll(".tarjeta-kanban")]
     .filter(function (c) { return c !== arrastrada; })
@@ -499,24 +501,23 @@ function indiceEn(y) {
   return foto.length;
 }
 
-function colocarHueco(lista, indice) {
-  if (!hueco) {
-    hueco = document.createElement("div");
-    hueco.className = "hueco";
-  }
-  if (indice === indiceActual && hueco.parentNode === lista) return;
+/** Mueve la tarjeta real al lugar donde va a caer: se ve donde queda. */
+function ubicar(lista, indice) {
+  if (indice === indiceActual && arrastrada.parentNode === lista) return;
   indiceActual = indice;
 
   const tarjetas = [...lista.querySelectorAll(".tarjeta-kanban")].filter(function (c) { return c !== arrastrada; });
   const referencia = tarjetas[indice];
-  if (referencia) lista.insertBefore(hueco, referencia);
-  else lista.appendChild(hueco);
+  if (referencia) lista.insertBefore(arrastrada, referencia);
+  else lista.appendChild(arrastrada);
 }
 
 document.addEventListener("dragstart", function (e) {
   const card = e.target.closest(".tarjeta-kanban");
   if (!card || card.getAttribute("draggable") !== "true") return;
   arrastrada = card;
+  origenLista = card.parentNode;
+  origenSiguiente = card.nextElementSibling;
   card.classList.add("arrastrando");
   e.dataTransfer.effectAllowed = "move";
   e.dataTransfer.setData("text/plain", card.dataset.id);
@@ -525,17 +526,16 @@ document.addEventListener("dragstart", function (e) {
 document.addEventListener("dragend", function () {
   if (arrastrada) arrastrada.classList.remove("arrastrando");
   document.querySelectorAll(".columna-lista.encima").forEach(function (l) { l.classList.remove("encima"); });
-  limpiarHueco();
+  limpiarArrastre();
   arrastrada = null;
 });
 
-// Al entrar a una columna se toma la foto. Una sola vez por columna.
 document.addEventListener("dragenter", function (e) {
   if (!arrastrada) return;
   const lista = e.target.closest(".columna-lista");
   if (!lista) return;
   tomarFoto(lista);
-  colocarHueco(lista, indiceEn(e.clientY));
+  ubicar(lista, indiceEn(e.clientY));
 });
 
 document.addEventListener("dragover", function (e) {
@@ -552,7 +552,7 @@ document.addEventListener("dragover", function (e) {
   });
   lista.classList.add("encima");
 
-  colocarHueco(lista, indiceEn(e.clientY));
+  ubicar(lista, indiceEn(e.clientY));
 });
 
 document.addEventListener("drop", async function (e) {
@@ -564,7 +564,7 @@ document.addEventListener("drop", async function (e) {
   const destino = lista.dataset.drop;
   const card = arrastrada;
   const indice = foto ? indiceEn(e.clientY) : 0;
-  const origen = card.closest(".columna-lista");
+  const origenFinal = origenLista;
 
   try {
     await pedir("/accion/" + card.dataset.id + "/mover/" + destino + "-" + indice);
@@ -575,18 +575,24 @@ document.addEventListener("drop", async function (e) {
     const mover = card.querySelector(".chip-mover");
     if (mover) mover.value = destino;
 
-    if (hueco && hueco.parentNode) hueco.parentNode.insertBefore(card, hueco);
-    else lista.appendChild(card);
-
-    card.classList.add("entrando");
-    setTimeout(function () { card.classList.remove("entrando"); }, 220);
+    ubicar(lista, indice);
+    card.classList.add("asentando");
+    setTimeout(function () { card.classList.remove("asentando"); }, 260);
 
     contar(lista);
-    if (origen && origen !== lista) contar(origen);
+    if (origenFinal && origenFinal !== lista) contar(origenFinal);
   } catch (err) {
+    // Si el servidor rechaza, la tarjeta vuelve de donde salio.
+    if (origenFinal) {
+      if (origenSiguiente && origenSiguiente.parentNode === origenFinal) {
+        origenFinal.insertBefore(card, origenSiguiente);
+      } else {
+        origenFinal.appendChild(card);
+      }
+    }
     fallar(err);
   } finally {
-    limpiarHueco();
+    limpiarArrastre();
   }
 });
 

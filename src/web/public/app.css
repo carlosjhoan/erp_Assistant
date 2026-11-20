@@ -1780,23 +1780,33 @@ label.inline {
 
 /* ---------- hueco de insercion al arrastrar ---------- */
 
-.hueco {
-  /* No captura eventos: si lo hiciera, el arrastre se mediria a si mismo. */
-  pointer-events: none;
-  height: 56px;
-  border: 1px dashed var(--accent-soft);
-  border-radius: 10px;
-  background: rgba(25, 35, 62, 0.04);
-  animation: hueco-in 140ms cubic-bezier(0.2, 0, 0.2, 1);
+/* La tarjeta en vuelo conserva su espacio y se ve translucida. */
+.tarjeta-kanban.arrastrando {
+  opacity: 0.55;
+  border-style: dashed;
+  box-shadow: 0 10px 24px -12px rgba(25, 35, 62, 0.45);
+  transition: opacity 120ms ease, transform 120ms cubic-bezier(0.2, 0, 0.2, 1);
 }
 
-@keyframes hueco-in {
-  from { height: 0; opacity: 0; box-shadow: 0 0 0 0 rgba(25,35,62,0); }
-  to   { height: 56px; opacity: 1; }
+/* Entrada suave al acomodarse en la columna destino. */
+.tarjeta-kanban.asentando { animation: asentar 260ms cubic-bezier(0.2, 0, 0.2, 1); }
+
+@keyframes asentar {
+  from { transform: scale(0.985); }
+  to   { transform: scale(1); }
 }
 
-/* Las tarjetas se corren con la misma curva: el espacio se abre, no salta. */
-.columna-lista .tarjeta-kanban { transition: transform 140ms cubic-bezier(0.2, 0, 0.2, 1); }
+/* Mientras se arrastra, las tarjetas hacen espacio con una curva corta. */
+.columna-lista .tarjeta-kanban { transition: transform 160ms cubic-bezier(0.2, 0, 0.2, 1); }
+
+/* La columna vacia deja de estorbar apenas entra una tarjeta. */
+.columna-lista:has(.tarjeta-kanban) .columna-vacia { display: none; }
+
+/* Borde del color de la columna: cada tarjeta dice de donde viene. */
+.columna.pendiente .tarjeta-kanban { border-left: 3px solid #5a6a8c; }
+.columna.seleccionada .tarjeta-kanban { border-left: 3px solid #2f6b4f; }
+.columna.postergada .tarjeta-kanban { border-left: 3px solid #96620f; }
+.columna.descartada .tarjeta-kanban { border-left: 3px solid #8c4a63; }
 
 /* ---------- proyectos como badges en el resumen ---------- */
 
