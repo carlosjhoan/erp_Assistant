@@ -1,9 +1,12 @@
 /** Asistente: el chat al centro y el estado del portafolio al costado. */
 
 import type { Db } from "../infra/db/client.ts";
-import { meeting, rubricItem } from "../infra/db/schema.ts";
-import { progresoPorProyecto, rango, semanas } from "../app/progreso.ts";
+import { meeting, projectCapability, rubricItem } from "../infra/db/schema.ts";
+import { capacidadesEfectivas, progresoPorProyecto, rango, semanas, veredicto } from "../app/progreso.ts";
 import { esc, type Pagina } from "./render.ts";
+
+const CHECK = `<svg class="feed-check" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M3.4 8.4l3 3 6.2-6.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const CIRCULO = `<span class="feed-circulo"></span>`;
 
 export function vistaInicio(db: Db): Pagina {
   const ss = semanas(db);
@@ -12,42 +15,24 @@ export function vistaInicio(db: Db): Pagina {
   const proyectos = progresoPorProyecto(db);
   const reuniones = db.select().from(meeting).all();
 
-  // Los items de la semana, agrupados por proyecto: el feed del panel.
-  const itemsSemana = actual ? db.select().from(rubricItem).all().filter((i) => i.rubricId === actual.id) : [];
-  const nombreProy = new Map(proyectos.map((p) => [p.proyectoId, p.nombre]));
-  const ordenProyecto = new Map(proyectos.map((p, i) => [p.proyectoId, i]));
+  const todasCaps = db.select().from(projectCapability).all();
+  const todosItems = db.select().from(rubricItem).all();
 
-  const feed = [...itemsSemana]
-    .sort((a, b) => {
-      const pa = ordenProyecto.get(a.projectId ?? "") ?? 99;
-      const pb = ordenProyecto.get(b.projectId ?? "") ?? 99;
-      return pa - pb || a.position - b.position;
-    })
-    .map(
-      (i, n) => `<div class="feed-fila" data-n="${n}">
-    ${
-      i.status === "done"
-        ? '<svg class="feed-check" viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><path d="M3.4 8.4l3 3 6.2-6.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-        : '<span class="feed-circulo"></span>'
-    }
-    <span class="feed-p">${esc(nombreProy.get(i.projectId ?? "") ?? "Sin proyecto")}</span>
-    <span class="feed-t">${esc(i.title)}</span>
-  </div>`,
-    )
-    .join("");
+  const capsDe = (id: string) => todasCaps.filter((c) => c.projectId === id);
 
-  // El alta mas reciente: ese es el "nuevo".
+  // El diagnóstico es el punto de partida: sin nada de esta semana.
+  const base = new Map(proyectos.map((p) => [p.proyectoId, veredicto(capsDe(p.proyectoId))]));
+
+  // El cierre estimado es el estado real de hoy, con todo lo hecho.
+  const cierre = new Map(
+    proyectos.map((p) => [p.proyectoId, veredicto(capacidadesEfectivas(capsDe(p.proyectoId), todosItems))]),
+  );
+
+  // El alta más reciente: ese es el "nuevo".
   const ultimoAlta = proyectos.reduce((max, p) => Math.max(max, new Date(p.creadoEn).getTime()), 0);
 
-  // Cada proyecto con su descripción y los dos aros del diagnóstico.
-  const filasProyecto = proyectos
-    .map((p, i) => {
-      const tono = ["verde", "tinta", "ambar", "malva"][i % 4];
-      const negocio = p.diagnostico ? p.diagnostico.negocio : null;
-      const tecnico = p.diagnostico ? p.diagnostico.tecnico : null;
-
-      const aro = (pct: number | null, color: string, etiqueta: string) => `
-        <span class="pm" data-pct="${pct ?? 0}">
+  const aro = (proyId: string, pct: number | null, color: string, etiqueta: string, medida: string) => `
+        <span class="pm" data-proy="${proyId}" data-medida="${medida}" data-pct="${pct ?? 0}">
           <svg class="pm-ring" viewBox="0 0 32 32" width="20" height="20" aria-hidden="true">
             <circle class="pm-bg" cx="16" cy="16" r="13" />
             <circle class="pm-fg ${color}" cx="16" cy="16" r="13" stroke-dasharray="0 81.7" />
@@ -56,8 +41,15 @@ export function vistaInicio(db: Db): Pagina {
           <i>${etiqueta}</i>
         </span>`;
 
-      // Solo el proyecto que entro ultimo lleva el sello.
+  const filasProyecto = proyectos
+    .map((p, i) => {
+      const tono = ["verde", "tinta", "ambar", "malva"][i % 4];
       const nuevo = new Date(p.creadoEn).getTime() === ultimoAlta;
+      const desde = base.get(p.proyectoId);
+      const hasta = cierre.get(p.proyectoId);
+
+      const negocio = p.diagnostico ? (desde?.negocio ?? 0) : null;
+      const tecnico = p.diagnostico ? (desde?.produccion ?? 0) : null;
 
       return `<a class="pcard ${tono}${nuevo ? " es-nuevo" : ""}" href="/proyecto/${p.proyectoId}">
   <div class="pcard-cabeza">
@@ -65,12 +57,50 @@ export function vistaInicio(db: Db): Pagina {
     <span class="pcard-n">${esc(p.nombre)}</span>
   </div>
   <div class="pcard-metricas">
-    ${aro(negocio, "verde", "negocio")}
+    ${aro(p.proyectoId, negocio, "verde", "negocio", "negocio")}
     <span class="pm-sep"></span>
-    ${aro(tecnico, "tinta", "técnico")}
+    ${aro(p.proyectoId, tecnico, "tinta", "técnico", "tecnico")}
   </div>
+  ${
+    p.diagnostico
+      ? `<div class="pcard-cierre">al cierre <b>${hasta?.negocio ?? 0}%</b> · <b>${hasta?.produccion ?? 0}%</b></div>`
+      : ""
+  }
   ${nuevo ? '<span class="badge-nuevo">NUEVO</span>' : ""}
 </a>`;
+    })
+    .join("");
+
+  // Los ítems de la semana, ordenados por proyecto, con el avance que dejan.
+  const itemsSemana = actual ? todosItems.filter((i) => i.rubricId === actual.id) : [];
+  const nombreProy = new Map(proyectos.map((p) => [p.proyectoId, p.nombre]));
+  const ordenProyecto = new Map(proyectos.map((p, i) => [p.proyectoId, i]));
+
+  const itemsOrdenados = [...itemsSemana].sort((a, b) => {
+    const pa = ordenProyecto.get(a.projectId ?? "") ?? 99;
+    const pb = ordenProyecto.get(b.projectId ?? "") ?? 99;
+    return pa - pb || a.position - b.position;
+  });
+
+  const aplicados: typeof todosItems = [];
+  const acumulado = new Map<string, { negocio: number; produccion: number }>();
+
+  for (const it of itemsOrdenados) {
+    aplicados.push(it);
+    if (!it.projectId) continue;
+    const v = veredicto(capacidadesEfectivas(capsDe(it.projectId), aplicados));
+    acumulado.set(it.id, { negocio: v.negocio, produccion: v.produccion });
+  }
+
+  const feed = itemsOrdenados
+    .map((i, n) => {
+      const ac = acumulado.get(i.id);
+      const marca = i.status === "done" ? CHECK : CIRCULO;
+      return `<div class="feed-fila" data-n="${n}" data-proy="${i.projectId ?? ""}" data-neg="${ac?.negocio ?? ""}" data-tec="${ac?.produccion ?? ""}">
+    ${marca}
+    <span class="feed-p">${esc(nombreProy.get(i.projectId ?? "") ?? "Sin proyecto")}</span>
+    <span class="feed-t">${esc(i.title)}</span>
+  </div>`;
     })
     .join("");
 
@@ -114,7 +144,7 @@ export function vistaInicio(db: Db): Pagina {
   </section>
 
   <header class="saludo">
-    <img class="perfil" src="/profile.jpg" alt="Carlos" width="76" height="76">
+    <img class="perfil" src="/profile.jpg" alt="Carlos" width="96" height="96">
     <h1 class="entrada" id="entrada">
       <span id="maquina" aria-label="Así van las cosas con Carlos ..."></span><i class="caret" aria-hidden="true"></i>
     </h1>

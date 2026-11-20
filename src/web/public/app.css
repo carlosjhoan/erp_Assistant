@@ -3637,3 +3637,15 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
 
 /* Se reserva el lugar para que un nombre largo no lo pise. */
 .inicio[data-estado="idle"] .pcard-cabeza { padding-right: 58px; }
+
+/* La cifra de cierre estimado, bajo los aros. */
+.pcard-cierre {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--soft);
+  font-size: 9px;
+  color: var(--olive);
+  letter-spacing: 0.02em;
+}
+
+.pcard-cierre b { color: var(--ink); font-variant-numeric: tabular-nums; }
