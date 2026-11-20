@@ -4888,3 +4888,23 @@ dialog.modal-diag header { padding: 18px 22px 14px; }
 
 /* Al llegar un turno nuevo, se ve el final. */
 .inicio[data-estado="chat"] .turno:last-child { scroll-margin-bottom: 132px; }
+
+/* ============================================================
+   El chat crece hasta acercarse al compositor y ahi empieza a
+   scrollear. Sin paddings duplicados que lo alejen del input.
+   ============================================================ */
+
+.inicio[data-estado="chat"] .chat {
+  padding-bottom: 0;
+  /* El alto lo manda el contenedor; el hilo se adapta. */
+  justify-content: flex-start;
+}
+
+.inicio[data-estado="chat"] .chat-hilo {
+  padding-bottom: 86px;
+  /* El corte visual queda justo sobre el compositor. */
+  scroll-padding-bottom: 86px;
+}
+
+/* El ultimo turno respira contra el compositor, no lo toca. */
+.inicio[data-estado="chat"] .turno:last-child { margin-bottom: 0; }
