@@ -3238,3 +3238,34 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
   min-width: 34px;
   text-align: right;
 }
+
+/* La cinta deja ver mas items antes de empezar a correr. */
+.feed { max-height: 420px; }
+
+/* ---------- reuniones: solo la fecha ---------- */
+
+.reuniones-lista { display: flex; flex-direction: column; gap: 4px; }
+
+.reunion-fila {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 120ms, transform 120ms;
+}
+
+.reunion-fila:hover { transform: translateX(2px); border-color: var(--accent-soft); }
+
+.reunion-f {
+  font-size: 13px;
+  font-weight: 620;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.reunion-a { font-size: 10px; color: var(--olive); font-family: ui-monospace, monospace; }

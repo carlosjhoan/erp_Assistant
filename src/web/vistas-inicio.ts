@@ -1,7 +1,7 @@
 /** Asistente: el chat al centro y el estado del portafolio al costado. */
 
 import type { Db } from "../infra/db/client.ts";
-import { meeting, rubricItem, topic } from "../infra/db/schema.ts";
+import { meeting, rubricItem } from "../infra/db/schema.ts";
 import { progresoPorProyecto, rango, semanas } from "../app/progreso.ts";
 import { esc, type Pagina } from "./render.ts";
 
@@ -11,8 +11,6 @@ export function vistaInicio(db: Db): Pagina {
 
   const proyectos = progresoPorProyecto(db);
   const reuniones = db.select().from(meeting).all();
-  const temas = db.select().from(topic).all();
-  const sinCalificar = temas.filter((t) => t.status === "proposed").length;
 
   // Los items de la semana, agrupados por proyecto: el feed del panel.
   const itemsSemana = actual ? db.select().from(rubricItem).all().filter((i) => i.rubricId === actual.id) : [];
@@ -74,7 +72,7 @@ export function vistaInicio(db: Db): Pagina {
   return {
     titulo: "Asistente",
     seccion: "inicio",
-    conteoBandeja: sinCalificar,
+    conteoBandeja: 0,
     cuerpo: `<div class="inicio" id="inicio" data-estado="idle">
   <section class="chat" id="chat">
     <div class="chat-hilo" id="hilo" aria-live="polite"></div>
@@ -126,10 +124,17 @@ export function vistaInicio(db: Db): Pagina {
 
     <div class="panel-bloque">
       <h3 class="bloque-t">Reuniones<span class="bloque-fecha">${reuniones.length}</span></h3>
-      <a class="mini-fila" href="/reuniones">
-        <span>${sinCalificar} tema(s) sin calificar</span>
-        <span class="mini-flecha">→</span>
-      </a>
+      <div class="reuniones-lista">
+        ${reuniones
+          .map(
+            (m) =>
+              `<a class="reunion-fila" href="/reunion/${m.id}">
+          <span class="reunion-f">${new Date(m.occurredAt).toLocaleDateString("es-CO", { day: "2-digit", month: "short" })}</span>
+          <span class="reunion-a">${new Date(m.occurredAt).getFullYear()}</span>
+        </a>`,
+          )
+          .join("")}
+      </div>
     </div>
   </aside>
 </div>`,
