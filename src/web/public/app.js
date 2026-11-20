@@ -465,24 +465,38 @@ document.addEventListener("keydown", function (e) {
 });
 
 
-/* ---------- tablero: arrastrar con hueco de insercion ---------- */
+/* ---------- tablero: arrastrar con hueco estable ---------- */
 
 let arrastrada = null;
 let hueco = null;
+let indiceActual = -1;
+// Foto de las posiciones tomada al entrar en la columna, antes de abrir el hueco.
+let foto = null;
 
 function limpiarHueco() {
   if (hueco && hueco.parentNode) hueco.remove();
   hueco = null;
+  indiceActual = -1;
+  foto = null;
 }
 
-// Devuelve el indice donde caeria la tarjeta segun la posicion del mouse.
-function indiceEn(lista, y) {
-  const tarjetas = [...lista.querySelectorAll(".tarjeta-kanban")].filter(function (c) { return c !== arrastrada; });
-  for (let i = 0; i < tarjetas.length; i++) {
-    const caja = tarjetas[i].getBoundingClientRect();
-    if (y < caja.top + caja.height / 2) return i;
+/** Congela las posiciones de la columna: asi el hueco no altera su propia medicion. */
+function tomarFoto(lista) {
+  foto = [...lista.querySelectorAll(".tarjeta-kanban")]
+    .filter(function (c) { return c !== arrastrada; })
+    .map(function (c) {
+      const r = c.getBoundingClientRect();
+      return { centro: r.top + r.height / 2 };
+    });
+  indiceActual = -1;
+}
+
+function indiceEn(y) {
+  if (!foto) return 0;
+  for (let i = 0; i < foto.length; i++) {
+    if (y < foto[i].centro) return i;
   }
-  return tarjetas.length;
+  return foto.length;
 }
 
 function colocarHueco(lista, indice) {
@@ -490,6 +504,9 @@ function colocarHueco(lista, indice) {
     hueco = document.createElement("div");
     hueco.className = "hueco";
   }
+  if (indice === indiceActual && hueco.parentNode === lista) return;
+  indiceActual = indice;
+
   const tarjetas = [...lista.querySelectorAll(".tarjeta-kanban")].filter(function (c) { return c !== arrastrada; });
   const referencia = tarjetas[indice];
   if (referencia) lista.insertBefore(hueco, referencia);
@@ -512,6 +529,15 @@ document.addEventListener("dragend", function () {
   arrastrada = null;
 });
 
+// Al entrar a una columna se toma la foto. Una sola vez por columna.
+document.addEventListener("dragenter", function (e) {
+  if (!arrastrada) return;
+  const lista = e.target.closest(".columna-lista");
+  if (!lista) return;
+  tomarFoto(lista);
+  colocarHueco(lista, indiceEn(e.clientY));
+});
+
 document.addEventListener("dragover", function (e) {
   if (!arrastrada) return;
   const lista = e.target.closest(".columna-lista");
@@ -519,13 +545,14 @@ document.addEventListener("dragover", function (e) {
   e.preventDefault();
   e.dataTransfer.dropEffect = "move";
 
+  if (!foto) tomarFoto(lista);
+
   document.querySelectorAll(".columna-lista.encima").forEach(function (l) {
     if (l !== lista) l.classList.remove("encima");
   });
   lista.classList.add("encima");
 
-  // El hueco muestra donde va a caer, empujando al resto hacia abajo.
-  colocarHueco(lista, indiceEn(lista, e.clientY));
+  colocarHueco(lista, indiceEn(e.clientY));
 });
 
 document.addEventListener("drop", async function (e) {
@@ -536,7 +563,7 @@ document.addEventListener("drop", async function (e) {
 
   const destino = lista.dataset.drop;
   const card = arrastrada;
-  const indice = indiceEn(lista, e.clientY);
+  const indice = foto ? indiceEn(e.clientY) : 0;
   const origen = card.closest(".columna-lista");
 
   try {
