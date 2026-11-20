@@ -1266,4 +1266,16 @@ function crearItemSemana(db: ReturnType<typeof openDatabase>["db"], rubricId: st
 }
 
 const PORT = Number(process.env.WEB_PORT ?? 4599);
+
+// Si el puerto esta ocupado, conviene decirlo claro y no volcar un stack.
+servidor.on("error", (err: NodeJS.ErrnoException) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`El puerto ${PORT} ya esta en uso.`);
+    console.error(`Liberalo con: npx kill-port ${PORT}   (o cerra el otro proceso)`);
+  } else {
+    console.error("No pude levantar el servidor:", err.message);
+  }
+  process.exit(1);
+});
+
 servidor.listen(PORT, "127.0.0.1", () => console.log(`my_erp web · http://127.0.0.1:${PORT}`));
