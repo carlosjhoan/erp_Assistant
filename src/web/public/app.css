@@ -3861,3 +3861,62 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
 
 /* El panel no arranca tan abajo: el copy ocupa una sola linea. */
 .inicio[data-estado="idle"] { padding-top: 78px; }
+
+/* ============================================================
+   El copy vive dentro del lienzo, centrado, no sobre el borde.
+   ============================================================ */
+
+.inicio[data-estado="idle"] .entrada {
+  position: static;
+  left: auto;
+  right: auto;
+  top: auto;
+  width: 100%;
+  max-width: none;
+  margin: 0 0 18px;
+  text-align: center;
+  justify-content: center;
+  font-size: 27px;
+}
+
+.inicio[data-estado="idle"] { padding-top: 10px; }
+
+/* ---------- metrica apilada: aro, numero, etiqueta ---------- */
+
+.inicio[data-estado="idle"] .pm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1px;
+  grid-template-columns: none;
+  flex: 1;
+  min-width: 0;
+}
+
+.inicio[data-estado="idle"] .pm-ring { width: 46px; height: 46px; flex: none; }
+
+.inicio[data-estado="idle"] .pm b {
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.inicio[data-estado="idle"] .pm i {
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+}
+
+.inicio[data-estado="idle"] .pcard-metricas {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.inicio[data-estado="idle"] .pm-sep { height: 60px; align-self: center; }
+
+/* Las cards ganan alto para la pila vertical. */
+.inicio[data-estado="idle"] .pcard { min-height: 176px; }
