@@ -89,7 +89,12 @@ export function vistaInicio(db: Db): Pagina {
             <path d="M6 11a6 6 0 0 0 12 0M12 17v4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
           </svg>
         </button>
-        <button type="submit" class="agente-enviar" aria-label="Enviar">→</button>
+        <button type="submit" class="agente-enviar" aria-label="Enviar consulta">
+          <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true">
+            <path d="M21.5 2.5 2.8 9.9l6.9 3.4 3.4 6.9 8.4-17.7Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9.7 13.3 21.5 2.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
       </div>
     </form>
 
@@ -102,6 +107,10 @@ export function vistaInicio(db: Db): Pagina {
       <span class="agente-meta" id="meta"></span>
     </div>
   </section>
+
+  <h1 class="entrada" id="entrada">
+    <span id="maquina" aria-label="Así van las cosas con Carlos"></span><i class="caret" aria-hidden="true"></i>
+  </h1>
 
   <aside class="panel">
     <div class="panel-bloque">

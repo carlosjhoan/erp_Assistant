@@ -3307,3 +3307,76 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
   .inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(3) { grid-column: 1; grid-row: 2; border-right: none; padding-right: 0; }
   .inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(2) { grid-column: 2; grid-row: 1 / span 2; }
 }
+
+/* ============================================================
+   Entrada: typewriter y revelado en cadena.
+   ============================================================ */
+
+.entrada {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 25px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0 0 8px;
+  min-height: 34px;
+}
+
+.entrada .caret {
+  display: inline-block;
+  width: 2px;
+  height: 24px;
+  background: var(--ink);
+  vertical-align: -3px;
+  margin-left: 2px;
+  animation: caret-parpadea 900ms steps(2, start) infinite;
+}
+
+.entrada.listo .caret {
+  animation: none;
+  opacity: 0;
+  transition: opacity 300ms;
+}
+
+@keyframes caret-parpadea {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+
+/* En reposo el bloque arranca arriba y todo entra en orden. */
+.inicio[data-estado="idle"] {
+  justify-content: flex-start;
+  padding-top: 6vh;
+}
+
+/* Las tarjetas entran despues del typewriter. */
+.inicio[data-estado="idle"] .pcard { animation: pcard-in 480ms cubic-bezier(0.22, 0.8, 0.3, 1) both; }
+.inicio[data-estado="idle"] .pcard:nth-child(1) { animation-delay: 1650ms; }
+.inicio[data-estado="idle"] .pcard:nth-child(2) { animation-delay: 1750ms; }
+.inicio[data-estado="idle"] .pcard:nth-child(3) { animation-delay: 1850ms; }
+.inicio[data-estado="idle"] .pcard:nth-child(4) { animation-delay: 1950ms; }
+
+/* Reuniones, luego la semana, luego el input. */
+.inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(3) {
+  animation: pcard-in 440ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
+  animation-delay: 2150ms;
+}
+
+.inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(2) {
+  animation: pcard-in 440ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
+  animation-delay: 2350ms;
+}
+
+.inicio[data-estado="idle"] .panel > .panel-bloque:nth-child(1) .bloque-t {
+  animation: pcard-in 380ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
+  animation-delay: 1600ms;
+}
+
+.inicio[data-estado="idle"] .chat-caja { animation-delay: 2650ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .entrada .caret { display: none; }
+  .inicio[data-estado="idle"] .pcard,
+  .inicio[data-estado="idle"] .panel > .panel-bloque,
+  .inicio[data-estado="idle"] .chat-caja { animation: none; }
+}

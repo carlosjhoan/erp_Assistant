@@ -993,40 +993,8 @@ if (formConsulta) {
   }
   entrada.addEventListener("input", ajustarAlto);
 
-  /* ---------- dictado ---------- */
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (micro && SR) {
-    const rec = new SR();
-    rec.lang = "es-CO";
-    rec.continuous = true;
-    rec.interimResults = true;
-    let escuchando = false;
-    let base = "";
-
-    rec.onstart = function () { escuchando = true; micro.classList.add("escuchando"); };
-    rec.onend = function () {
-      escuchando = false;
-      micro.classList.remove("escuchando");
-    };
-    rec.onerror = function () {
-      escuchando = false;
-      micro.classList.remove("escuchando");
-    };
-    rec.onresult = function (ev) {
-      let texto = "";
-      for (let i = ev.resultIndex; i < ev.results.length; i++) texto += ev.results[i][0].transcript;
-      entrada.value = (base + " " + texto).trim();
-      ajustarAlto();
-    };
-
-    micro.addEventListener("click", function () {
-      if (escuchando) { rec.stop(); return; }
-      base = entrada.value.trim();
-      try { rec.start(); } catch {}
-    });
-  } else if (micro) {
-    micro.hidden = true;
-  }
+  // El dictado vive en montarDictado: continuo, con pausa y reanudacion.
+  montarDictado(micro, entrada);
 
   pintar();
   entrada.focus();
@@ -1079,7 +1047,9 @@ document.querySelectorAll(".pm").forEach(function (caja) {
     caja.classList.add("abierto");
     return;
   }
-  setTimeout(function () { caja.classList.add("abierto"); }, 60);
+  const inicioCaja = document.getElementById("inicio");
+  const espera = inicioCaja && inicioCaja.dataset.estado === "idle" ? 2700 : 60;
+  setTimeout(function () { caja.classList.add("abierto"); }, espera);
 })();
 
 
@@ -1162,7 +1132,117 @@ document.querySelectorAll(".pm").forEach(function (caja) {
   const formChat = document.getElementById("form-consulta");
   if (formChat) formChat.addEventListener("submit", liberar);
 
-  setTimeout(paso, 500);
+  const inicioFeed = document.getElementById("inicio");
+  const arranque = inicioFeed && inicioFeed.dataset.estado === "idle" ? 2500 : 400;
+  setTimeout(paso, arranque);
 })();
+
+
+/* ---------- entrada: typewriter y revelado en orden ---------- */
+(function () {
+  const maquina = document.getElementById("maquina");
+  const entrada = document.getElementById("entrada");
+  const inicio = document.getElementById("inicio");
+  if (!maquina || !inicio) return;
+
+  const TEXTO = "Así van las cosas con Carlos";
+  const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (reduce) {
+    maquina.textContent = TEXTO;
+    return;
+  }
+
+  let n = 0;
+  const paso = 38;
+
+  function escribir() {
+    if (n > TEXTO.length) return;
+    maquina.textContent = TEXTO.slice(0, n);
+    n++;
+    setTimeout(escribir, paso);
+  }
+
+  escribir();
+
+  // Al terminar de escribir, el cursor se apaga y arranca la entrada.
+  setTimeout(function () {
+    if (entrada) entrada.classList.add("listo");
+    inicio.classList.add("armado");
+  }, TEXTO.length * paso + 420);
+})();
+
+/* ---------- dictado con pausa y reanudacion ---------- */
+function montarDictado(micro, entrada) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { micro.hidden = true; return; }
+
+  const rec = new SR();
+  rec.lang = "es-CO";
+  rec.continuous = true;
+  rec.interimResults = true;
+
+  let queriendo = false;   // el usuario quiere seguir dictando
+  let base = "";
+  let reconocido = "";
+  let reinicio = null;
+
+  function pintar() {
+    entrada.value = (base + " " + reconocido).replace(/s+/g, " ").trim();
+  }
+
+  rec.onstart = function () {
+    micro.classList.add("escuchando");
+    micro.setAttribute("aria-pressed", "true");
+    micro.title = "Pausar dictado";
+  };
+
+  // Chrome corta solo tras un silencio. Si el usuario sigue queriendo, se reabre.
+  rec.onend = function () {
+    if (queriendo) {
+      micro.classList.add("pausado");
+      reinicio = setTimeout(function () {
+        if (queriendo) { try { rec.start(); } catch {} }
+      }, 180);
+      return;
+    }
+    micro.classList.remove("escuchando", "pausado");
+    micro.setAttribute("aria-pressed", "false");
+    micro.title = "Dictar";
+  };
+
+  rec.onerror = function () {
+    queriendo = false;
+    micro.classList.remove("escuchando", "pausado");
+    micro.setAttribute("aria-pressed", "false");
+  };
+
+  rec.onresult = function (ev) {
+    let texto = "";
+    for (let k = ev.resultIndex; k < ev.results.length; k++) texto += ev.results[k][0].transcript;
+    reconocido = texto;
+    pintar();
+    entrada.dispatchEvent(new Event("input"));
+  };
+
+  micro.addEventListener("click", function () {
+    clearTimeout(reinicio);
+
+    if (!queriendo) {
+      // Empezar: conserva lo ya escrito y agrega lo dictado.
+      base = entrada.value.trim();
+      reconocido = "";
+      queriendo = true;
+      try { rec.start(); } catch {}
+      return;
+    }
+
+    // Pausar: deja el texto y suelta el microfono.
+    queriendo = false;
+    micro.classList.remove("pausado");
+    try { rec.stop(); } catch {}
+    entrada.focus();
+  });
+}
 
 })();
