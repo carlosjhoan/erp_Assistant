@@ -1006,6 +1006,12 @@ if (formConsulta) {
       inicio.dataset.estado = "chat";
     }
 
+    // Si venia dictando, se corta: el texto ya viajo en el mensaje.
+    detenerDictado();
+    const textoEnviado = entrada.value;
+    entrada.value = "";
+    ajustarAlto();
+
     boton.disabled = true;
     entrada.disabled = true;
     reiniciarPasos();
@@ -1059,6 +1065,7 @@ if (formConsulta) {
       turnos.push({ pregunta: pregunta, error: "no pude conectar con el modelo", ms: Math.round(performance.now() - t0), at: Date.now() });
       pintar();
       ocultarEstado = setTimeout(function () { estado.hidden = true; }, 900);
+      if (!entrada.value.trim()) { entrada.value = textoEnviado; ajustarAlto(); }
     } finally {
       boton.disabled = false;
       entrada.disabled = false;
@@ -1298,6 +1305,9 @@ document.querySelectorAll(".pm").forEach(function (caja) {
 })();
 
 /* ---------- dictado con pausa y reanudacion ---------- */
+// Permite cortar el dictado desde fuera (por ejemplo, al enviar).
+let detenerDictado = function () {};
+
 function montarDictado(micro, entrada) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { micro.hidden = true; return; }
@@ -1348,6 +1358,18 @@ function montarDictado(micro, entrada) {
     reconocido = texto;
     pintar();
     entrada.dispatchEvent(new Event("input"));
+  };
+
+  // Al enviar, se apaga el microfono y se olvida lo dictado.
+  detenerDictado = function () {
+    queriendo = false;
+    clearTimeout(reinicio);
+    try { rec.stop(); } catch {}
+    micro.classList.remove("escuchando", "pausado");
+    micro.setAttribute("aria-pressed", "false");
+    micro.title = "Dictar";
+    base = "";
+    reconocido = "";
   };
 
   micro.addEventListener("click", function () {
