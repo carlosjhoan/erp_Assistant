@@ -17,6 +17,7 @@ export interface ProgresoProyecto {
   proyectoId: string;
   nombre: string;
   descripcion: string | null;
+  creadoEn: Date;
   estado: string;
   total: number;
   hechos: number;
@@ -59,6 +60,7 @@ export function progresoPorProyecto(db: Db, semanaId?: string): ProgresoProyecto
         proyectoId: p.id,
         nombre: p.name,
         descripcion: p.description,
+        creadoEn: p.createdAt,
         estado: p.status,
         ...contar(mios),
         diagnostico: diag

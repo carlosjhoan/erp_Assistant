@@ -36,6 +36,9 @@ export function vistaInicio(db: Db): Pagina {
     )
     .join("");
 
+  // El alta mas reciente: ese es el "nuevo".
+  const ultimoAlta = proyectos.reduce((max, p) => Math.max(max, new Date(p.creadoEn).getTime()), 0);
+
   // Cada proyecto con su descripción y los dos aros del diagnóstico.
   const filasProyecto = proyectos
     .map((p, i) => {
@@ -53,18 +56,20 @@ export function vistaInicio(db: Db): Pagina {
           <i>${etiqueta}</i>
         </span>`;
 
-      return `<a class="pcard ${tono}" href="/proyecto/${p.proyectoId}">
+      // Solo el proyecto que entro ultimo lleva el sello.
+      const nuevo = new Date(p.creadoEn).getTime() === ultimoAlta;
+
+      return `<a class="pcard ${tono}${nuevo ? " es-nuevo" : ""}" href="/proyecto/${p.proyectoId}">
   <div class="pcard-cabeza">
+    <i class="vivo" aria-hidden="true"></i>
     <span class="pcard-n">${esc(p.nombre)}</span>
-    <span class="badge-estado ${p.estado}">${esc(p.estado)}</span>
   </div>
-  <p class="pcard-d">${esc(p.descripcion ?? "Sin descripción.")}</p>
   <div class="pcard-metricas">
     ${aro(negocio, "verde", "negocio")}
     <span class="pm-sep"></span>
     ${aro(tecnico, "tinta", "técnico")}
   </div>
-  <div class="pcard-pie">${p.repos} repo(s) · semana ${p.semana.pct}%</div>
+  ${nuevo ? '<span class="badge-nuevo">NUEVO</span>' : ""}
 </a>`;
     })
     .join("");

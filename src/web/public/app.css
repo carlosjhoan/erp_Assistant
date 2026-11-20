@@ -3546,3 +3546,59 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
 .inicio[data-estado="idle"] .feed {
   max-height: clamp(90px, calc(100vh - 720px), 420px);
 }
+
+/* ---------- card de proyecto: nombre, punto vivo y aros ---------- */
+
+.pcard { position: relative; }
+
+.vivo {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #2f6b4f;
+  flex: none;
+  position: relative;
+}
+
+.vivo::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid #2f6b4f;
+  animation: vivo-onda 1900ms infinite cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+@keyframes vivo-onda {
+  0%   { transform: scale(0.7); opacity: 0.7; }
+  70%  { transform: scale(1.6); opacity: 0; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+.pcard-n { letter-spacing: 0.06em; }
+
+.pcard-metricas { margin-top: 4px; }
+
+/* El sello de proyecto nuevo, abajo a la derecha. */
+.badge-nuevo {
+  position: absolute;
+  right: 10px;
+  bottom: 9px;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #fff;
+  background: linear-gradient(135deg, #19233e 0%, #45527a 100%);
+  border-radius: 999px;
+  padding: 2px 8px;
+  animation: nuevo-late 2600ms infinite ease-in-out;
+}
+
+@keyframes nuevo-late {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(25, 35, 62, 0.35); }
+  50%      { box-shadow: 0 0 0 4px rgba(25, 35, 62, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vivo::after, .badge-nuevo { animation: none; }
+}
