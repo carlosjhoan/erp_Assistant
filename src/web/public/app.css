@@ -2549,6 +2549,8 @@ label.inline {
   resize: none;
   padding: 6px 0;
   max-height: 120px;
+  /* Sin barra hasta que el texto pase el alto maximo. */
+  overflow-y: hidden;
 }
 
 .chat-caja textarea::placeholder { color: #9aa3b8; }
@@ -3022,3 +3024,7 @@ body.rail-hidden .principal { padding-left: 30px; padding-right: 30px; }
 .chat-hilo { scroll-margin-bottom: 120px; }
 
 body.rail-hidden .chat-caja { left: calc(var(--rail-w) + 24px); }
+
+
+/* Solo aparece scroll cuando el texto supera el alto maximo. */
+.chat-caja textarea.con-scroll { overflow-y: auto; }

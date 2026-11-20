@@ -982,9 +982,14 @@ if (formConsulta) {
     }
   });
 
+  const ALTO_MAX = 120;
+
   function ajustarAlto() {
     entrada.style.height = "auto";
-    entrada.style.height = Math.min(120, entrada.scrollHeight) + "px";
+    const alto = Math.min(ALTO_MAX, entrada.scrollHeight);
+    entrada.style.height = alto + "px";
+    // La barra aparece unicamente cuando ya no cabe.
+    entrada.classList.toggle("con-scroll", entrada.scrollHeight > ALTO_MAX);
   }
   entrada.addEventListener("input", ajustarAlto);
 
