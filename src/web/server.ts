@@ -10,7 +10,8 @@ import { createTopicRepo } from "../infra/db/topic-repo.ts";
 import { esc, pagina, type Pagina } from "./render.ts";
 import { renderMarkdown, vistaPrevia } from "./markdown.ts";
 import { ordenarPorUrgencia } from "./orden-reuniones.ts";
-import { alternarProyecto, limpiarProyectos, asignarOwner, cambiarEstado, deshacerDecision, quitarOwner, guardarContexto, proyectosDeTema } from "../app/triage.ts";
+import type { EstadoTema } from "../infra/db/topic-repo.ts";
+import { alternarProyecto, limpiarProyectos, moverTema, asignarOwner, cambiarEstado, deshacerDecision, quitarOwner, guardarContexto, proyectosDeTema } from "../app/triage.ts";
 import { aprobarRubrica, crearRubricaWeb, temasDeRubrica } from "../app/create-rubric.ts";
 import { detectarRepos } from "../app/detect-repos.ts";
 import { listarNotas, importarNota, archivarReunion, restaurarReunion } from "../app/granola-browser.ts";
@@ -72,7 +73,14 @@ function multiProyectos(topicId: string, activos: string[]): string {
     })
     .join("");
 
-  const resumen = activos.length === 0 ? "Sin proyecto" : activos.length === 1 ? "1 proyecto" : `${activos.length} proyectos`;
+  // Los proyectos elegidos se ven como badges, no como un número.
+  const resumen =
+    activos.length === 0
+      ? "Sin proyecto"
+      : proyectos
+          .filter((p) => activos.includes(p.id))
+          .map((p) => `<span class="chip-proyecto">${esc(p.name)}</span>`)
+          .join("");
 
   return `<details class="multi">
     <summary><span class="multi-resumen">${resumen}</span></summary>
@@ -1006,6 +1014,14 @@ async function accionTema(res: ServerResponse, id: string, campo: string, valor:
       if (!["me", "opencode"].includes(valor)) return json(res, 400, { error: "dueño inválido" });
       const r = asignarOwner({ db }, id, valor as "me");
       return json(res, 200, { ok: true, titulo: r.title, owner: r.owner });
+    }
+
+    if (campo === "mover") {
+      const partes = valor.split("-");
+      const indice = Number(partes.pop());
+      const destino = partes.join("-") as EstadoTema;
+      const r = moverTema({ db }, id, destino, Number.isFinite(indice) ? indice : 0);
+      return json(res, 200, { ok: true, titulo: r.title, estado: r.hacia, indice: r.indice });
     }
 
     if (campo === "proyecto") {

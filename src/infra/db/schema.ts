@@ -110,6 +110,9 @@ export const topic = sqliteTable(
     scopeSignal: text("scope_signal", { enum: ["likely_scope", "idea_context"] }),
     scopeReason: text("scope_reason"),
     openQuestions: text("open_questions", { mode: "json" }).$type<string[]>(),
+    /** Orden dentro de su columna. Se renumera al mover. */
+    position: integer("position").notNull().default(0),
+
     /** Proyecto al que pertenece el tema. Obligatorio para poder seleccionarlo. */
     projectId: text("project_id").references(() => project.id),
 

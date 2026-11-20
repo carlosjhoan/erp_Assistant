@@ -231,3 +231,60 @@ export function alternarProyecto(ctx: TriageCtx, prefijo: string, projectId: str
 export function proyectosDeTema(ctx: TriageCtx, topicId: string): string[] {
   return ctx.db.select().from(topicProject).where(eq(topicProject.topicId, topicId)).all().map((x) => x.projectId);
 }
+
+/**
+ * Mueve un tema a un estado y lo deja en la posición indicada dentro de esa
+ * columna. Renumera la columna entera para que no queden huecos.
+ */
+export function moverTema(ctx: TriageCtx, prefijo: string, destino: EstadoTema, indice: number) {
+  const t = resolver(ctx, prefijo);
+  assertEditable(ctx, t.id);
+
+  const desde = t.status as EstadoTema;
+  if (desde !== destino && !canTransitionTopic(desde, destino)) {
+    throw new TriageError(`No se puede pasar de "${desde}" a "${destino}".`);
+  }
+
+  ctx.db.transaction(() => {
+    ctx.db
+      .update(topic)
+      .set({
+        status: destino,
+        decidedAt: new Date(),
+        decidedBy: ctx.actor ?? "yo",
+        ...(destino === "selected" ? {} : { rubricId: null }),
+      })
+      .where(eq(topic.id, t.id))
+      .run();
+
+    // La columna de destino, sin el tema movido, en su orden actual.
+    const hermanos = ctx.db
+      .select()
+      .from(topic)
+      .all()
+      .filter((x) => x.status === destino && x.id !== t.id)
+      .sort((a, b) => a.position - b.position || a.createdAt.getTime() - b.createdAt.getTime());
+
+    const posicion = Math.max(0, Math.min(indice, hermanos.length));
+    hermanos.splice(posicion, 0, { ...t, status: destino });
+
+    hermanos.forEach((x, i) => {
+      ctx.db.update(topic).set({ position: i }).where(eq(topic.id, x.id)).run();
+    });
+
+    // La columna de origen también se renumera.
+    const origen = ctx.db
+      .select()
+      .from(topic)
+      .all()
+      .filter((x) => x.status === desde && x.id !== t.id)
+      .sort((a, b) => a.position - b.position);
+    origen.forEach((x, i) => {
+      ctx.db.update(topic).set({ position: i }).where(eq(topic.id, x.id)).run();
+    });
+  });
+
+  if (t.meetingId) sincronizarEstadoReunion(ctx.db, t.meetingId);
+
+  return { id: t.id, title: t.title, desde, hacia: destino, indice };
+}

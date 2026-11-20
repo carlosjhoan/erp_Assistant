@@ -465,9 +465,36 @@ document.addEventListener("keydown", function (e) {
 });
 
 
-/* ---------- tablero: arrastrar y soltar entre columnas ---------- */
+/* ---------- tablero: arrastrar con hueco de insercion ---------- */
 
 let arrastrada = null;
+let hueco = null;
+
+function limpiarHueco() {
+  if (hueco && hueco.parentNode) hueco.remove();
+  hueco = null;
+}
+
+// Devuelve el indice donde caeria la tarjeta segun la posicion del mouse.
+function indiceEn(lista, y) {
+  const tarjetas = [...lista.querySelectorAll(".tarjeta-kanban")].filter(function (c) { return c !== arrastrada; });
+  for (let i = 0; i < tarjetas.length; i++) {
+    const caja = tarjetas[i].getBoundingClientRect();
+    if (y < caja.top + caja.height / 2) return i;
+  }
+  return tarjetas.length;
+}
+
+function colocarHueco(lista, indice) {
+  if (!hueco) {
+    hueco = document.createElement("div");
+    hueco.className = "hueco";
+  }
+  const tarjetas = [...lista.querySelectorAll(".tarjeta-kanban")].filter(function (c) { return c !== arrastrada; });
+  const referencia = tarjetas[indice];
+  if (referencia) lista.insertBefore(hueco, referencia);
+  else lista.appendChild(hueco);
+}
 
 document.addEventListener("dragstart", function (e) {
   const card = e.target.closest(".tarjeta-kanban");
@@ -479,56 +506,60 @@ document.addEventListener("dragstart", function (e) {
 });
 
 document.addEventListener("dragend", function () {
-  document.querySelectorAll(".tarjeta-kanban.arrastrando").forEach(function (c) {
-    c.classList.remove("arrastrando");
-  });
-  document.querySelectorAll(".columna-lista.encima").forEach(function (l) {
-    l.classList.remove("encima");
-  });
+  if (arrastrada) arrastrada.classList.remove("arrastrando");
+  document.querySelectorAll(".columna-lista.encima").forEach(function (l) { l.classList.remove("encima"); });
+  limpiarHueco();
   arrastrada = null;
 });
 
 document.addEventListener("dragover", function (e) {
+  if (!arrastrada) return;
   const lista = e.target.closest(".columna-lista");
-  if (!lista || !arrastrada) return;
+  if (!lista) return;
   e.preventDefault();
   e.dataTransfer.dropEffect = "move";
+
   document.querySelectorAll(".columna-lista.encima").forEach(function (l) {
     if (l !== lista) l.classList.remove("encima");
   });
   lista.classList.add("encima");
+
+  // El hueco muestra donde va a caer, empujando al resto hacia abajo.
+  colocarHueco(lista, indiceEn(lista, e.clientY));
 });
 
 document.addEventListener("drop", async function (e) {
+  if (!arrastrada) return;
   const lista = e.target.closest(".columna-lista");
-  if (!lista || !arrastrada) return;
+  if (!lista) return;
   e.preventDefault();
 
   const destino = lista.dataset.drop;
   const card = arrastrada;
-  const id = card.dataset.id;
+  const indice = indiceEn(lista, e.clientY);
   const origen = card.closest(".columna-lista");
 
-  lista.classList.remove("encima");
-  if (origen === lista) return;
-
   try {
-    await pedir("/accion/" + id + "/estado/" + destino);
+    await pedir("/accion/" + card.dataset.id + "/mover/" + destino + "-" + indice);
 
-    // Mueve la tarjeta y refresca los contadores de las dos columnas.
     card.classList.remove("estado-proposed", "estado-selected", "estado-parked", "estado-discarded");
     card.classList.add("estado-" + destino);
-    const select = card.querySelector(".kanban-select");
-    if (select) select.value = destino;
 
-    lista.appendChild(card);
+    const mover = card.querySelector(".chip-mover");
+    if (mover) mover.value = destino;
+
+    if (hueco && hueco.parentNode) hueco.parentNode.insertBefore(card, hueco);
+    else lista.appendChild(card);
+
     card.classList.add("entrando");
     setTimeout(function () { card.classList.remove("entrando"); }, 220);
 
     contar(lista);
-    if (origen) contar(origen);
+    if (origen && origen !== lista) contar(origen);
   } catch (err) {
     fallar(err);
+  } finally {
+    limpiarHueco();
   }
 });
 
@@ -536,8 +567,8 @@ function contar(lista) {
   const columna = lista.closest(".columna");
   if (!columna) return;
   const globo = columna.querySelector(".columna-cuenta");
-  const tarjetas = lista.querySelectorAll(".tarjeta-kanban").length;
-  if (globo) globo.textContent = String(tarjetas);
+  const n = lista.querySelectorAll(".tarjeta-kanban").length;
+  if (globo) globo.textContent = String(n);
 }
 
 })();
