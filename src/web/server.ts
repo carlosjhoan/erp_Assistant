@@ -9,6 +9,8 @@ import { agentRun, itemEvent, llmCall, meeting, project, projectRepository, repo
 import { createTopicRepo } from "../infra/db/topic-repo.ts";
 import { esc, pagina, type Pagina } from "./render.ts";
 import { vistaProyecto, vistaProyectos, vistaRubricas, vistaSemana } from "./vistas-proyecto.ts";
+import { vistaInicio } from "./vistas-inicio.ts";
+import { consultar } from "../app/consulta.ts";
 import { renderMarkdown, vistaPrevia } from "./markdown.ts";
 import { ordenarPorUrgencia } from "./orden-reuniones.ts";
 import type { EstadoTema } from "../infra/db/topic-repo.ts";
@@ -1054,6 +1056,29 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
     return;
   }
 
+  // Consulta libre al ERP. Devuelve la respuesta y el costo real de la llamada.
+  if (ruta === "/consulta" && req.method === "POST") {
+    let cuerpo = "";
+    for await (const chunk of req) cuerpo += String(chunk);
+    let pregunta = "";
+    try {
+      pregunta = String((JSON.parse(cuerpo) as { pregunta?: string }).pregunta ?? "").trim();
+    } catch {
+      pregunta = "";
+    }
+    if (!pregunta) return json(res, 400, { error: "pregunta vacia" });
+
+    const proveedores = providersFromEnv(db);
+    try {
+      const antes = Date.now();
+      const r = await consultar(db, proveedores, pregunta);
+      const gastado = db.select().from(llmCall).all().filter((c) => c.runId === r.runId).reduce((a, c) => a + (c.costUsd ?? 0), 0);
+      const total = db.select().from(llmCall).all().filter((c) => new Date(c.createdAt).toDateString() === new Date().toDateString()).reduce((a, c) => a + (c.costUsd ?? 0), 0);
+      return json(res, 200, { ok: true, ...r.datos, ms: Date.now() - antes, costo: gastado, costoHoy: total });
+    } catch (err) {
+      return json(res, 200, { ok: false, error: err instanceof Error ? err.message : String(err) });
+    }
+  }
   // Declarar que un item mueve una capacidad del diagnostico.
   // Editar el titulo y el criterio de un item. Queda marcado como editado a
   // mano para que una reimportacion no lo pise.
@@ -1146,9 +1171,9 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
   const verTema = ruta.match(/^\/tema\/([a-f0-9-]+)$/);
   if (verTema?.[1]) return responder(res, 200, pagina(vistaTema(verTema[1])));
 
-  if (ruta === "/") return responder(res, 200, pagina(vistaProyectos(db)));
+  if (ruta === "/") return responder(res, 200, pagina(vistaInicio(db)));
   if (ruta === "/temas") return responder(res, 200, pagina(vistaTemas()));
-  if (ruta === "/proyectos") return responder(res, 200, redirect("/"));
+  if (ruta === "/proyectos") return responder(res, 200, pagina(vistaProyectos(db)));
   if (ruta === "/reuniones/nueva") return responder(res, 200, pagina(vistaNuevaReunion()));
   if (ruta === "/reuniones") return responder(res, 200, pagina(vistaReuniones()));
 

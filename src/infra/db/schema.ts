@@ -357,6 +357,8 @@ export const llmCall = sqliteTable(
     durationMs: integer("duration_ms"),
     prompt: text("prompt"),
     response: text("response"),
+    /** Costo estimado de esta llamada, en dolares. */
+    costUsd: real("cost_usd"),
     createdAt: now(),
   },
   (t) => [index("call_run").on(t.runId), index("call_created").on(t.createdAt)]

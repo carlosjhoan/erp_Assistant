@@ -4,6 +4,7 @@ import { agentRun, llmCall } from "../db/schema.ts";
 import type { openDatabase } from "../db/client.ts";
 import type { IntentoFallido } from "./types.ts";
 import type { ErrorKind } from "./errors.ts";
+import { costoUsd } from "./precio.ts";
 
 type DB = ReturnType<typeof openDatabase>["db"];
 
@@ -96,6 +97,7 @@ export function recordCall(db: DB, call: CallRecord): void {
       durationMs: call.durationMs ?? null,
       prompt: recortar(call.prompt),
       response: recortar(call.response),
+      costUsd: costoUsd(call.provider, call.model, call.inputTokens, call.outputTokens),
     })
     .run();
 }

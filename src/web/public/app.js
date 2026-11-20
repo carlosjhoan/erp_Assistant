@@ -812,4 +812,83 @@ document.querySelectorAll("[data-borrar]").forEach(function (boton) {
   });
 });
 
+
+/* ---------- consulta agéntica en el inicio ---------- */
+const formConsulta = document.getElementById("form-consulta");
+if (formConsulta) {
+  const entrada = document.getElementById("pregunta");
+  const estado = document.getElementById("estado");
+  const meta = document.getElementById("meta");
+  const caja = document.getElementById("respuesta");
+  const boton = formConsulta.querySelector(".agente-enviar");
+
+  const pasos = {
+    entendiendo: estado.querySelector('[data-paso="entendiendo"]'),
+    consultando: estado.querySelector('[data-paso="consultando"]'),
+    listo: estado.querySelector('[data-paso="listo"]'),
+  };
+
+  function marcar(nombre, clase) {
+    const el = pasos[nombre];
+    if (!el) return;
+    el.classList.remove("activo", "hecho");
+    if (clase) el.classList.add(clase);
+  }
+
+  formConsulta.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const pregunta = entrada.value.trim();
+    if (!pregunta) return;
+
+    boton.disabled = true;
+    entrada.disabled = true;
+    caja.hidden = true;
+    estado.hidden = false;
+    meta.textContent = "";
+
+    marcar("entendiendo", "activo");
+    const t0 = performance.now();
+
+    // El primer paso se siente real: el modelo tarda, no fingimos instantaneidad.
+    setTimeout(function () {
+      marcar("entendiendo", "hecho");
+      marcar("consultando", "activo");
+    }, 260);
+
+    try {
+      const r = await fetch("/consulta", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ pregunta: pregunta }),
+      });
+      const datos = await r.json();
+      const ms = Math.round(performance.now() - t0);
+
+      marcar("consultando", "hecho");
+      marcar("listo", "hecho");
+
+      if (datos.ok) {
+        meta.textContent = ms + " ms · $" + (datos.costo || 0).toFixed(4);
+        const enlace = datos.ruta ? ' <a href="' + datos.ruta + '">ver detalle →</a>' : "";
+        const siguiente = datos.siguiente ? '<div style="margin-top:8px;color:var(--olive);font-size:11px">' + datos.siguiente + "</div>" : "";
+        caja.innerHTML = "<div>" + datos.respuesta + "</div>" + siguiente + enlace;
+        caja.hidden = false;
+      } else {
+        meta.textContent = ms + " ms";
+        caja.innerHTML = '<div style="color:var(--bad)">No pude responder: ' + (datos.error || "error") + "</div>";
+        caja.hidden = false;
+      }
+    } catch (err) {
+      meta.textContent = "";
+      caja.innerHTML = '<div style="color:var(--bad)">No pude conectar con el modelo.</div>';
+      caja.hidden = false;
+      console.error(err);
+    } finally {
+      boton.disabled = false;
+      entrada.disabled = false;
+      entrada.focus();
+    }
+  });
+}
+
 })();
