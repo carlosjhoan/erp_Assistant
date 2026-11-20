@@ -3455,3 +3455,34 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
 }
 
 .saludo .entrada { margin: 0; }
+
+/* ============================================================
+   Jerarquia piramidal: foto arriba, saludo debajo, luego el resto.
+   ============================================================ */
+
+.saludo {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.perfil {
+  width: 76px;
+  height: 76px;
+}
+
+.saludo .entrada {
+  font-size: 24px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.saludo .entrada .caret { height: 22px; vertical-align: -2px; }
+
+/* Con la foto arriba, la cinta cede un poco de alto. */
+.inicio[data-estado="idle"] .feed { max-height: calc(100vh - 520px); min-height: 120px; }
