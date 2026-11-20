@@ -4738,3 +4738,31 @@ body.rail-hidden .rail-toggle { align-self: center; margin: 0; }
   color: var(--olive);
   margin-top: 1px;
 }
+
+/* Los repos de /proyectos, abajo a la derecha. */
+.tp-repos { justify-content: flex-end; }
+
+/* El modal de diagnostico respira: padding propio en cuerpo y cabecera. */
+dialog.modal-diag {
+  width: min(600px, 92vw);
+  padding: 0;
+}
+
+dialog.modal-diag header { padding: 18px 22px 14px; }
+
+.modal-diag > .md-resumen,
+.modal-diag > .md-nota,
+.modal-diag > .md-caps,
+.modal-diag > .nota {
+  margin-left: 22px;
+  margin-right: 22px;
+}
+
+.modal-diag > .md-caps {
+  margin-bottom: 22px;
+  max-height: 50vh;
+  padding-right: 8px;
+}
+
+.modal-diag > .md-resumen { margin-top: 18px; }
+.modal-diag > .md-nota { margin-bottom: 16px; }
