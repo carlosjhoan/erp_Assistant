@@ -4320,3 +4320,40 @@ body.rail-hidden .rail-toggle { align-self: center; margin: 0; }
 /* Dentro del vidrio, las pistas se ven mejor un poco mas oscuras. */
 .inicio[data-estado="chat"] .bf .prog { background: #e3e9f3; }
 .inicio[data-estado="chat"] .semana-h .prog { background: #e3e9f3; }
+
+/* ============================================================
+   El compositor ocupa el 70% del lienzo disponible, cualquiera
+   sea el estado del riel izquierdo.
+   ============================================================ */
+
+:root { --rail-der: 384px; }
+
+.inicio[data-estado="chat"] { grid-template-columns: 1fr var(--rail-der); }
+
+/* Reposo: lienzo = viewport menos el riel izquierdo. */
+.inicio[data-estado="idle"] .chat-caja {
+  right: auto;
+  left: calc(var(--rail-w) + (100vw - var(--rail-w)) * 0.15);
+  width: calc((100vw - var(--rail-w)) * 0.7);
+  max-width: none;
+  margin: 0;
+}
+
+/* Conversacion: el lienzo descuenta tambien el aside derecho. */
+.inicio[data-estado="chat"] .chat-caja {
+  right: auto;
+  left: calc(var(--rail-w) + (100vw - var(--rail-w) - var(--rail-der)) * 0.15);
+  width: calc((100vw - var(--rail-w) - var(--rail-der)) * 0.7);
+  max-width: none;
+  margin: 0;
+}
+
+/* En pantallas angostas manda el minimo legible. */
+@media (max-width: 1100px) {
+  .inicio[data-estado="idle"] .chat-caja,
+  .inicio[data-estado="chat"] .chat-caja {
+    left: calc(var(--rail-w) + 20px);
+    right: 20px;
+    width: auto;
+  }
+}
