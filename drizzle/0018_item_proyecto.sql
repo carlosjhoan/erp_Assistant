@@ -1,0 +1,1 @@
+ALTER TABLE `rubric_item` ADD `project_id` text REFERENCES project(id);

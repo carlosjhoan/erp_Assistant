@@ -15,7 +15,7 @@ function baseMigrada() {
 
 const id = (p: string) => `${p}_${Math.random().toString(36).slice(2, 10)}`;
 
-test("la migración crea las dieciséis tablas", () => {
+test("la migración crea las diecisiete tablas", () => {
   const { sqlite } = baseMigrada();
   const tablas = (sqlite.prepare("select name from sqlite_master where type='table' order by name").all() as { name: string }[])
     .map((r) => r.name)
@@ -27,6 +27,7 @@ test("la migración crea las dieciséis tablas", () => {
     "llm_call",
     "meeting",
     "project",
+    "project_diagnosis",
     "project_repository",
     "recipient",
     "repo",

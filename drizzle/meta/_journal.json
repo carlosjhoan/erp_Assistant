@@ -120,6 +120,20 @@
       "when": 1795138489877,
       "tag": "0016_orden_temas",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1795145127770,
+      "tag": "0017_diagnostico_y_proyecto_item",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1795145163856,
+      "tag": "0018_item_proyecto",
+      "breakpoints": true
     }
   ]
 }

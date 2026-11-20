@@ -5,9 +5,10 @@ import { join, extname } from "node:path";
 import { randomUUID } from "node:crypto";
 import { desc, eq } from "drizzle-orm";
 import { openDatabase } from "../infra/db/client.ts";
-import { agentRun, llmCall, meeting, project, projectRepository, repo as repoTable, rubric, rubricItem, topic } from "../infra/db/schema.ts";
+import { agentRun, itemEvent, llmCall, meeting, project, projectRepository, repo as repoTable, rubric, rubricItem, topic } from "../infra/db/schema.ts";
 import { createTopicRepo } from "../infra/db/topic-repo.ts";
 import { esc, pagina, type Pagina } from "./render.ts";
+import { vistaProyecto, vistaProyectos, vistaRubricas, vistaSemana } from "./vistas-proyecto.ts";
 import { renderMarkdown, vistaPrevia } from "./markdown.ts";
 import { ordenarPorUrgencia } from "./orden-reuniones.ts";
 import type { EstadoTema } from "../infra/db/topic-repo.ts";
@@ -98,86 +99,6 @@ function opciones(lista: readonly { valor: string; texto: string }[], actual: st
 
 /* ---------- rúbrica ---------- */
 
-function vistaRubrica(): Pagina {
-  const r = db.select().from(rubric).orderBy(desc(rubric.createdAt)).all()[0];
-
-  if (!r) {
-    return {
-      titulo: "Rúbrica",
-      seccion: "rubrica",
-      conteoBandeja: createTopicRepo(db).bandeja().length,
-      cuerpo: `<div class="vacio">
-  <h2>Todavía no hay rúbrica</h2>
-  <p>Se crea con los temas que marcaste como <b>Seleccionar</b> en la bandeja.</p>
-  <p style="margin-top:16px"><button class="boton" data-accion="crear-rubrica">Crear rúbrica</button></p>
-</div>`,
-    };
-  }
-
-  const temas = temasDeRubrica(db, r.id);
-  const items = db.select().from(rubricItem).where(eq(rubricItem.rubricId, r.id)).orderBy(rubricItem.position).all();
-  const repos = new Map(db.select().from(repoTable).all().map((x) => [x.id, x.name]));
-
-  const bloques = temas
-    .map((t) => {
-      const propios = items.filter((i) => i.topicId === t.id);
-      const hechos = propios.filter((i) => i.status === "done").length;
-
-      const filas =
-        propios.length === 0
-          ? `<div class="item"><div class="numero">—</div><div><h4 style="color:var(--warn)">Sin desglosar</h4><div class="criterio">Este tema todavía no tiene ítems.</div></div></div>`
-          : propios
-              .map((i) => {
-                const marca = i.verifyStatus === "verified" ? "✓" : "⚠";
-                const nombreRepo = i.repoId ? repos.get(i.repoId) : undefined;
-                const meta = [
-                  `<span>${i.type}</span>`,
-                  nombreRepo ? `<span>repo: ${esc(nombreRepo)}</span>` : "",
-                  i.status !== "pending" ? `<span>${i.status}</span>` : "",
-                  i.verifyStatus !== "verified" && i.verifyScore != null
-                    ? `<span style="color:var(--warn)">jev ${i.verifyScore.toFixed(2)}</span>`
-                    : "",
-                ]
-                  .filter(Boolean)
-                  .join("");
-
-                return `<div class="item">
-  <div class="numero">${i.position + 1}</div>
-  <div>
-    <h4>${marca} ${esc(i.title)}</h4>
-    <div class="criterio">${esc(i.acceptanceCriteria)}</div>
-    <div class="meta">${meta}</div>
-  </div>
-</div>`;
-              })
-              .join("\n");
-
-      return `<section class="tema-bloque">
-  <h2>${esc(t.title)} <span class="avance">${hechos}/${propios.length} ✓</span></h2>
-  ${filas}
-</section>`;
-    })
-    .join("\n");
-
-  const aprobada = r.status === "approved" || r.status === "closed";
-  const accion = aprobada
-    ? `<span class="dueno codigo">${r.status}</span>`
-    : `<button class="boton" data-accion="aprobar" data-rubrica="${r.id}">Aprobar rúbrica</button>`;
-
-  return {
-    titulo: `Rúbrica ${r.weekStart} · v${r.version}`,
-    seccion: "rubrica",
-    conteoBandeja: createTopicRepo(db).bandeja().length,
-    cuerpo: `<div class="resumen">
-  <span>${temas.length} tema(s)</span>
-  <span>${items.length} ítem(s)</span>
-  <span>entrega ${r.deadline ?? "sin fecha"}</span>
-  <span>estado: ${r.status}</span>
-  <span class="der">${accion}</span>
-</div>
-${bloques}`,
-  };
-}
 
 /* ---------- temas ---------- */
 
@@ -903,65 +824,6 @@ function vistaNuevaReunion(): Pagina {
   };
 }
 
-function vistaProyectos(): Pagina {
-  const proyectos = db.select().from(project).all().sort((a, b) => {
-    if (a.status !== b.status) return a.status === "active" ? -1 : 1;
-    return a.name.localeCompare(b.name);
-  });
-  const vinculos = db.select().from(projectRepository).all();
-  const repos = db.select().from(repoTable).all();
-  const temas = db.select().from(topic).all();
-  const items = db.select().from(rubricItem).all();
-
-  const tarjetas = proyectos
-    .map((p) => {
-      const misRepos = repos.filter((r) => vinculos.some((v) => v.projectId === p.id && v.repoId === r.id));
-      const misTemas = temas.filter((t) => t.projectId === p.id);
-      const itemsPorTema = new Map(items.map((i) => [i.topicId, i]));
-      const misItems = misTemas.flatMap((t) => items.filter((i) => i.topicId === t.id));
-      const hechos = misItems.filter((i) => i.status === "done").length;
-      const pct = misItems.length > 0 ? Math.round((hechos / misItems.length) * 100) : 0;
-
-      const sinCalificar = misTemas.filter((t) => t.status === "proposed").length;
-      const seleccionados = misTemas.filter((t) => t.status === "selected").length;
-
-      return `<article class="tarjeta-proyecto">
-  <header>
-    <strong>${esc(p.name)}</strong>
-    <span class="dueno ${p.status === "active" ? "mio" : "codigo"}">${p.status}</span>
-    <span class="der">${misRepos.length} repo(s)</span>
-  </header>
-  <p class="descripcion">${esc(p.description ?? "Sin descripción.")}</p>
-
-  <div class="progreso" title="${hechos} de ${misItems.length} ítems hechos">
-    <div class="barra" style="width:${pct}%"></div>
-  </div>
-  <p class="cifras">
-    <span><b>${misItems.length}</b> ítem(s)</span>
-    <span><b>${hechos}</b> hechos</span>
-    <span><b>${seleccionados}</b> en la rúbrica</span>
-    ${sinCalificar > 0 ? `<span style="color:var(--warn)"><b>${sinCalificar}</b> sin calificar</span>` : ""}
-  </p>
-
-  ${misRepos.length > 0 ? `<p class="repos-lista">${misRepos.map((r) => `<code>${esc(r.name)}</code>`).join(" ")}</p>` : ""}
-</article>`;
-    })
-    .join("\n");
-
-  const activos = proyectos.filter((p) => p.status === "active").length;
-
-  return {
-    titulo: "Proyectos",
-    seccion: "proyectos",
-    conteoBandeja: createTopicRepo(db).bandeja().length,
-    cuerpo: `<div class="resumen">
-  <span>${proyectos.length} proyecto(s)</span>
-  <span>${activos} activo(s)</span>
-  <span>${repos.length} repo(s) en total</span>
-</div>
-${tarjetas || `<div class="vacio"><h2>Sin proyectos</h2><p>Corré <code>npm run repos:seed</code>.</p></div>`}`,
-  };
-}
 
 function marcador(titulo: string, seccion: string, fase: string): Pagina {
   return {
@@ -1192,6 +1054,46 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
     return;
   }
 
+  // Marcar un item de rubrica como hecho. Mueve el porcentaje y deja rastro.
+  const itemHecho = ruta.match(/^\/item\/([a-f0-9-]{36})\/hecho$/);
+  if (itemHecho?.[1] && req.method === "POST") {
+    const it = db.select().from(rubricItem).where(eq(rubricItem.id, itemHecho[1])).all()[0];
+    if (it) {
+      const nuevo = it.status === "done" ? "pending" : "done";
+      db.update(rubricItem).set({ status: nuevo }).where(eq(rubricItem.id, it.id)).run();
+      db.insert(itemEvent)
+        .values({
+          id: randomUUID(),
+          itemId: it.id,
+          actorType: "human",
+          kind: "status_change",
+          body: `estado: ${it.status} -> ${nuevo}`,
+        })
+        .run();
+    }
+    return json(res, 200, { ok: true });
+  }
+
+  // Semana de rúbrica: dashboard y detalle comparten prefijo.
+  const verSemana = ruta.match(/^\/rubrica\/([a-f0-9-]{36})$/);
+  if (verSemana?.[1] && req.method !== "POST") return responder(res, 200, pagina(vistaSemana(db, verSemana[1])));
+
+  const itemNuevo = ruta.match(/^\/rubrica\/([a-f0-9-]{36})\/item$/);
+  if (itemNuevo?.[1] && req.method === "POST") {
+    const f = await leerFormulario(req);
+    crearItemSemana(db, itemNuevo[1], f);
+    return responder(res, 302, redirect(`/rubrica/${itemNuevo[1]}`));
+  }
+
+  const verProyecto = ruta.match(/^\/proyecto\/([a-f0-9-]{36})$/);
+  if (verProyecto?.[1]) return responder(res, 200, pagina(vistaProyecto(db, verProyecto[1])));
+
+  if (ruta === "/proyecto/crear" && req.method === "POST") {
+    const f = await leerFormulario(req);
+    crearProyecto(db, f);
+    return responder(res, 302, redirect("/"));
+  }
+
   const rub = ruta.match(/^\/rubrica\/(\w+)(?:\/([a-f0-9-]+))?$/);
   if (rub?.[1]) {
     accionRubrica(res, rub[1], rub[2] ?? "");
@@ -1201,7 +1103,7 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
   const verTema = ruta.match(/^\/tema\/([a-f0-9-]+)$/);
   if (verTema?.[1]) return responder(res, 200, pagina(vistaTema(verTema[1])));
 
-  if (ruta === "/") return responder(res, 200, pagina(vistaProyectos()));
+  if (ruta === "/") return responder(res, 200, pagina(vistaProyectos(db)));
   if (ruta === "/temas") return responder(res, 200, pagina(vistaTemas()));
   if (ruta === "/proyectos") return responder(res, 200, redirect("/"));
   if (ruta === "/reuniones/nueva") return responder(res, 200, pagina(vistaNuevaReunion()));
@@ -1209,12 +1111,63 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
 
   const verReunion = ruta.match(/^\/reunion\/([a-f0-9-]+)$/);
   if (verReunion?.[1]) return responder(res, 200, pagina(vistaReunion(verReunion[1], url.searchParams.get("tab") ?? undefined, url.searchParams.get("vista") === "rubrica" ? "rubrica" : "temas")));
-  if (ruta === "/rubrica") return responder(res, 200, pagina(vistaRubrica()));
+  if (ruta === "/rubrica") return responder(res, 200, pagina(vistaRubricas(db)));
   if (ruta === "/repos") return responder(res, 200, pagina(vistaRepos()));
   if (ruta === "/trazas") return responder(res, 200, pagina(vistaTrazas()));
 
   responder(res, 404, "no encontrado");
 });
+
+
+/** Lee un formulario HTML y devuelve sus campos. */
+async function leerFormulario(req: IncomingMessage): Promise<URLSearchParams> {
+  const partes: Buffer[] = [];
+  for await (const chunk of req) partes.push(chunk as Buffer);
+  return new URLSearchParams(Buffer.concat(partes).toString("utf8"));
+}
+
+/** Crea un proyecto desde el formulario de la vista de proyectos. */
+function crearProyecto(db: ReturnType<typeof openDatabase>["db"], f: URLSearchParams) {
+  const nombre = (f.get("nombre") ?? "").trim();
+  const ruta = (f.get("ruta") ?? "").trim();
+  if (!nombre || !ruta) return;
+  db.insert(project).values({
+    id: randomUUID(),
+    name: nombre,
+    description: (f.get("descripcion") ?? "").trim() || null,
+    path: ruta,
+    status: "active",
+  }).run();
+}
+
+/**
+ * Crea un item suelto en una semana. Si no tiene proyecto, la justificacion es
+ * obligatoria: un item huerfano sin motivo es un agujero en el porcentaje.
+ */
+function crearItemSemana(db: ReturnType<typeof openDatabase>["db"], rubricId: string, f: URLSearchParams) {
+  const titulo = (f.get("titulo") ?? "").trim();
+  const criterio = (f.get("criterio") ?? "").trim();
+  const proyecto = (f.get("proyecto") ?? "").trim() || null;
+  const justificacion = (f.get("justificacion") ?? "").trim();
+  if (!titulo || !criterio) return;
+  if (!proyecto && !justificacion) return;
+
+  const max = db.select().from(rubricItem).where(eq(rubricItem.rubricId, rubricId)).all()
+    .reduce((m, i) => Math.max(m, i.position), -1);
+
+  db.insert(rubricItem).values({
+    id: randomUUID(),
+    rubricId,
+    projectId: proyecto,
+    title: titulo,
+    // La justificación queda pegada al criterio: es lo que explica el ítem.
+    acceptanceCriteria: justificacion ? `${criterio}\n\nJustificación: ${justificacion}` : criterio,
+    type: "other",
+    origin: "manual",
+    humanEdited: true,
+    position: max + 1,
+  }).run();
+}
 
 const PORT = Number(process.env.WEB_PORT ?? 4599);
 servidor.listen(PORT, "127.0.0.1", () => console.log(`my_erp web · http://127.0.0.1:${PORT}`));

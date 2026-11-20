@@ -22,10 +22,7 @@ export interface Pagina {
 const ENTRADAS = [
   { id: "proyectos", nombre: "Proyectos", href: "/" },
   { id: "reuniones", nombre: "Reuniones", href: "/reuniones" },
-  { id: "rubrica", nombre: "Rúbrica", href: "/rubrica" },
-  { id: "temas", nombre: "Temas", href: "/temas" },
-  { id: "repos", nombre: "Repos", href: "/repos" },
-  { id: "trazas", nombre: "Trazas", href: "/trazas" },
+  { id: "rubrica", nombre: "Rúbricas", href: "/rubrica" },
 ];
 
 export function pagina(p: Pagina): string {

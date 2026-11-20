@@ -154,6 +154,8 @@ export const rubricItem = sqliteTable(
     topicId: text("topic_id").references((): AnySQLiteColumn => topic.id),
     // Repo al que pertenece el ítem cuando lo propuso OpenCode.
     repoId: text("repo_id").references(() => repo.id),
+    /** Proyecto al que se imputa el ítem. Nulo = no suma a ningún porcentaje. */
+    projectId: text("project_id").references(() => project.id),
     // Si lo editaste vos, regenerar los ítems del agente no lo puede pisar.
     humanEdited: integer("human_edited", { mode: "boolean" }).notNull().default(false),
     title: text("title").notNull(),
@@ -166,7 +168,7 @@ export const rubricItem = sqliteTable(
       .notNull()
       .default("pending"),
     dueDate: text("due_date"),
-    origin: text("origin", { enum: ["agent", "manual"] }).notNull(),
+    origin: text("origin", { enum: ["agent", "manual", "markdown"] }).notNull(),
     sourceMeetingId: text("source_meeting_id").references(() => meeting.id),
     sourceExcerpt: text("source_excerpt"),
     carriedFromItemId: text("carried_from_item_id"),
@@ -390,6 +392,28 @@ export const topicRepo = sqliteTable(
  * Un repo puede servir a varios proyectos. Es la relacion real: dos carpetas
  * distintas comparten raiz, y un repo puede entrar en dos frentes comerciales.
  */
+export const projectDiagnosis = sqliteTable(
+  "project_diagnosis",
+  {
+    id: text("id").primaryKey(),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => project.id),
+    /** De donde salio: agente, carga manual o un markdown. */
+    source: text("source", { enum: ["agent", "manual", "markdown"] }).notNull(),
+    /** Avance del eje de negocio, 0..100. */
+    businessPct: integer("business_pct"),
+    /** Avance del eje tecnico, 0..100. */
+    technicalPct: integer("technical_pct"),
+    summary: text("summary"),
+    /** Ruta o nota del informe del que salieron los porcentajes. */
+    reportRef: text("report_ref"),
+    measuredAt: integer("measured_at", { mode: "timestamp_ms" }).notNull(),
+    createdAt: now(),
+  },
+  (t) => [index("diagnosis_project").on(t.projectId, t.measuredAt)]
+);
+
 export const projectRepository = sqliteTable(
   "project_repository",
   {

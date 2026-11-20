@@ -685,4 +685,28 @@ function contar(lista) {
   if (globo) globo.textContent = String(n);
 }
 
+
+/* ---------- abrir modales por data-abrir ---------- */
+document.querySelectorAll("[data-abrir]").forEach(function (boton) {
+  boton.addEventListener("click", function () {
+    const d = document.getElementById(boton.dataset.abrir);
+    if (d && d.showModal) d.showModal();
+  });
+});
+
+/* ---------- marcar un item de rubrica como hecho ---------- */
+document.querySelectorAll("input[data-item]").forEach(function (chk) {
+  chk.addEventListener("change", async function () {
+    chk.disabled = true;
+    try {
+      await pedir("/item/" + chk.dataset.item + "/hecho");
+    } catch (err) {
+      chk.checked = !chk.checked;
+      fallar(err);
+    } finally {
+      chk.disabled = false;
+    }
+  });
+});
+
 })();

@@ -1852,3 +1852,188 @@ label.inline {
   color: var(--ink);
   font-weight: 400;
 }
+
+/* ---------- proyectos: tarjeta con dos avances ---------- */
+
+.nota-linea {
+  font-size: 11px;
+  color: var(--olive);
+  margin: 0 0 14px;
+}
+
+.tarjeta-proyecto {
+  display: block;
+  position: relative;
+  background: #fff;
+  background-image: linear-gradient(180deg, rgba(90, 106, 140, 0.06), transparent 40%);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 120ms, transform 120ms cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+.tarjeta-proyecto:hover { transform: translateY(-1px); border-color: var(--accent-soft); }
+.tarjeta-proyecto.verde { border-left-color: #2f6b4f; }
+.tarjeta-proyecto.tinta { border-left-color: #19233e; }
+.tarjeta-proyecto.ambar { border-left-color: #96620f; }
+.tarjeta-proyecto.malva { border-left-color: #8c4a63; }
+
+.tp-cabeza { display: flex; align-items: center; gap: 10px; }
+.tp-cabeza strong { font-size: 13px; font-weight: 620; letter-spacing: 0.06em; text-transform: uppercase; }
+.tp-estado { margin-left: auto; font-size: 10px; color: var(--olive); }
+.tp-desc { font-size: 12.5px; color: var(--stone); margin: 6px 0 4px; }
+.tp-meta { font-size: 10.5px; color: var(--olive); margin: 0; }
+
+.tp-avance {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--soft);
+}
+
+.tp-fila {
+  display: grid;
+  grid-template-columns: 92px 1fr 38px 92px;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.tp-etq { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--olive); }
+.tp-fila b { font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.tp-n { font-size: 10px; color: var(--olive); text-align: right; }
+
+/* ---------- barra de progreso reutilizable ---------- */
+
+.prog {
+  height: 6px;
+  background: var(--soft);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.prog > span { display: block; height: 100%; border-radius: 999px; background: var(--olive); transition: width 200ms cubic-bezier(0.2, 0, 0.2, 1); }
+.prog.verde > span { background: #2f6b4f; }
+.prog.tinta > span { background: #19233e; }
+
+/* ---------- detalle de proyecto ---------- */
+
+.volver { font-size: 10.5px; color: var(--olive); text-decoration: none; }
+.volver:hover { color: var(--ink); }
+
+.pj-cabeza { margin: 10px 0 24px; }
+.pj-cabeza h2 { font-size: 15px; font-weight: 650; letter-spacing: 0.05em; text-transform: uppercase; margin: 0 0 4px; }
+.pj-estado { font-size: 10px; color: #2f6b4f; border: 1px solid #b9d6c3; border-radius: 999px; padding: 1px 8px; }
+
+.bloque { margin-bottom: 28px; }
+.bloque-t { display: flex; align-items: baseline; gap: 10px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--olive); margin: 0 0 10px; font-weight: 600; }
+.bloque-fecha { margin-left: auto; font-size: 10px; text-transform: none; letter-spacing: 0; color: var(--olive); }
+
+.av-fila {
+  display: grid;
+  grid-template-columns: 96px 1fr 40px 78px;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+}
+
+.av-rango { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--stone); }
+.av-fila b { font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.av-n { font-size: 10px; color: var(--olive); text-align: right; }
+
+.grupo-item { margin: 6px 0 14px; }
+.repo-fila { font-size: 12.5px; padding: 5px 0; border-bottom: 1px solid var(--soft); }
+
+/* ---------- items ---------- */
+
+.it {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.it input { width: 14px; height: 14px; accent-color: #2f6b4f; flex: none; }
+.it-txt { flex: 1; }
+.it input:checked + .it-txt { color: var(--olive); }
+
+.it-tipo {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--olive);
+  background: var(--soft);
+  border-radius: 5px;
+  padding: 1px 6px;
+}
+
+/* ---------- dashboard de semanas ---------- */
+
+.semana-card {
+  display: block;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 120ms;
+}
+
+.semana-card:hover { border-color: var(--accent-soft); }
+
+.semana-card.actual {
+  border-left: 3px solid #2f6b4f;
+  background-image: linear-gradient(180deg, rgba(47, 107, 79, 0.06), transparent 45%);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.sc-cabeza { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.sc-cabeza strong { font-size: 14.5px; font-weight: 620; }
+.pill { margin-left: auto; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--olive); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+.pill.ink { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+.sc-grande { display: grid; grid-template-columns: 1fr 64px; align-items: center; gap: 14px; }
+.sc-grande .prog { height: 8px; }
+.sc-pct { font-size: 18px; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+.sc-n { font-size: 10px; color: var(--olive); margin: 6px 0 0; }
+
+.sc-minis { display: flex; gap: 16px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--soft); flex-wrap: wrap; }
+.mini-stat { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--stone); }
+.mini-stat b { font-variant-numeric: tabular-nums; color: var(--ink); }
+
+.pt { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+.pt.verde { background: #2f6b4f; }
+.pt.tinta { background: #19233e; }
+.pt.ambar { background: #96620f; }
+.pt.malva { background: #8c4a63; }
+
+.sc-abrir { display: inline-block; margin-top: 12px; font-size: 10.5px; color: var(--ink); }
+
+.semanas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.sc-mini-fila { display: grid; grid-template-columns: 1fr 40px auto; align-items: center; gap: 10px; }
+.sc-mini-fila .prog { height: 5px; }
+.sc-mini-fila b { font-size: 11.5px; font-variant-numeric: tabular-nums; }
+
+/* ---------- grupos de la semana ---------- */
+
+.grupo { border-left: 3px solid var(--line); padding-left: 14px; margin-bottom: 28px; }
+.grupo.verde { border-left-color: #2f6b4f; }
+.grupo.tinta { border-left-color: #19233e; }
+.grupo.ambar { border-left-color: #96620f; }
+.grupo.malva { border-left-color: #8c4a63; }
+
+.grupo-h { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.grupo-n { font-size: 12px; font-weight: 620; text-transform: uppercase; letter-spacing: 0.06em; }
+.grupo-m { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.grupo-m .prog { width: 70px; height: 4px; }
+.grupo-m b { font-size: 10.5px; font-variant-numeric: tabular-nums; }
+.grupo-c { font-size: 10px; color: var(--olive); }
