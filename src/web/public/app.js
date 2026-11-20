@@ -1041,9 +1041,10 @@ document.querySelectorAll(".pm").forEach(function (caja) {
   const pct = Math.max(0, Math.min(100, Number(caja.dataset.pct || 0)));
   const dash = ((pct / 100) * C).toFixed(1);
   const i = [...document.querySelectorAll(".pm")].indexOf(caja);
+  const espera = document.getElementById("inicio")?.dataset.estado === "idle" ? 1750 + i * 110 : 140 + i * 90;
   setTimeout(function () {
     anillo.setAttribute("stroke-dasharray", dash + " " + C.toFixed(1));
-  }, 140 + i * 90);
+  }, espera);
 });
 
 /* ---------- plegar el riel: la conversación gana el ancho ---------- */

@@ -61,11 +61,6 @@ export function vistaInicio(db: Db): Pagina {
     <span class="pm-sep"></span>
     ${aro(p.proyectoId, tecnico, "tinta", "técnico", "tecnico")}
   </div>
-  ${
-    p.diagnostico
-      ? `<div class="pcard-cierre">al cierre <b>${hasta?.negocio ?? 0}%</b> · <b>${hasta?.produccion ?? 0}%</b></div>`
-      : ""
-  }
   ${nuevo ? '<span class="badge-nuevo">NUEVO</span>' : ""}
 </a>`;
     })
@@ -144,6 +139,7 @@ export function vistaInicio(db: Db): Pagina {
   </section>
 
   <header class="saludo">
+    <img class="marca" src="/logo-mark.png" alt="Steel and Glass">
     <img class="perfil" src="/profile.jpg" alt="Carlos" width="96" height="96">
     <h1 class="entrada" id="entrada">
       <span id="maquina" aria-label="Así van las cosas con Carlos ..."></span><i class="caret" aria-hidden="true"></i>
