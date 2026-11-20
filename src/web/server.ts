@@ -651,7 +651,10 @@ function tableroTemas(temas: TemaTarjeta[], editable: boolean): string {
 
   ${t.description ? `<p class="kanban-desc">${esc(t.description)}</p><button type="button" class="kanban-ver" data-abrir-modal="${idModal}">ver más</button>` : ""}
 
-  <div class="kanban-pie">
+  ${
+    // Responsable y proyectos solo tienen sentido cuando el tema ya se eligió.
+    t.status === "selected"
+      ? `<div class="kanban-pie">
     ${
       editable
         ? `<select class="chip-select" data-campo="owner" aria-label="Responsable">${opciones(DUENOS, t.owner ?? "")}</select>`
@@ -662,12 +665,15 @@ function tableroTemas(temas: TemaTarjeta[], editable: boolean): string {
         ? multiProyectos(t.id, proyectosDeTema({ db }, t.id))
         : `<span class="chip">${nombres || "Sin proyecto"}</span>`
     }
-    ${
-      editable
-        ? `<select class="chip-mover" data-campo="estado" aria-label="Mover a otra columna" title="Mover a otra columna">${opciones(ESTADOS, t.status)}</select>`
-        : ""
-    }
-  </div>
+  </div>`
+      : ""
+  }
+
+  ${
+    editable
+      ? `<select class="chip-mover" data-campo="estado" aria-label="Mover a otra columna" title="Mover a otra columna">${opciones(ESTADOS, t.status)}</select>`
+      : ""
+  }
 </article>
 <dialog id="${idModal}" class="modal modal-desc" closedby="any">
   <header>

@@ -1759,3 +1759,21 @@ label.inline {
 .columna-resto .columna-lista { margin-top: 6px; }
 
 .columna-vacia { color: var(--olive); font-size: 11px; opacity: 0.7; }
+
+/* El control de mover existe para el teclado, pero no compite visualmente:
+   aparece al enfocar la tarjeta. */
+.chip-mover {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  opacity: 0;
+  pointer-events: none;
+}
+.tarjeta-kanban { position: relative; }
+.tarjeta-kanban:hover .chip-mover,
+.tarjeta-kanban:focus-within .chip-mover {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.kanban-pie { flex-wrap: nowrap; }

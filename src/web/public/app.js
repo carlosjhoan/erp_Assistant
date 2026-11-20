@@ -464,7 +464,6 @@ document.addEventListener("keydown", function (e) {
   document.querySelectorAll("dialog.modal[open]").forEach(function (d) { d.close(); });
 });
 
-})();
 
 /* ---------- tablero: arrastrar y soltar entre columnas ---------- */
 
@@ -540,3 +539,5 @@ function contar(lista) {
   const tarjetas = lista.querySelectorAll(".tarjeta-kanban").length;
   if (globo) globo.textContent = String(tarjetas);
 }
+
+})();
