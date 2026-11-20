@@ -3202,3 +3202,39 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
 }
 
 .feed-fila { position: relative; }
+
+/* ---------- progreso de la cinta ---------- */
+
+.feed-prog {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px 12px;
+  padding-left: 1px;
+}
+
+.feed-prog-barra {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--soft);
+  overflow: hidden;
+}
+
+.feed-prog-barra > span {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2f6b4f, #4d8f6b);
+  transition: width 260ms cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+.feed-prog-n {
+  font-family: ui-monospace, monospace;
+  font-size: 9.5px;
+  color: var(--olive);
+  font-variant-numeric: tabular-nums;
+  min-width: 34px;
+  text-align: right;
+}

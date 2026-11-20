@@ -113,7 +113,15 @@ export function vistaInicio(db: Db): Pagina {
 
     <div class="panel-bloque">
       <h3 class="bloque-t">En la semana<span class="bloque-fecha">${actual ? rango(actual.desde, actual.hasta) : "sin abrir"}</span></h3>
-      ${actual ? `<div class="feed" id="feed">${feed}</div>` : `<p class="nota">No hay semana abierta.</p>`}
+      ${
+        actual
+          ? `<div class="feed-prog">
+        <div class="feed-prog-barra"><span id="feed-barra"></span></div>
+        <span class="feed-prog-n" id="feed-num">0/${itemsSemana.length}</span>
+      </div>
+      <div class="feed" id="feed">${feed}</div>`
+          : `<p class="nota">No hay semana abierta.</p>`
+      }
     </div>
 
     <div class="panel-bloque">

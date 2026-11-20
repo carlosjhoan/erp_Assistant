@@ -1093,6 +1093,15 @@ document.querySelectorAll(".pm").forEach(function (caja) {
 
   const PAUSA = 950;      // entre una fila y la siguiente
   const FINAL = 1600;     // al terminar, antes de reiniciar
+  const barra = document.getElementById("feed-barra");
+  const num = document.getElementById("feed-num");
+  const total = filas.length;
+
+  function pintarProgreso(n) {
+    if (barra) barra.style.width = Math.round((n / total) * 100) + "%";
+    if (num) num.textContent = n + "/" + total;
+  }
+
   let i = 0;
   let timer = null;
   let ciclo = null;
@@ -1101,6 +1110,7 @@ document.querySelectorAll(".pm").forEach(function (caja) {
   function reiniciar() {
     filas.forEach(function (f) { f.classList.remove("visible"); });
     feed.scrollTo({ top: 0, behavior: "smooth" });
+    pintarProgreso(0);
     i = 0;
   }
 
@@ -1120,12 +1130,14 @@ document.querySelectorAll(".pm").forEach(function (caja) {
     const fila = filas[i];
     feed.scrollTo({ top: fila.offsetTop - feed.clientHeight + fila.offsetHeight + 16, behavior: "smooth" });
     i++;
+    pintarProgreso(i);
     timer = setTimeout(paso, PAUSA);
   }
 
   const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (reduce) {
     filas.forEach(function (f) { f.classList.add("visible"); });
+    pintarProgreso(total);
     return;
   }
 
@@ -1135,6 +1147,7 @@ document.querySelectorAll(".pm").forEach(function (caja) {
     clearTimeout(timer);
     clearTimeout(ciclo);
     filas.forEach(function (f) { f.classList.add("visible"); });
+    pintarProgreso(total);
     feed.classList.add("quieto");
   }
 
