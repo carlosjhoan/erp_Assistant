@@ -84,14 +84,33 @@ export function vistaInicio(db: Db): Pagina {
     return pa - pb || a.position - b.position;
   });
 
-  const aplicados: typeof todosItems = [];
+  // El avance se reparte entre los items del proyecto: rampa continua
+  // que arranca en el diagnostico y termina exactamente en el cierre.
+  const totalPorProyecto = new Map<string, number>();
+  for (const it of itemsOrdenados) {
+    if (!it.projectId) continue;
+    totalPorProyecto.set(it.projectId, (totalPorProyecto.get(it.projectId) ?? 0) + 1);
+  }
+
+  const vistos = new Map<string, number>();
   const acumulado = new Map<string, { negocio: number; produccion: number }>();
 
   for (const it of itemsOrdenados) {
-    aplicados.push(it);
     if (!it.projectId) continue;
-    const v = veredicto(capacidadesEfectivas(capsDe(it.projectId), aplicados));
-    acumulado.set(it.id, { negocio: v.negocio, produccion: v.produccion });
+    const total = totalPorProyecto.get(it.projectId) ?? 1;
+    const n = (vistos.get(it.projectId) ?? 0) + 1;
+    vistos.set(it.projectId, n);
+
+    const b = base.get(it.projectId);
+    const f = cierre.get(it.projectId);
+    // Sin diagnostico no hay rampa: el proyecto no tiene linea base.
+    if (!b || !f || b.base === 0) continue;
+
+    const t = n / total;
+    acumulado.set(it.id, {
+      negocio: Math.round(b.negocio + (f.negocio - b.negocio) * t),
+      produccion: Math.round(b.produccion + (f.produccion - b.produccion) * t),
+    });
   }
 
   const feed = itemsOrdenados
