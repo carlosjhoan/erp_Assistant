@@ -52,6 +52,9 @@
     alert(e && e.message ? e.message : String(e));
   }
 
+  // Corta el dictado desde fuera (por ejemplo, al enviar). Se define al montar.
+  let detenerDictado = function () {};
+
   /* ---------- tarjeta de tema: decision y responsable ---------- */
 
   document.querySelectorAll(".tema-card select[data-campo]").forEach(function (select) {
@@ -1007,7 +1010,7 @@ if (formConsulta) {
     }
 
     // Si venia dictando, se corta: el texto ya viajo en el mensaje.
-    detenerDictado();
+    if (typeof detenerDictado === "function") detenerDictado();
     const textoEnviado = entrada.value;
     entrada.value = "";
     ajustarAlto();
@@ -1305,9 +1308,6 @@ document.querySelectorAll(".pm").forEach(function (caja) {
 })();
 
 /* ---------- dictado con pausa y reanudacion ---------- */
-// Permite cortar el dictado desde fuera (por ejemplo, al enviar).
-let detenerDictado = function () {};
-
 function montarDictado(micro, entrada) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { micro.hidden = true; return; }
