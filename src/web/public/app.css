@@ -3486,3 +3486,14 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
 
 /* Con la foto arriba, la cinta cede un poco de alto. */
 .inicio[data-estado="idle"] .feed { max-height: calc(100vh - 520px); min-height: 120px; }
+
+/* La foto crece por escala: el raster se mantiene nitido. */
+.perfil {
+  width: 80px;
+  height: 80px;
+  transform: scale(1.15);
+  transform-origin: center;
+  transition: transform 220ms cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+.perfil:hover { transform: scale(1.22); }
