@@ -3739,3 +3739,16 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
 
 /* El suelo de la cinta se ajusta al logo mas alto. */
 .inicio[data-estado="idle"] .feed { max-height: clamp(80px, calc(100vh - 730px), 380px); }
+
+/* Se reserva mas aire abajo para que el panel no toque el compositor. */
+.inicio[data-estado="idle"] {
+  padding-bottom: 210px;
+  gap: 8px;
+}
+
+/* La cinta termina antes: deja respiro sobre el input. */
+.inicio[data-estado="idle"] .feed {
+  max-height: clamp(64px, calc(100vh - 790px), 320px);
+}
+
+.inicio[data-estado="idle"] .saludo { margin-bottom: 2px; }
