@@ -4274,3 +4274,49 @@ body.rail-hidden .rail-toggle { align-self: center; margin: 0; }
   max-width: none;
   margin: 0;
 }
+
+/* ============================================================
+   Las filas del rail recuperan el vidrio: contraste sobre el aside.
+   ============================================================ */
+
+.inicio[data-estado="chat"] .panel {
+  background: #eef2f8;
+}
+
+.inicio[data-estado="chat"] .pcard,
+.inicio[data-estado="chat"] .semana-h,
+.inicio[data-estado="chat"] .reunion-card {
+  background-color: #fff;
+  background-image:
+    radial-gradient(130% 95% at 10% 0%, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(158deg, rgba(255, 255, 255, 0.95) 0%, rgba(243, 247, 253, 0.9) 55%, rgba(232, 239, 249, 0.92) 100%);
+  border-color: rgba(255, 255, 255, 0.9);
+  border-left-width: 3px;
+  box-shadow:
+    0 10px 24px -20px rgba(25, 35, 62, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+/* El canto de vidrio, sin el reflejo al pasar el mouse. */
+.inicio[data-estado="chat"] .pcard::before,
+.inicio[data-estado="chat"] .semana-h::before,
+.inicio[data-estado="chat"] .reunion-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.95), rgba(139, 158, 190, 0.3) 40%, rgba(255, 255, 255, 0.85));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.inicio[data-estado="chat"] .semana-h,
+.inicio[data-estado="chat"] .reunion-card { position: relative; overflow: hidden; }
+
+/* Dentro del vidrio, las pistas se ven mejor un poco mas oscuras. */
+.inicio[data-estado="chat"] .bf .prog { background: #e3e9f3; }
+.inicio[data-estado="chat"] .semana-h .prog { background: #e3e9f3; }
