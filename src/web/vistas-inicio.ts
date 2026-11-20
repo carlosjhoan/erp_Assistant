@@ -33,7 +33,7 @@ export function vistaInicio(db: Db): Pagina {
 
   const aro = (proyId: string, pct: number | null, color: string, etiqueta: string, medida: string) => `
         <span class="pm" data-proy="${proyId}" data-medida="${medida}" data-pct="${pct ?? 0}">
-          <svg class="pm-ring" viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+          <svg class="pm-ring" viewBox="0 0 32 32" width="44" height="44" aria-hidden="true">
             <circle class="pm-bg" cx="16" cy="16" r="13" />
             <circle class="pm-fg ${color}" cx="16" cy="16" r="13" stroke-dasharray="0 81.7" />
           </svg>
