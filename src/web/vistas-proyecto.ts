@@ -29,37 +29,68 @@ function conteo(db: Db) {
   return createTopicRepo(db).bandeja().length;
 }
 
+/** Descripción de cada proyecto. Por ahora fija; luego vendrá de la ficha. */
+const DESCRIPCIONES: Record<string, string> = {
+  Comercial: "Activación de leads, pipeline y contenido asistido para el área comercial.",
+  "Gerancial-Brain": "Inteligencia financiera: tablero de decisión y seguimiento gerencial.",
+  Landing: "Landing comercial: presentación del negocio y captura de demanda.",
+  CRM: "Gestión de clientes. Modelo de datos definido y onboarding en curso.",
+};
+
+const descripcion = (nombre: string) => DESCRIPCIONES[nombre] ?? "Sin descripción definida.";
+
 export function vistaProyectos(db: Db): Pagina {
   const datos = progresoPorProyecto(db);
 
+  // Nombres de los repos por proyecto, para el pie de la tarjeta.
+  const vinculos = db.select().from(projectRepository).all();
+  const todosRepos = db.select().from(repoTable).all();
+  const reposDe = (id: string) =>
+    vinculos
+      .filter((v) => v.projectId === id)
+      .map((v) => todosRepos.find((r) => r.id === v.repoId)?.name)
+      .filter((n): n is string => Boolean(n));
+
+  const fila = (etq: string, pct: number | null, clase: string, nota: string) =>
+    [
+      '<div class="tp-fila">',
+      '<span class="tp-etq">' + etq + "</span>",
+      barra(pct ?? 0, clase),
+      "<b>" + (pct === null ? "—" : pct + "%") + "</b>",
+      '<span class="tp-n">' + nota + "</span>",
+      "</div>",
+    ].join("");
+
   const tarjetas = datos
     .map((p, i) => {
-      const diag = p.diagnostico
-        ? `Diagnóstico ${p.diagnostico.negocio ?? "—"}% negocio / ${p.diagnostico.tecnico ?? "—"}% técnico`
-        : "Sin diagnóstico";
+      const negocio = p.diagnostico ? p.diagnostico.negocio : null;
+      const tecnico = p.diagnostico ? p.diagnostico.tecnico : null;
+      const repos = reposDe(p.proyectoId);
 
-      return `<a class="tarjeta-proyecto ${tono(i)}" href="/proyecto/${p.proyectoId}">
-  <div class="tp-cabeza">
-    <strong>${esc(p.nombre)}</strong>
-    <span class="badge-estado ${p.estado}">${esc(p.estado)}</span>
-  </div>
-  <p class="tp-desc">${esc(descripcionDe(db, p.proyectoId))}</p>
-  <p class="tp-meta">${p.repos} repo(s) · ${esc(diag)}</p>
-  <div class="tp-avance">
-    <div class="tp-fila">
-      <span class="tp-etq">Esta semana</span>
-      ${barra(p.semana.pct, "verde")}
-      <b>${p.semana.pct}%</b>
-      <span class="tp-n">${p.semana.hechos} de ${p.semana.total} ítems</span>
-    </div>
-    <div class="tp-fila">
-      <span class="tp-etq">Acumulado</span>
-      ${barra(p.pct, "tinta")}
-      <b>${p.pct}%</b>
-      <span class="tp-n">${p.hechos} de ${p.total}</span>
-    </div>
-  </div>
-</a>`;
+      const cuerpo = [
+        '<a class="tarjeta-proyecto ' + tono(i) + '" href="/proyecto/' + p.proyectoId + '">',
+        '<div class="tp-cabeza">',
+        "<strong>" + esc(p.nombre) + "</strong>",
+        '<span class="badge-estado ' + p.estado + '">' + esc(p.estado) + "</span>",
+        "</div>",
+        '<p class="tp-desc">' + esc(descripcion(p.nombre)) + "</p>",
+        '<div class="tp-avance">',
+        fila("Semana", p.semana.pct, "verde", p.semana.hechos + " de " + p.semana.total + " ítems"),
+        fila("Negocio", negocio, "verde", negocio === null ? "sin diagnóstico" : ""),
+        fila("Técnico", tecnico, "tinta", tecnico === null ? "sin diagnóstico" : ""),
+        "</div>",
+      ];
+
+      if (repos.length > 0) {
+        cuerpo.push(
+          '<div class="tp-repos">' +
+            repos.map((r) => '<span class="repo-badge">' + esc(r) + "</span>").join("") +
+            "</div>",
+        );
+      }
+
+      cuerpo.push("</a>");
+      return cuerpo.join("\n");
     })
     .join("\n");
 
@@ -67,10 +98,12 @@ export function vistaProyectos(db: Db): Pagina {
     titulo: "Proyectos",
     seccion: "proyectos",
     conteoBandeja: conteo(db),
-    accion: `<button class="boton" data-abrir="modal-proyecto">+ Nuevo proyecto</button>`,
-    cuerpo: `<p class="nota-linea">El avance sale de los ítems hechos sobre los ítems vivos. Los descartados no cuentan.</p>
-${tarjetas || `<div class="vacio-mini">Todavía no hay proyectos. Creá el primero.</div>`}
-${modalProyecto()}`,
+    accion: '<button class="boton" data-abrir="modal-proyecto">+ Nuevo proyecto</button>',
+    cuerpo:
+      '<p class="nota-linea">Tres medidas por proyecto: el avance de esta semana y los dos ejes del diagnóstico.</p>\n' +
+      (tarjetas || '<div class="vacio-mini">Todavía no hay proyectos.</div>') +
+      "\n" +
+      modalProyecto(),
   };
 }
 

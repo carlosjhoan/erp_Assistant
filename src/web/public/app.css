@@ -4595,3 +4595,38 @@ body.rail-hidden .rail-toggle { align-self: center; margin: 0; }
   color: var(--olive);
   padding-left: 2px;
 }
+
+/* ---------- tarjeta de proyecto en /proyectos ---------- */
+
+.tp-fila { grid-template-columns: 76px 1fr 44px 96px; }
+
+.tarjeta-proyecto .tp-desc { margin: 6px 0 14px; max-width: 62ch; }
+
+.tarjeta-proyecto .tp-avance {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--soft);
+}
+
+.tarjeta-proyecto .tp-fila { margin-top: 7px; }
+
+/* Pie con los repos del proyecto. */
+.tp-repos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+  padding-top: 11px;
+  border-top: 1px solid var(--soft);
+}
+
+.repo-badge {
+  font-family: ui-monospace, monospace;
+  font-size: 9.5px;
+  color: var(--stone);
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
