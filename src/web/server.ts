@@ -663,7 +663,7 @@ function tableroTemas(temas: TemaTarjeta[], editable: boolean): string {
       ? `<div class="kanban-pie">
     ${
       editable
-        ? `<select class="chip-select" data-campo="owner" aria-label="Responsable">${opciones(DUENOS, t.owner ?? "")}</select>`
+        ? `<select class="chip-select dueno dueno-${t.owner ?? "none"}" data-campo="owner" aria-label="Responsable">${opciones(DUENOS, t.owner ?? "")}</select>`
         : `<span class="chip">${t.owner === "opencode" ? "Código" : t.owner === "me" ? "Mío" : "Sin asignar"}</span>`
     }
     ${

@@ -1821,3 +1821,34 @@ label.inline {
 
 .multi > summary { display: flex; align-items: center; gap: 2px; }
 .multi-resumen { display: flex; align-items: center; flex-wrap: wrap; gap: 3px; }
+
+/* ---------- badge de responsable: color sólido, no blanco ---------- */
+
+.chip-select.dueno {
+  font-weight: 500;
+  border: none;
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(25, 35, 62, 0.18);
+}
+
+.chip-select.dueno-me {
+  background: linear-gradient(135deg, #2f6b4f 0%, #4d8f6b 100%);
+}
+
+.chip-select.dueno-opencode {
+  background: linear-gradient(135deg, #19233e 0%, #45527a 100%);
+}
+
+/* Sin asignar queda neutro: no es una decision tomada. */
+.chip-select.dueno-none {
+  background: linear-gradient(135deg, #e9edf5 0%, #dfe4ee 100%);
+  color: var(--stone);
+  border: 1px solid var(--line);
+}
+
+/* Las opciones del desplegable vuelven al fondo claro del navegador. */
+.chip-select.dueno option {
+  background: #fff;
+  color: var(--ink);
+  font-weight: 400;
+}

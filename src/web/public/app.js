@@ -368,6 +368,43 @@ function btnDeshabilitar(b, si) {
 
 /* ---------- chips de proyecto por tema ---------- */
 
+/* ---------- tablero: responsable y estado desde la tarjeta ---------- */
+
+document.querySelectorAll(".tarjeta-kanban select[data-campo]").forEach(function (select) {
+  select.dataset.previo = select.value;
+
+  select.addEventListener("change", async function () {
+    const card = select.closest(".tarjeta-kanban");
+    const id = card.dataset.id;
+    const campo = select.dataset.campo;
+    const valor = select.value;
+    const anterior = select.dataset.previo || "";
+    select.disabled = true;
+
+    try {
+      await pedir("/accion/" + id + "/" + campo + "/" + encodeURIComponent(valor));
+      select.dataset.previo = valor;
+
+      if (campo === "estado") {
+        card.classList.remove("estado-proposed", "estado-selected", "estado-parked", "estado-discarded");
+        card.classList.add("estado-" + valor);
+      }
+
+      if (campo === "owner") {
+        card.querySelectorAll(".dueno").forEach(function (s) {
+          s.classList.remove("dueno-me", "dueno-opencode", "dueno-none");
+          s.classList.add("dueno-" + (valor || "none"));
+        });
+      }
+    } catch (err) {
+      select.value = anterior;
+      fallar(err);
+    } finally {
+      select.disabled = false;
+    }
+  });
+});
+
 /* ---------- resumen de proyectos: siempre en badges ---------- */
 
 function pintarResumen(detalle) {
