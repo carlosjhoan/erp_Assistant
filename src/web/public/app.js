@@ -813,14 +813,25 @@ document.querySelectorAll("[data-borrar]").forEach(function (boton) {
 });
 
 
-/* ---------- consulta agéntica en el inicio ---------- */
+/* ---------- chat agéntico del inicio ---------- */
+
 const formConsulta = document.getElementById("form-consulta");
 if (formConsulta) {
+  const CLAVE = "my_erp.chat.v1";
   const entrada = document.getElementById("pregunta");
+  const hilo = document.getElementById("hilo");
   const estado = document.getElementById("estado");
   const meta = document.getElementById("meta");
-  const caja = document.getElementById("respuesta");
   const boton = formConsulta.querySelector(".agente-enviar");
+  const micro = document.getElementById("mic");
+
+  let turnos = [];
+  try { turnos = JSON.parse(localStorage.getItem(CLAVE) || "[]"); } catch { turnos = []; }
+  if (!Array.isArray(turnos)) turnos = [];
+
+  const guardar = () => {
+    try { localStorage.setItem(CLAVE, JSON.stringify(turnos.slice(-40))); } catch {}
+  };
 
   const pasos = {
     entendiendo: estado.querySelector('[data-paso="entendiendo"]'),
@@ -835,24 +846,76 @@ if (formConsulta) {
     if (clase) el.classList.add(clase);
   }
 
-  formConsulta.addEventListener("submit", async function (e) {
-    e.preventDefault();
-    const pregunta = entrada.value.trim();
+  function reiniciarPasos() {
+    Object.keys(pasos).forEach(function (k) {
+      if (pasos[k]) pasos[k].className = "paso";
+    });
+  }
+
+  function tarjetaTurno(t) {
+    const fila = document.createElement("div");
+    fila.className = "turno";
+
+    const preg = document.createElement("div");
+    preg.className = "turno-preg";
+    preg.textContent = t.pregunta;
+
+    const resp = document.createElement("div");
+    resp.className = "turno-resp" + (t.error ? " error" : "");
+    resp.textContent = t.respuesta || t.error || "";
+
+    const pie = document.createElement("div");
+    pie.className = "turno-pie";
+    const partes = [];
+    if (t.ms) partes.push(t.ms + " ms");
+    if (typeof t.costo === "number") partes.push("$" + t.costo.toFixed(5));
+    if (t.modelo) partes.push(t.modelo);
+    pie.textContent = partes.join(" · ");
+
+    if (t.siguiente) {
+      const sig = document.createElement("div");
+      sig.className = "turno-sig";
+      sig.textContent = t.siguiente;
+      resp.appendChild(sig);
+    }
+
+    if (t.ruta) {
+      const a = document.createElement("a");
+      a.className = "turno-link";
+      a.href = t.ruta;
+      a.textContent = "ver detalle →";
+      resp.appendChild(a);
+    }
+
+    fila.appendChild(preg);
+    fila.appendChild(resp);
+    if (pie.textContent) fila.appendChild(pie);
+    return fila;
+  }
+
+  function pintar() {
+    hilo.textContent = "";
+    turnos.forEach(function (t) { hilo.appendChild(tarjetaTurno(t)); });
+    hilo.scrollTop = hilo.scrollHeight;
+  }
+
+  async function preguntar(texto) {
+    const pregunta = String(texto || "").trim();
     if (!pregunta) return;
 
     boton.disabled = true;
     entrada.disabled = true;
-    caja.hidden = true;
+    reiniciarPasos();
     estado.hidden = false;
     meta.textContent = "";
-
     marcar("entendiendo", "activo");
-    const t0 = performance.now();
 
-    // El primer paso se siente real: el modelo tarda, no fingimos instantaneidad.
+    const t0 = performance.now();
     setTimeout(function () {
-      marcar("entendiendo", "hecho");
-      marcar("consultando", "activo");
+      if (pasos.entendiendo && pasos.entendiendo.classList.contains("activo")) {
+        marcar("entendiendo", "hecho");
+        marcar("consultando", "activo");
+      }
     }, 260);
 
     try {
@@ -866,29 +929,92 @@ if (formConsulta) {
 
       marcar("consultando", "hecho");
       marcar("listo", "hecho");
+      meta.textContent = ms + " ms";
 
-      if (datos.ok) {
-        meta.textContent = ms + " ms · $" + (datos.costo || 0).toFixed(4);
-        const enlace = datos.ruta ? ' <a href="' + datos.ruta + '">ver detalle →</a>' : "";
-        const siguiente = datos.siguiente ? '<div style="margin-top:8px;color:var(--olive);font-size:11px">' + datos.siguiente + "</div>" : "";
-        caja.innerHTML = "<div>" + datos.respuesta + "</div>" + siguiente + enlace;
-        caja.hidden = false;
-      } else {
-        meta.textContent = ms + " ms";
-        caja.innerHTML = '<div style="color:var(--bad)">No pude responder: ' + (datos.error || "error") + "</div>";
-        caja.hidden = false;
-      }
+      const turno = {
+        pregunta: pregunta,
+        respuesta: datos.ok ? datos.respuesta : "",
+        error: datos.ok ? "" : datos.error || "sin respuesta",
+        ruta: datos.ruta || "",
+        siguiente: datos.siguiente || "",
+        ms: ms,
+        costo: typeof datos.costo === "number" ? datos.costo : null,
+        modelo: datos.modelo || "",
+        at: Date.now(),
+      };
+
+      turnos.push(turno);
+      guardar();
+      pintar();
+      entrada.value = "";
+      ajustarAlto();
     } catch (err) {
-      meta.textContent = "";
-      caja.innerHTML = '<div style="color:var(--bad)">No pude conectar con el modelo.</div>';
-      caja.hidden = false;
       console.error(err);
+      turnos.push({ pregunta: pregunta, error: "no pude conectar con el modelo", ms: Math.round(performance.now() - t0), at: Date.now() });
+      guardar();
+      pintar();
     } finally {
       boton.disabled = false;
       entrada.disabled = false;
       entrada.focus();
     }
+  }
+
+  formConsulta.addEventListener("submit", function (e) {
+    e.preventDefault();
+    preguntar(entrada.value);
   });
+
+  entrada.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      preguntar(entrada.value);
+    }
+  });
+
+  function ajustarAlto() {
+    entrada.style.height = "auto";
+    entrada.style.height = Math.min(120, entrada.scrollHeight) + "px";
+  }
+  entrada.addEventListener("input", ajustarAlto);
+
+  /* ---------- dictado ---------- */
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (micro && SR) {
+    const rec = new SR();
+    rec.lang = "es-CO";
+    rec.continuous = true;
+    rec.interimResults = true;
+    let escuchando = false;
+    let base = "";
+
+    rec.onstart = function () { escuchando = true; micro.classList.add("escuchando"); };
+    rec.onend = function () {
+      escuchando = false;
+      micro.classList.remove("escuchando");
+    };
+    rec.onerror = function () {
+      escuchando = false;
+      micro.classList.remove("escuchando");
+    };
+    rec.onresult = function (ev) {
+      let texto = "";
+      for (let i = ev.resultIndex; i < ev.results.length; i++) texto += ev.results[i][0].transcript;
+      entrada.value = (base + " " + texto).trim();
+      ajustarAlto();
+    };
+
+    micro.addEventListener("click", function () {
+      if (escuchando) { rec.stop(); return; }
+      base = entrada.value.trim();
+      try { rec.start(); } catch {}
+    });
+  } else if (micro) {
+    micro.hidden = true;
+  }
+
+  pintar();
+  entrada.focus();
 }
 
 })();

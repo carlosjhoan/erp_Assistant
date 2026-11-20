@@ -55,9 +55,9 @@ export function foto(db: Db): string {
     ),
     "",
     actual
-      ? `SEMANA EN CURSO: ${rango(actual.desde, actual.hasta)} — ${actual.pct}% (${actual.hechos}/${actual.total} ítems)`
-      : "SEMANA EN CURSO: no hay rúbrica abierta",
-    `Semanas registradas: ${ss.length}`,
+      ? `RÚBRICA DE LA SEMANA EN CURSO: ${rango(actual.desde, actual.hasta)} — ${actual.pct}% (${actual.hechos}/${actual.total} ítems hechos)`
+      : "RÚBRICA DE LA SEMANA EN CURSO: no hay ninguna abierta",
+    `Semanas de rúbrica registradas: ${ss.length}`,
     "",
     `REUNIONES: ${reuniones.length} · temas sin calificar: ${sinCalificar}`,
     "",
