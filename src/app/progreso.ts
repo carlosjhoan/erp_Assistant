@@ -16,6 +16,7 @@ export function contar(items: { status: string }[]) {
 export interface ProgresoProyecto {
   proyectoId: string;
   nombre: string;
+  descripcion: string | null;
   estado: string;
   total: number;
   hechos: number;
@@ -57,6 +58,7 @@ export function progresoPorProyecto(db: Db, semanaId?: string): ProgresoProyecto
       return {
         proyectoId: p.id,
         nombre: p.name,
+        descripcion: p.description,
         estado: p.status,
         ...contar(mios),
         diagnostico: diag

@@ -37,13 +37,35 @@ export function vistaInicio(db: Db): Pagina {
   const runs = db.select().from(agentRun).orderBy(desc(agentRun.createdAt)).all().slice(0, 5);
   const costos = new Map(db.select().from(llmCall).all().map((c) => [c.runId, c.costUsd ?? 0]));
 
+  // Card glass con la descripción y los dos aros del diagnóstico.
   const filasProyecto = proyectos
     .map((p, i) => {
       const tono = ["verde", "tinta", "ambar", "malva"][i % 4];
-      return `<a class="pproy ${tono}" href="/proyecto/${p.proyectoId}">
-  <span class="pproy-n">${esc(p.nombre)}</span>
-  <span class="pproy-p">${p.semana.pct}%</span>
-  <span class="pproy-b">${p.semana.hechos}/${p.semana.total}</span>
+      const negocio = p.diagnostico ? p.diagnostico.negocio : null;
+      const tecnico = p.diagnostico ? p.diagnostico.tecnico : null;
+
+      const aro = (pct: number | null, color: string, etiqueta: string) => `
+        <span class="pm" data-pct="${pct ?? 0}">
+          <svg class="pm-ring" viewBox="0 0 32 32" width="20" height="20" aria-hidden="true">
+            <circle class="pm-bg" cx="16" cy="16" r="13" />
+            <circle class="pm-fg ${color}" cx="16" cy="16" r="13" stroke-dasharray="0 81.7" />
+          </svg>
+          <b>${pct === null ? "—" : pct + "%"}</b>
+          <i>${etiqueta}</i>
+        </span>`;
+
+      return `<a class="pcard ${tono}" href="/proyecto/${p.proyectoId}">
+  <div class="pcard-cabeza">
+    <span class="pcard-n">${esc(p.nombre)}</span>
+    <span class="badge-estado ${p.estado}">${esc(p.estado)}</span>
+  </div>
+  <p class="pcard-d">${esc(p.descripcion ?? "Sin descripción.")}</p>
+  <div class="pcard-metricas">
+    ${aro(negocio, "verde", "negocio")}
+    <span class="pm-sep"></span>
+    ${aro(tecnico, "tinta", "técnico")}
+  </div>
+  <div class="pcard-pie">${p.repos} repo(s) · semana ${p.semana.pct}%</div>
 </a>`;
     })
     .join("");

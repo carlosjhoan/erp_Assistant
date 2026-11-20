@@ -817,7 +817,6 @@ document.querySelectorAll("[data-borrar]").forEach(function (boton) {
 
 const formConsulta = document.getElementById("form-consulta");
 if (formConsulta) {
-  const CLAVE = "my_erp.chat.v1";
   const entrada = document.getElementById("pregunta");
   const hilo = document.getElementById("hilo");
   const estado = document.getElementById("estado");
@@ -825,13 +824,8 @@ if (formConsulta) {
   const boton = formConsulta.querySelector(".agente-enviar");
   const micro = document.getElementById("mic");
 
-  let turnos = [];
-  try { turnos = JSON.parse(localStorage.getItem(CLAVE) || "[]"); } catch { turnos = []; }
-  if (!Array.isArray(turnos)) turnos = [];
-
-  const guardar = () => {
-    try { localStorage.setItem(CLAVE, JSON.stringify(turnos.slice(-40))); } catch {}
-  };
+  // La sesión arranca vacía siempre: nada de localStorage.
+  const turnos = [];
 
   const pasos = {
     entendiendo: estado.querySelector('[data-paso="entendiendo"]'),
@@ -866,11 +860,22 @@ if (formConsulta) {
 
     const pie = document.createElement("div");
     pie.className = "turno-pie";
-    const partes = [];
-    if (t.ms) partes.push(t.ms + " ms");
-    if (typeof t.costo === "number") partes.push("$" + t.costo.toFixed(5));
-    if (t.modelo) partes.push(t.modelo);
-    pie.textContent = partes.join(" · ");
+
+    const icono = {
+      reloj: '<svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 4.6V8l2.2 1.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
+      calendario: '<svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
+      moneda: '<svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 4.8v6.4M6.4 6.2h2.4a1.2 1.2 0 0 1 0 2.4H6.4" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>',
+    };
+
+    const cuando = t.at ? new Date(t.at) : new Date();
+    const fecha = cuando.toLocaleDateString("es-CO", { day: "2-digit", month: "short" });
+    const hora = cuando.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: false });
+
+    const trozos = [];
+    trozos.push('<span class="u">' + icono.calendario + fecha + " · " + hora + "</span>");
+    if (t.ms) trozos.push('<span class="u">' + icono.reloj + (t.ms / 1000).toFixed(2) + " s</span>");
+    if (typeof t.costo === "number") trozos.push('<span class="u">' + icono.moneda + "$" + t.costo.toFixed(5) + "</span>");
+    pie.innerHTML = trozos.join("");
 
     if (t.siguiente) {
       const sig = document.createElement("div");
@@ -944,14 +949,12 @@ if (formConsulta) {
       };
 
       turnos.push(turno);
-      guardar();
       pintar();
       entrada.value = "";
       ajustarAlto();
     } catch (err) {
       console.error(err);
       turnos.push({ pregunta: pregunta, error: "no pude conectar con el modelo", ms: Math.round(performance.now() - t0), at: Date.now() });
-      guardar();
       pintar();
     } finally {
       boton.disabled = false;
@@ -1017,4 +1020,17 @@ if (formConsulta) {
   entrada.focus();
 }
 
+
+/* ---------- los aros de cada proyecto se llenan de a poco ---------- */
+document.querySelectorAll(".pm").forEach(function (caja) {
+  const anillo = caja.querySelector(".pm-fg");
+  if (!anillo) return;
+  const C = 2 * Math.PI * 13;
+  const pct = Math.max(0, Math.min(100, Number(caja.dataset.pct || 0)));
+  const dash = ((pct / 100) * C).toFixed(1);
+  const i = [...document.querySelectorAll(".pm")].indexOf(caja);
+  setTimeout(function () {
+    anillo.setAttribute("stroke-dasharray", dash + " " + C.toFixed(1));
+  }, 140 + i * 90);
+});
 })();
