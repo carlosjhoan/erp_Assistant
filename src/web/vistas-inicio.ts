@@ -1,7 +1,7 @@
 /** Asistente: el chat al centro y el estado del portafolio al costado. */
 
 import type { Db } from "../infra/db/client.ts";
-import { meeting, projectCapability, rubricItem, topic } from "../infra/db/schema.ts";
+import { llmCall, meeting, projectCapability, rubricItem, topic } from "../infra/db/schema.ts";
 import { capacidadesEfectivas, progresoPorProyecto, rango, semanas, veredicto } from "../app/progreso.ts";
 import { esc, type Pagina } from "./render.ts";
 
@@ -21,6 +21,40 @@ function barraDoble(desde: number | undefined, hasta: number | undefined, color:
     <span class="t-avance" style="left:${base}%; width:${avance}%"></span>
   </div>`;
 }
+
+const TASA = Number(process.env.USD_COP ?? 4000);
+
+/** Consumo de hoy por tecnología, para el panel de costo. */
+function consumo(db: Db) {
+  const hoy = new Date().toDateString();
+  const filas = db.select().from(llmCall).all().filter((c) => new Date(c.createdAt).toDateString() === hoy);
+
+  const porTecnologia = new Map<string, { llamadas: number; usd: number; tokens: number; modelo: string }>();
+  for (const c of filas) {
+    const k = c.provider;
+    const acc = porTecnologia.get(k) ?? { llamadas: 0, usd: 0, tokens: 0, modelo: c.model ?? k };
+    acc.llamadas += 1;
+    acc.usd += c.costUsd ?? 0;
+    acc.tokens += c.inputTokens ?? 0;
+    porTecnologia.set(k, acc);
+  }
+
+  return {
+    llamadas: filas.length,
+    usd: filas.reduce((a, c) => a + (c.costUsd ?? 0), 0),
+    tecnologias: [...porTecnologia.entries()].sort((a, b) => b[1].usd - a[1].usd),
+  };
+}
+
+const dinero = (usd: number, moneda: "usd" | "cop") =>
+  moneda === "usd" ? `${usd.toFixed(4)}` : `${Math.round(usd * TASA).toLocaleString("es-CO")}`;
+
+const ICONO_TEC: Record<string, string> = {
+  deepseek: '<img src="/deepseek.svg" alt="DeepSeek" class="tec-logo">',
+  jev: '<img src="/typesafe.png" alt="Jev" class="tec-logo">',
+};
+
+const NOMBRE_TEC: Record<string, string> = { deepseek: "DeepSeek", jev: "Jev · TypeSafe" };
 
 export function vistaInicio(db: Db): Pagina {
   const ss = semanas(db);
@@ -139,10 +173,43 @@ export function vistaInicio(db: Db): Pagina {
     })
     .join("");
 
+  const uso = consumo(db);
+
+  // El head muestra el costo de la sesion y abre el desglose.
+  const accion = `<button type="button" class="uso" id="uso" aria-haspopup="dialog">
+    <span class="uso-n">sesión ${uso.llamadas} · <b data-moneda="usd" data-usd="${uso.usd}">${dinero(uso.usd, "usd")}</b></span>
+  </button>`;
+
+  const modalUso = `<dialog id="modal-uso" class="modal modal-uso">
+  <header><h2>Costo de la sesión</h2><button class="cerrar" data-cerrar-modal="modal-uso" aria-label="Cerrar">✕</button></header>
+  <div class="uso-total">
+    <span>Total hoy</span>
+    <b id="uso-total" data-usd="${uso.usd}">${dinero(uso.usd, "usd")}</b>
+  </div>
+  <div class="uso-moneda">
+    <button type="button" class="moneda activa" data-moneda-sel="usd">USD</button>
+    <button type="button" class="moneda" data-moneda-sel="cop">COP</button>
+  </div>
+  <p class="uso-sub">Desglose por tecnología</p>
+  <div class="uso-tecs">
+    ${uso.tecnologias
+      .map(
+        ([k, v]) => `<div class="tec">
+      <span class="tec-ico">${ICONO_TEC[k] ?? ""}</span>
+      <span class="tec-n">${NOMBRE_TEC[k] ?? k}<i>${v.modelo}</i></span>
+      <span class="tec-c">${v.llamadas} llamada(s) · ${(v.tokens / 1000).toFixed(1)}k tok</span>
+      <b class="tec-usd" data-usd="${v.usd}">${dinero(v.usd, "usd")}</b>
+    </div>`,
+      )
+      .join("")}
+  </div>
+</dialog>`;
+
   return {
     titulo: "Asistente",
     seccion: "inicio",
     conteoBandeja: 0,
+    accion,
     cuerpo: `<div class="inicio" id="inicio" data-estado="idle">
   <section class="chat" id="chat">
     <div class="chat-hilo" id="hilo" aria-live="polite"></div>
@@ -241,6 +308,7 @@ export function vistaInicio(db: Db): Pagina {
       </div>
     </div>
   </aside>
+  ${modalUso}
 </div>`,
   };
 }

@@ -846,42 +846,43 @@ if (formConsulta) {
     });
   }
 
+  const hora = (d) => new Date(d).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: false });
+
   function tarjetaTurno(t) {
-    const fila = document.createElement("div");
-    fila.className = "turno";
-
-    const preg = document.createElement("div");
-    preg.className = "turno-preg";
-    preg.textContent = t.pregunta;
-
-    const resp = document.createElement("div");
-    resp.className = "turno-resp" + (t.error ? " error" : "");
-    resp.textContent = t.respuesta || t.error || "";
-
-    const pie = document.createElement("div");
-    pie.className = "turno-pie";
-
-    const icono = {
-      reloj: '<svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 4.6V8l2.2 1.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
-      calendario: '<svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
-      moneda: '<svg viewBox="0 0 16 16" width="10" height="10" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 4.8v6.4M6.4 6.2h2.4a1.2 1.2 0 0 1 0 2.4H6.4" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>',
-    };
-
     const cuando = t.at ? new Date(t.at) : new Date();
-    const fecha = cuando.toLocaleDateString("es-CO", { day: "2-digit", month: "short" });
-    const hora = cuando.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit", hour12: false });
 
-    const trozos = [];
-    trozos.push('<span class="u">' + icono.calendario + fecha + " · " + hora + "</span>");
-    if (t.ms) trozos.push('<span class="u">' + icono.reloj + (t.ms / 1000).toFixed(2) + " s</span>");
-    if (typeof t.costo === "number") trozos.push('<span class="u">' + icono.moneda + "$" + t.costo.toFixed(5) + "</span>");
-    pie.innerHTML = trozos.join("");
+    // Turno del usuario: a la derecha.
+    const usuario = document.createElement("div");
+    usuario.className = "msg user";
+    usuario.innerHTML =
+      '<div class="msg-cabeza"><time>' + hora(cuando) + '</time><span>Carlos</span></div>' +
+      '<div class="msg-cuerpo"></div>';
+    usuario.querySelector(".msg-cuerpo").textContent = t.pregunta;
+
+    // Turno del asistente: a la izquierda, con avatar.
+    const bot = document.createElement("div");
+    bot.className = "msg bot";
+
+    const avatar = document.createElement("div");
+    avatar.className = "msg-avatar";
+    avatar.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M12 3.4l1.9 4.7 4.7 1.9-4.7 1.9L12 16.6l-1.9-4.7L5.4 10l4.7-1.9z" fill="currentColor"/></svg>';
+
+    const bloque = document.createElement("div");
+    bloque.className = "msg-bloque";
+
+    const cabeza = document.createElement("div");
+    cabeza.className = "msg-cabeza";
+    cabeza.innerHTML = '<strong>Asistente</strong><time>' + hora(cuando) + '</time>';
+
+    const cuerpo = document.createElement("div");
+    cuerpo.className = "msg-cuerpo" + (t.error ? " error" : "");
+    cuerpo.textContent = t.respuesta || t.error || "";
 
     if (t.siguiente) {
       const sig = document.createElement("div");
-      sig.className = "turno-sig";
+      sig.className = "msg-sig";
       sig.textContent = t.siguiente;
-      resp.appendChild(sig);
+      cuerpo.appendChild(sig);
     }
 
     if (t.vista) {
@@ -889,22 +890,38 @@ if (formConsulta) {
       caja.className = "turno-vista";
       caja.dataset.vista = t.vista.vista;
       caja.dataset.id = t.vista.id || "";
-      resp.appendChild(caja);
+      cuerpo.appendChild(caja);
       cargarVista(caja);
     }
 
     if (t.ruta) {
       const a = document.createElement("a");
-      a.className = "turno-link";
+      a.className = "msg-link";
       a.href = t.ruta;
       a.textContent = "ver detalle →";
-      resp.appendChild(a);
+      cuerpo.appendChild(a);
     }
 
-    fila.appendChild(preg);
-    fila.appendChild(resp);
-    if (pie.textContent) fila.appendChild(pie);
-    return fila;
+    const pie = document.createElement("div");
+    pie.className = "msg-pie";
+    const partes = [];
+    if (t.ms) partes.push((t.ms / 1000).toFixed(2) + " s");
+    if (typeof t.costo === "number") partes.push("$" + t.costo.toFixed(5));
+    if (t.modelo) partes.push(t.modelo);
+    pie.textContent = partes.join(" · ");
+
+    bloque.appendChild(cabeza);
+    bloque.appendChild(cuerpo);
+    if (pie.textContent) bloque.appendChild(pie);
+
+    bot.appendChild(avatar);
+    bot.appendChild(bloque);
+
+    const cont = document.createElement("div");
+    cont.className = "turno";
+    cont.appendChild(usuario);
+    cont.appendChild(bot);
+    return cont;
   }
 
   // Trae el HTML de una vista y lo muestra igual que en su pantalla.
@@ -1305,5 +1322,44 @@ function montarDictado(micro, entrada) {
     entrada.focus();
   });
 }
+
+
+/* ---------- costo de la sesion ---------- */
+(function () {
+  const boton = document.getElementById("uso");
+  const modal = document.getElementById("modal-uso");
+  if (!boton || !modal) return;
+
+  const TASA = Number(document.body.dataset.tasa || 4000);
+  let moneda = "usd";
+
+  const fmt = (usd) => moneda === "usd"
+    ? "$" + Number(usd).toFixed(4)
+    : "$" + Math.round(Number(usd) * TASA).toLocaleString("es-CO");
+
+  function repintar() {
+    modal.querySelectorAll(".tec-usd").forEach(function (el) {
+      el.textContent = fmt(el.dataset.usd);
+    });
+    const total = modal.querySelector("#uso-total");
+    if (total && total.dataset.usd) total.textContent = fmt(total.dataset.usd);
+    modal.querySelectorAll("[data-moneda-sel]").forEach(function (b) {
+      b.classList.toggle("activa", b.dataset.monedaSel === moneda);
+    });
+    const chip = boton.querySelector("[data-moneda]");
+    if (chip) chip.textContent = fmt(chip.dataset.usd);
+  }
+
+  boton.addEventListener("click", function () {
+    if (modal.showModal) modal.showModal();
+  });
+
+  modal.querySelectorAll("[data-moneda-sel]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      moneda = b.dataset.monedaSel;
+      repintar();
+    });
+  });
+})();
 
 })();
