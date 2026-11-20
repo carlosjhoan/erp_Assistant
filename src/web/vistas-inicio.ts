@@ -109,7 +109,7 @@ export function vistaInicio(db: Db): Pagina {
   </section>
 
   <header class="saludo">
-    <img class="perfil" src="/profile.jpg" alt="Carlos" width="46" height="46">
+    <img class="perfil" src="/profile.jpg" alt="Carlos" width="76" height="76">
     <h1 class="entrada" id="entrada">
       <span id="maquina" aria-label="Así van las cosas con Carlos ..."></span><i class="caret" aria-hidden="true"></i>
     </h1>
