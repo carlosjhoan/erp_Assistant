@@ -3380,3 +3380,35 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
   .inicio[data-estado="idle"] .panel > .panel-bloque,
   .inicio[data-estado="idle"] .chat-caja { animation: none; }
 }
+
+/* ============================================================
+   El primer render cabe entero: sin scroll en el lienzo.
+   ============================================================ */
+
+.contenido:has(#inicio[data-estado="idle"]) {
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.inicio[data-estado="idle"] {
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding-top: 2vh;
+  padding-bottom: 140px;
+  gap: 16px;
+}
+
+.inicio[data-estado="idle"] .panel { min-height: 0; overflow: hidden; }
+
+/* La cinta se adapta a lo que queda de alto. */
+.inicio[data-estado="idle"] .feed {
+  max-height: calc(100vh - 430px);
+  min-height: 140px;
+}
+
+/* Tarjetas un poco mas bajas para que entren las cuatro. */
+.inicio[data-estado="idle"] .pcard { padding: 10px 13px; }
+.inicio[data-estado="idle"] .pcard-d { -webkit-line-clamp: 1; margin: 4px 0 8px; }
+.inicio[data-estado="idle"] .pcard-pie { margin-top: 7px; padding-top: 6px; }
