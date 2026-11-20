@@ -2908,13 +2908,23 @@ label.inline {
 
 .rail-toggle:hover { background: #e6ebf4; color: var(--ink); }
 
-body.rail-hidden { --rail-w: 62px; }
-body.rail-hidden .rail { padding-left: 8px; padding-right: 8px; align-items: center; }
-body.rail-hidden .rail-toggle { align-self: center; transform: rotate(180deg); }
-body.rail-hidden .nav a span,
-body.rail-hidden .nav .conteo { display: none; }
-body.rail-hidden .nav a { justify-content: center; padding: 9px 0; width: 100%; }
-body.rail-hidden .nav-i { opacity: 0.85; }
-body.rail-hidden .principal { padding-left: 26px; padding-right: 26px; }
+body.rail-hidden { --rail-w: 44px; }
 
-body.rail-hidden .nav a.activo { background: #fff; }
+/* Plegado no muestra iconos: queda el logo y el boton para volver. */
+body.rail-hidden .rail {
+  padding: 18px 0 14px;
+  gap: 0;
+  align-items: center;
+  overflow: hidden;
+}
+
+body.rail-hidden .rail > *:not(.rail-head):not(.rail-toggle) { display: none; }
+
+body.rail-hidden .rail-head { justify-content: center; padding: 0; }
+body.rail-hidden .rail-toggle {
+  align-self: center;
+  margin-top: 12px;
+  transform: rotate(180deg);
+}
+
+body.rail-hidden .principal { padding-left: 34px; padding-right: 34px; }
