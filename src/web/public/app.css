@@ -4154,3 +4154,38 @@ body.rail-hidden .rail-toggle { align-self: center; margin: 0; }
 /* El badge NUEVO vuelve abajo a la derecha para no cortar el nombre. */
 .inicio[data-estado="chat"] .badge-nuevo { top: auto; bottom: 8px; right: 10px; }
 .inicio[data-estado="chat"] .pcard-cabeza { padding-right: 0; }
+
+/* ============================================================
+   El rail derecho se lee como un aside, no como tarjetas sueltas.
+   ============================================================ */
+
+.inicio[data-estado="chat"] .panel {
+  width: 100%;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  box-sizing: border-box;
+}
+
+/* Las filas ocupan todo el ancho util del aside. */
+.inicio[data-estado="chat"] .pcard,
+.inicio[data-estado="chat"] .semana-h,
+.inicio[data-estado="chat"] .reunion-card {
+  width: 100%;
+  box-sizing: border-box;
+  display: block;
+  border-radius: 6px;
+  background: #fbfcfe;
+  border: 1px solid var(--soft);
+  border-left-width: 3px;
+}
+
+.inicio[data-estado="chat"] .pproy-lista { gap: 6px; }
+
+/* Sin onda expansiva ni desplazamientos dentro del aside. */
+.inicio[data-estado="chat"] .vivo::after { display: none; }
+.inicio[data-estado="chat"] .pcard:hover,
+.inicio[data-estado="chat"] .reunion-card:hover { transform: none; border-color: var(--soft); }
+
+.inicio[data-estado="chat"] .pcard-cabeza { margin-bottom: 2px; }
