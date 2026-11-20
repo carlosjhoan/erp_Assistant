@@ -200,7 +200,11 @@ type ItemAporte = { capabilityId: string | null; capabilityEffect: string; statu
  * que la empujan. Se calcula al leer: desmarcar un ítem revierte el avance
  * solo, sin tocar la capacidad.
  */
-export function efectiva(base: string, items: ItemAporte[], capabilityId: string): { actual: string; porItems: boolean } {
+export function efectiva(
+  base: string,
+  items: ItemAporte[],
+  capabilityId: string,
+): { actual: string; porItems: boolean; confiable: boolean } {
   const aportes = items
     .filter((i) => i.capabilityId === capabilityId && i.status === "done" && i.capabilityEffect !== "none")
     .map((i) => (i.capabilityEffect === "cierra" ? 3 : 2));
@@ -209,13 +213,27 @@ export function efectiva(base: string, items: ItemAporte[], capabilityId: string
   const desdeBase = RANGO[base] ?? 0;
   const mejor = Math.max(desdeBase, desdeItems);
 
-  return { actual: NOMBRE[mejor] ?? base, porItems: desdeItems > desdeBase };
+  // Cerrar un ítem implica que la capacidad funciona: gana confiabilidad.
+  return {
+    actual: NOMBRE[mejor] ?? base,
+    porItems: desdeItems > desdeBase,
+    confiable: aportes.includes(3),
+  };
 }
 
 /** Aplica el avance de los ítems a todas las capacidades de un proyecto. */
-export function capacidadesEfectivas<T extends { id: string; integration: string }>(caps: T[], items: ItemAporte[]) {
+export function capacidadesEfectivas<T extends { id: string; integration: string; reliability: string }>(
+  caps: T[],
+  items: ItemAporte[],
+) {
   return caps.map((c) => {
     const e = efectiva(c.integration, items, c.id);
-    return { ...c, integration: e.actual, base: c.integration, movidaPorItems: e.porItems };
+    return {
+      ...c,
+      integration: e.actual,
+      reliability: e.confiable ? "F2" : c.reliability,
+      base: c.integration,
+      movidaPorItems: e.porItems,
+    };
   });
 }
