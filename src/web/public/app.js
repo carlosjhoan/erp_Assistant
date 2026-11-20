@@ -884,6 +884,15 @@ if (formConsulta) {
       resp.appendChild(sig);
     }
 
+    if (t.vista) {
+      const caja = document.createElement("div");
+      caja.className = "turno-vista";
+      caja.dataset.vista = t.vista.vista;
+      caja.dataset.id = t.vista.id || "";
+      resp.appendChild(caja);
+      cargarVista(caja);
+    }
+
     if (t.ruta) {
       const a = document.createElement("a");
       a.className = "turno-link";
@@ -896,6 +905,27 @@ if (formConsulta) {
     fila.appendChild(resp);
     if (pie.textContent) fila.appendChild(pie);
     return fila;
+  }
+
+  // Trae el HTML de una vista y lo muestra igual que en su pantalla.
+  async function cargarVista(caja) {
+    caja.classList.add("cargando");
+    try {
+      const r = await fetch("/fragmento", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ vista: caja.dataset.vista, id: caja.dataset.id }),
+      });
+      const d = await r.json();
+      if (d.ok && d.html) {
+        caja.innerHTML = d.html;
+        caja.classList.add("lista");
+      } else {
+        caja.remove();
+      }
+    } catch {
+      caja.remove();
+    }
   }
 
   function pintar() {
@@ -948,6 +978,7 @@ if (formConsulta) {
         respuesta: datos.ok ? datos.respuesta : "",
         error: datos.ok ? "" : datos.error || "sin respuesta",
         ruta: datos.ruta || "",
+        vista: datos.mostrar && datos.mostrar.vista ? datos.mostrar : null,
         siguiente: datos.siguiente || "",
         ms: ms,
         costo: typeof datos.costo === "number" ? datos.costo : null,

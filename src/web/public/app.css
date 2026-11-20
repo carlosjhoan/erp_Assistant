@@ -3412,3 +3412,22 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
 .inicio[data-estado="idle"] .pcard { padding: 10px 13px; }
 .inicio[data-estado="idle"] .pcard-d { -webkit-line-clamp: 1; margin: 4px 0 8px; }
 .inicio[data-estado="idle"] .pcard-pie { margin-top: 7px; padding-top: 6px; }
+
+/* ---------- una vista renderizada dentro del chat ---------- */
+
+.turno-vista {
+  margin-top: 12px;
+  border-top: 1px solid var(--soft);
+  padding-top: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-radius: 10px;
+}
+
+.turno-vista.cargando { min-height: 40px; opacity: 0.5; }
+
+/* La vista embebida no arrastra el padding de la pantalla completa. */
+.turno-vista .volver { display: none; }
+.turno-vista > .pj-cabeza { margin-bottom: 14px; }
+.turno-vista > .pj-hero { margin: 0 0 14px; }

@@ -1056,6 +1056,29 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
     return;
   }
 
+  // El chat pide una vista y el servidor devuelve su HTML ya renderizado.
+  if (ruta === "/fragmento" && req.method === "POST") {
+    let cuerpo = "";
+    for await (const chunk of req) cuerpo += String(chunk);
+    let vista = "";
+    let id = "";
+    try {
+      const d = JSON.parse(cuerpo) as { vista?: string; id?: string };
+      vista = String(d.vista ?? "");
+      id = String(d.id ?? "");
+    } catch {
+      /* cuerpo invalido */
+    }
+
+    try {
+      if (vista === "proyecto" && id) return json(res, 200, { ok: true, html: vistaProyecto(db, id).cuerpo });
+      if (vista === "semana" && id) return json(res, 200, { ok: true, html: vistaSemana(db, id).cuerpo });
+      if (vista === "reuniones") return json(res, 200, { ok: true, html: vistaReuniones().cuerpo });
+      return json(res, 200, { ok: false });
+    } catch (err) {
+      return json(res, 200, { ok: false, error: err instanceof Error ? err.message : String(err) });
+    }
+  }
   // Consulta libre al ERP. Devuelve la respuesta y el costo real de la llamada.
   if (ruta === "/consulta" && req.method === "POST") {
     let cuerpo = "";

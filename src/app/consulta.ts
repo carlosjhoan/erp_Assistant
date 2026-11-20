@@ -20,6 +20,16 @@ const Respuesta = z.object({
   ruta: z.enum(["/proyectos", "/reuniones", "/rubrica"]).nullable(),
   /** Qué mirar primero, en una línea. */
   siguiente: z.string().nullable(),
+  /**
+   * Vista que conviene mostrar debajo de la respuesta. El servidor la
+   * renderiza con la misma funcion que usa la pantalla completa.
+   */
+  mostrar: z
+    .object({
+      vista: z.enum(["proyecto", "semana", "reuniones"]),
+      id: z.string().nullable(),
+    })
+    .nullable(),
 });
 
 export type Consulta = z.infer<typeof Respuesta>;
@@ -51,11 +61,11 @@ export function foto(db: Db): string {
     "PROYECTOS (avance de la semana en curso y acumulado):",
     ...proyectos.map(
       (p) =>
-        `- ${p.nombre}: semana ${p.semana.pct}% (${p.semana.hechos}/${p.semana.total}), acumulado ${p.pct}% (${p.hechos}/${p.total}), ${p.repos} repos, diagnóstico ${p.diagnostico ? `${p.diagnostico.negocio}% negocio / ${p.diagnostico.tecnico}% producción` : "sin cargar"}`,
+        `- ${p.nombre} [id ${p.proyectoId}]: semana ${p.semana.pct}% (${p.semana.hechos}/${p.semana.total}), acumulado ${p.pct}% (${p.hechos}/${p.total}), ${p.repos} repos, diagnóstico ${p.diagnostico ? `${p.diagnostico.negocio}% negocio / ${p.diagnostico.tecnico}% producción` : "sin cargar"}`,
     ),
     "",
     actual
-      ? `RÚBRICA DE LA SEMANA EN CURSO: ${rango(actual.desde, actual.hasta)} — ${actual.pct}% (${actual.hechos}/${actual.total} ítems hechos)`
+      ? `RÚBRICA DE LA SEMANA EN CURSO [id ${actual.id}]: ${rango(actual.desde, actual.hasta)} — ${actual.pct}% (${actual.hechos}/${actual.total} ítems hechos)`
       : "RÚBRICA DE LA SEMANA EN CURSO: no hay ninguna abierta",
     `Semanas de rúbrica registradas: ${ss.length}`,
     "",
@@ -85,7 +95,9 @@ export async function consultar(
       system:
         "Sos el asistente de un ERP personal de gestión de proyectos. Respondés en español neutro, breve y concreto. " +
         "Solo podés afirmar lo que dice la foto de datos que recibís; si algo no está, decilo. " +
-        "No inventes cifras. Máximo tres frases. Si conviene, indicá una ruta para ver el detalle.",
+        "No inventes cifras. Máximo tres frases. Si conviene, indicá una ruta para ver el detalle. " +
+        "Cuando la pregunta sea sobre un proyecto, la semana o las reuniones, llena 'mostrar' con la vista y el id exacto de la foto, " +
+        "para que el usuario vea el detalle renderizado. Si la pregunta es general, deja 'mostrar' en null.",
       prompt: `PREGUNTA: ${pregunta}\n\nFOTO DEL ESTADO:\n${foto(db)}`,
       schema: Respuesta,
     });
