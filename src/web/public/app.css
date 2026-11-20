@@ -3602,3 +3602,28 @@ body.rail-hidden .chat-caja { left: var(--rail-w); }
 @media (prefers-reduced-motion: reduce) {
   .vivo::after, .badge-nuevo { animation: none; }
 }
+
+/* Cards de proyecto: mas altas y todas iguales. */
+.inicio[data-estado="idle"] .pcard {
+  min-height: 112px;
+  padding: 14px 16px 26px;
+  display: flex;
+  flex-direction: column;
+}
+
+.inicio[data-estado="idle"] .pcard-cabeza { margin-bottom: 4px; }
+
+.inicio[data-estado="idle"] .pcard-metricas {
+  margin-top: auto;
+  gap: 12px;
+}
+
+.inicio[data-estado="idle"] .pcard-n { font-size: 12px; }
+.inicio[data-estado="idle"] .pm b { font-size: 12.5px; }
+
+.badge-nuevo { right: 12px; bottom: 10px; }
+
+/* Con las cards mas altas, la cinta cede otro poco. */
+.inicio[data-estado="idle"] .feed {
+  max-height: clamp(80px, calc(100vh - 680px), 400px);
+}
