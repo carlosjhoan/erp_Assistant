@@ -155,6 +155,11 @@ export function vistaInicio(db: Db): Pagina {
   </h1>
 
   <aside class="panel">
+    <header class="rail-cabeza">
+      <img class="rail-logo" src="/logo-mark.png" alt="Steel and Glass">
+      <img class="rail-perfil" src="/profile.jpg" alt="Carlos" width="38" height="38">
+    </header>
+
     <div class="panel-bloque">
       <h3 class="bloque-t">Proyectos<span class="bloque-fecha">${proyectos.length}</span></h3>
       <div class="pproy-lista">${filasProyecto}</div>

@@ -4189,3 +4189,69 @@ body.rail-hidden .rail-toggle { align-self: center; margin: 0; }
 .inicio[data-estado="chat"] .reunion-card:hover { transform: none; border-color: var(--soft); }
 
 .inicio[data-estado="chat"] .pcard-cabeza { margin-bottom: 2px; }
+
+/* ============================================================
+   El rail derecho ocupa toda la franja vertical, desde la linea
+   del encabezado hasta el borde inferior.
+   ============================================================ */
+
+.contenido:has(#inicio[data-estado="chat"]) {
+  padding: 0;
+  overflow: hidden;
+}
+
+.inicio[data-estado="chat"] {
+  display: grid;
+  grid-template-columns: 1fr 384px;
+  gap: 0;
+  height: 100%;
+  max-height: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+
+.inicio[data-estado="chat"] .chat {
+  padding: 22px 28px 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* El aside: columna completa con su propio head. */
+.inicio[data-estado="chat"] .panel {
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 14px 16px 24px;
+  border: none;
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+  background: #fbfcfe;
+  gap: 14px;
+}
+
+.rail-cabeza {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rail-logo { height: 26px; width: auto; mix-blend-mode: multiply; }
+
+.rail-perfil {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--line);
+}
+
+/* El bloque de autor fijo desaparece: vive dentro del rail. */
+.inicio[data-estado="chat"] .autor { display: none; }
+
+/* Sin padding inferior en la columna: el scroll lo maneja el aside. */
+.inicio[data-estado="chat"] .chat { padding-bottom: 110px; }
