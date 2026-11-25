@@ -55,6 +55,9 @@ function llmFalso(respuesta: unknown): LlmProvider {
         fallos: [],
       };
     },
+    async agent() {
+      throw new Error("agent no implementado en el fake");
+    },
   };
 }
 

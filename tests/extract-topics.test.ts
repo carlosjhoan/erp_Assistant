@@ -51,6 +51,9 @@ function entorno(respuesta: Partial<ExtraccionTemas> = {}, scores: Record<string
         fallos: [],
       };
     },
+    async agent() {
+      throw new Error("agent no implementado en el fake");
+    },
   };
 
   let preguntasHechas: string[] = [];

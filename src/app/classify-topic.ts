@@ -17,7 +17,7 @@ export interface Clasificacion {
  * Tres preguntas binarias, con criterios explícitos. Se pide una por tema y
  * todas viajan en el mismo request que la verificación de grounding.
  *
- * Un entregable ("reunirse con Luisa", "armar el plan del 15 de diciembre") no
+ * Un entregable ("reunirse con una persona", "armar el plan del 15 de diciembre") no
  * lo puede desglosar ningún repo: preguntarle a los repos es el error que
  * produjo el desglose inventado.
  */

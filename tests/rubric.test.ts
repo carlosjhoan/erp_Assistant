@@ -70,6 +70,9 @@ function proveedores(items = ITEMS, scores?: Record<string, number>) {
         fallos: [],
       };
     },
+    async agent() {
+      throw new Error("agent no implementado en el fake");
+    },
   };
   const decision: DecisionProvider = {
     async decide(_state, questions) {

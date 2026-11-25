@@ -10,7 +10,8 @@ import { createTopicRepo } from "../infra/db/topic-repo.ts";
 import { esc, pagina, type Pagina } from "./render.ts";
 import { vistaProyecto, vistaProyectos, vistaRubricas, vistaSemana } from "./vistas-proyecto.ts";
 import { vistaInicio } from "./vistas-inicio.ts";
-import { consultar } from "../app/consulta.ts";
+import { consultar, gastoDelDia } from "../app/consulta.ts";
+import { topeDia } from "../app/presupuesto.ts";
 import { renderMarkdown, vistaPrevia } from "./markdown.ts";
 import { ordenarPorUrgencia } from "./orden-reuniones.ts";
 import type { EstadoTema } from "../infra/db/topic-repo.ts";
@@ -26,6 +27,8 @@ import { topicRepo } from "../infra/db/schema.ts";
 
 const { db } = openDatabase(process.env.DATABASE_PATH ?? "./data/my_erp.db");
 migrate(db, { migrationsFolder: "./drizzle" });
+
+const RUTA_DE = { proyecto: "/proyectos", semana: "/rubrica", reuniones: "/reuniones" } as const;
 
 const PUBLICO = join(import.meta.dirname, "public");
 const MIME: Record<string, string> = {
@@ -1096,13 +1099,31 @@ const servidor = createServer(async (req: IncomingMessage, res: ServerResponse) 
     }
     if (!pregunta) return json(res, 400, { error: "pregunta vacia" });
 
+    if (gastoDelDia(db) > topeDia()) {
+      return json(res, 200, { ok: false, error: "tope diario de gasto alcanzado" });
+    }
+
     const proveedores = providersFromEnv(db);
     try {
       const antes = Date.now();
       const r = await consultar(db, proveedores, pregunta);
       const gastado = db.select().from(llmCall).all().filter((c) => c.runId === r.runId).reduce((a, c) => a + (c.costUsd ?? 0), 0);
-      const total = db.select().from(llmCall).all().filter((c) => new Date(c.createdAt).toDateString() === new Date().toDateString()).reduce((a, c) => a + (c.costUsd ?? 0), 0);
-      return json(res, 200, { ok: true, ...r.datos, modelo: r.modelo, ms: Date.now() - antes, msDatos: r.msDatos, msModelo: r.msModelo, costo: gastado, costoHoy: total });
+      const total = gastoDelDia(db);
+      return json(res, 200, {
+        ok: true,
+        respuesta: r.texto,
+        ruta: r.principal ? RUTA_DE[r.principal.vista] : null,
+        mostrar: r.principal,
+        enlace: null,
+        siguiente: null,
+        pasos: r.pasos.map((p) => ({ tool: p.tool, ok: p.ok })),
+        modelo: r.modelo,
+        ms: Date.now() - antes,
+        msDatos: 0,
+        msModelo: r.msModelo,
+        costo: gastado,
+        costoHoy: total,
+      });
     } catch (err) {
       return json(res, 200, { ok: false, error: err instanceof Error ? err.message : String(err) });
     }

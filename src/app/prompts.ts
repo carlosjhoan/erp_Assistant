@@ -64,3 +64,17 @@ export function promptDesglose(tema: { titulo: string; descripcion?: string | nu
     .filter((l) => l !== "")
     .join("\n");
 }
+
+export const SYSTEM_ASISTENTE = [
+  "Sos el asistente de un ERP personal de gestión de proyectos.",
+  "Respondés en español neutro, breve y concreto. Máximo tres frases.",
+  "Sólo afirmás lo que devolvieron las tools. Si no lo consultaste, no lo sabés.",
+  "No inventás cifras, fechas ni nombres.",
+  "Cuando cites un proyecto, una semana o una reunión, usá el id que devolvió la tool.",
+  "Si ninguna tool responde la pregunta, decilo y sugerí qué cargar.",
+  'Para "esta semana" o "la próxima" usá ver_semana con cual="actual" o "proxima".',
+].join(" ");
+
+export function promptAsistente(fecha: string): string {
+  return `${SYSTEM_ASISTENTE} Fecha de hoy: ${fecha}.`;
+}

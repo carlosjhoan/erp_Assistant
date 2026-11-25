@@ -1,9 +1,18 @@
 import { createDeepSeek } from "@ai-sdk/deepseek";
-import { generateText, NoObjectGeneratedError, Output } from "ai";
+import { generateText, isStepCount, NoObjectGeneratedError, Output, tool as aiTool } from "ai";
 import type { z } from "zod";
 import { clasificarError } from "./errors.ts";
+import { costoUsd } from "./precio.ts";
 import type { TraceFn } from "./trace.ts";
-import { LlmError, type GenerateResult, type IntentoFallido, type LlmProvider } from "./types.ts";
+import {
+  LlmError,
+  type AgentOpts,
+  type AgentResult,
+  type GenerateResult,
+  type IntentoFallido,
+  type LlmProvider,
+  type PasoAgente,
+} from "./types.ts";
 
 export interface DeepSeekConfig {
   apiKey: string;
@@ -133,7 +142,8 @@ export function createDeepSeekProvider(cfg: DeepSeekConfig): LlmProvider {
 
             cfg.trace?.({
               provider: "deepseek",
-              model: response.modelId ?? cfg.model,
+              // Se tarifa con el modelo configurado: el id servido no está en TARIFAS.
+              model: cfg.model,
               attempt: intentoActual,
               status: "ok",
               inputTokens: usage.inputTokens ?? 0,
@@ -176,6 +186,78 @@ export function createDeepSeekProvider(cfg: DeepSeekConfig): LlmProvider {
       );
 
       return { ...value, durationMs: Date.now() - started, intentos, fallos };
+    },
+
+    async agent(opts: AgentOpts): Promise<AgentResult> {
+      const started = Date.now();
+      let ultimo = started;
+
+      const tools = Object.fromEntries(
+        opts.tools.map((t) => [
+          t.name,
+          aiTool({
+            description: t.description,
+            inputSchema: t.input,
+            execute: (input: unknown) => t.execute(input),
+          }),
+        ]),
+      );
+
+      const acumulado = (
+        steps: readonly { usage: { inputTokens?: number | undefined; outputTokens?: number | undefined } }[]
+      ) =>
+        steps.reduce(
+          (a, s) =>
+            a + costoUsd("deepseek", cfg.model, s.usage.inputTokens ?? 0, s.usage.outputTokens ?? 0),
+          0
+        );
+
+      const r = await generateText({
+        model: client(cfg.model),
+        system: opts.system,
+        messages: opts.messages,
+        tools,
+        maxRetries: 2,
+        stopWhen: [isStepCount(opts.maxSteps), ({ steps }) => acumulado(steps) > opts.topeUsd],
+        onStepFinish: (step) => {
+          const ahora = Date.now();
+          cfg.trace?.({
+            provider: "deepseek",
+            // Se tarifa con el modelo configurado: el id servido no está en TARIFAS.
+            model: cfg.model,
+            attempt: 1,
+            status: "ok",
+            inputTokens: step.usage.inputTokens ?? 0,
+            outputTokens: step.usage.outputTokens ?? 0,
+            durationMs: ahora - ultimo,
+            response: JSON.stringify({
+              text: step.text,
+              toolCalls: step.toolCalls.map((c) => ({ tool: c.toolName, input: c.input })),
+            }),
+          });
+          ultimo = ahora;
+        },
+      });
+
+      const usd = acumulado(r.steps);
+
+      const pasos: PasoAgente[] = r.steps.flatMap((s) =>
+        s.toolCalls.map((c) => {
+          const res = s.toolResults.find((t) => t.toolCallId === c.toolCallId);
+          return { tool: c.toolName, input: c.input, output: res?.output, ok: res !== undefined };
+        })
+      );
+
+      return {
+        text: r.text,
+        pasos,
+        steps: r.steps.length,
+        tokens: r.totalUsage.totalTokens ?? 0,
+        usd,
+        durationMs: Date.now() - started,
+        modelo: cfg.model,
+        truncado: r.steps.length >= opts.maxSteps || usd > opts.topeUsd,
+      };
     },
   };
 }

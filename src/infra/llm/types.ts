@@ -1,6 +1,47 @@
 import type { z } from "zod";
 import type { ErrorKind } from "./errors.ts";
 
+/**
+ * Lo mínimo que el proveedor necesita saber de una tool.
+ * El contrato completo (sideEffect, ref) vive en `app/tools/tool.ts`: así infra
+ * no depende de app.
+ */
+export interface ToolParaAgente {
+  name: string;
+  description: string;
+  input: z.ZodType<unknown>;
+  execute(input: unknown): unknown | Promise<unknown>;
+}
+
+export interface AgentOpts {
+  system: string;
+  messages: { role: "user" | "assistant"; content: string }[];
+  tools: ToolParaAgente[];
+  /** Tope duro de pasos del loop. */
+  maxSteps: number;
+  /** Tope de gasto del turno, en dólares. */
+  topeUsd: number;
+}
+
+export interface PasoAgente {
+  tool: string;
+  input: unknown;
+  output: unknown;
+  ok: boolean;
+}
+
+export interface AgentResult {
+  text: string;
+  pasos: PasoAgente[];
+  steps: number;
+  tokens: number;
+  usd: number;
+  durationMs: number;
+  modelo: string;
+  /** true si cortó por `maxSteps` o por `topeUsd` antes de la respuesta final. */
+  truncado: boolean;
+}
+
 /** Lo que el dominio necesita de un modelo generativo. */
 export interface LlmProvider {
   generate<T>(opts: {
@@ -11,6 +52,9 @@ export interface LlmProvider {
     prompt: string;
     schema: z.ZodType<T>;
   }): Promise<GenerateResult<T>>;
+
+  /** Loop de tools con presupuesto. */
+  agent(opts: AgentOpts): Promise<AgentResult>;
 }
 
 export interface IntentoFallido {
