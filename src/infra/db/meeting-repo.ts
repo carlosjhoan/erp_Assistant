@@ -36,10 +36,9 @@ export function createMeetingRepo(db: DB) {
       participants: raw.participants,
       summary: raw.summary ?? null,
       privateNotes: raw.privateNotes ?? null,
-      transcript: raw.transcript ?? null,
+      // El transcript no se persiste: es ruido y no entra al modelo.
       summaryAvailable: Boolean(raw.summary),
       privateNotesAvailable: Boolean(raw.privateNotes),
-      transcriptAvailable: Boolean(raw.transcript),
       contentHash: hash,
     };
 

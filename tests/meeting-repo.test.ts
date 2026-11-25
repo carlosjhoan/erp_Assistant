@@ -64,14 +64,21 @@ test("saveMany resume creadas, actualizadas e iguales", () => {
   assert.deepEqual(segunda, { created: 0, updated: 1, unchanged: 1 });
 });
 
-test("guarda los flags de disponibilidad por bloque", () => {
+test("no persiste el transcript: sólo resumen y notas privadas", () => {
   const { r } = repo();
   r.save(base({ transcript: "Carlos: hola" }), "granola");
   const fila = r.list()[0]!;
   assert.equal(fila.summaryAvailable, true);
-  assert.equal(fila.transcriptAvailable, true);
+  assert.equal(fila.transcriptAvailable, false);
+  assert.equal(fila.transcript, null);
   assert.equal(fila.privateNotesAvailable, false);
   assert.equal(fila.privateNotes, null);
+});
+
+test("un cambio sólo en el transcript no actualiza la reunión", () => {
+  const { r } = repo();
+  r.save(base({ transcript: "A" }), "granola");
+  assert.equal(r.save(base({ transcript: "B distinto" }), "granola"), "unchanged");
 });
 
 test("contentHash cambia con el contenido y no con el formato de salto de línea", () => {

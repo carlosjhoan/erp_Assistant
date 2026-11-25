@@ -19,11 +19,14 @@ export interface MeetingSource {
 /**
  * Huella del contenido: cambia si la nota cambió, no si se reimporta igual.
  * Normaliza saltos de línea y espacios de borde para que un CRLF no cuente como cambio.
+ *
+ * El transcript queda fuera a propósito: es ruido y no entra al modelo, así que
+ * tampoco debe provocar una reimportación.
  */
-export function contentHash(m: Pick<RawMeeting, "summary" | "privateNotes" | "transcript">): string {
+export function contentHash(m: Pick<RawMeeting, "summary" | "privateNotes">): string {
   const normalizar = (s?: string) => (s ?? "").replace(/\r\n/g, "\n").trim();
   return createHash("sha256")
-    .update([normalizar(m.summary), normalizar(m.privateNotes), normalizar(m.transcript)].join("\u0000"))
+    .update([normalizar(m.summary), normalizar(m.privateNotes)].join("\u0000"))
     .digest("hex");
 }
 
