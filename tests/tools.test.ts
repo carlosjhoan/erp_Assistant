@@ -60,9 +60,9 @@ function seed() {
       externalId: "g1",
       title: "Landing page activation plan",
       occurredAt: new Date(),
-      participants: ["Persona_#%&", "Persona_%&#"],
+      participants: ["Ana Gómez", "Carlos Ruiz"],
       contentHash: "h1",
-      summary: "Persona_#%& pidió que el deadline quede antes del 15 de diciembre.",
+      summary: "Ana Gómez pidió que el deadline quede antes del 15 de diciembre.",
       privateNotes: "Acordamos revisar pricing el jueves.",
       transcript: "texto basura que no debe aparecer",
     })
@@ -242,13 +242,13 @@ test("buscar_notas busca en summary y privateNotes, nunca en transcript", () => 
   const { db } = seed();
   const tool = buscarNotas(db);
 
-  const porPersona = tool.execute({ texto: "Persona_#%&" }) as {
+  const porAna = tool.execute({ texto: "Ana Gómez" }) as {
     items: { id: string; campo: string; extracto: string }[];
     total: number;
   };
-  assert.equal(porPersona.total, 1);
-  assert.equal(porPersona.items[0]!.campo, "summary");
-  assert.match(porPersona.items[0]!.extracto, /Persona_#%&/);
+  assert.equal(porAna.total, 1);
+  assert.equal(porAna.items[0]!.campo, "summary");
+  assert.match(porAna.items[0]!.extracto, /Ana Gómez/);
 
   const porPricing = tool.execute({ texto: "pricing" }) as { items: { campo: string }[] };
   assert.equal(porPricing.items[0]!.campo, "privateNotes");
@@ -256,7 +256,7 @@ test("buscar_notas busca en summary y privateNotes, nunca en transcript", () => 
   assert.equal((tool.execute({ texto: "basura" }) as { total: number }).total, 0);
 
   assert.equal(tool.input.safeParse({ texto: "a" }).success, false);
-  assert.equal(tool.input.safeParse({ texto: "Persona_#%&", extra: 1 }).success, false);
+  assert.equal(tool.input.safeParse({ texto: "Ana Gómez", extra: 1 }).success, false);
 });
 
 test("ver_reunion devuelve temas, citas y preguntas, sin transcript", () => {
@@ -347,7 +347,7 @@ test("las tools de lectura no escriben", () => {
   verSemana(db).execute({});
   verSemana(db).execute({ cual: "proxima" });
   listarItems(db).execute({});
-  buscarNotas(db).execute({ texto: "Persona_#%&" });
+  buscarNotas(db).execute({ texto: "Ana Gómez" });
   verReunion(db).execute({ id: "m1" });
   estadoDiagnostico(db).execute({ proyectoId: "p1" });
 

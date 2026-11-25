@@ -3,26 +3,15 @@ import assert from "node:assert/strict";
 import { eq } from "drizzle-orm";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { openDatabase } from "../src/infra/db/client.ts";
-import { agentRun, meeting } from "../src/infra/db/schema.ts";
+import { agentRun } from "../src/infra/db/schema.ts";
 import { consultar, gastoDelDia } from "../src/app/consulta.ts";
 import { registro } from "../src/app/tools/index.ts";
 import type { Providers } from "../src/infra/llm/providers.ts";
 import type { AgentOpts, AgentResult, LlmProvider } from "../src/infra/llm/types.ts";
 
-function dbConReunion() {
+function dbVacia() {
   const { db } = openDatabase(":memory:");
   migrate(db, { migrationsFolder: "./drizzle" });
-  db.insert(meeting)
-    .values({
-      id: "m1",
-      source: "manual",
-      externalId: "e1",
-      title: "t",
-      occurredAt: new Date(),
-      participants: ["Ana Gómez"],
-      contentHash: "h",
-    })
-    .run();
   return db;
 }
 
@@ -59,8 +48,8 @@ function agente(resultado: Partial<AgentResult>, capturar?: (opts: AgentOpts) =>
   };
 }
 
-test("consultar delega en las tools, enmascara nombres y deja traza", async () => {
-  const db = dbConReunion();
+test("consultar delega en las tools y deja traza", async () => {
+  const db = dbVacia();
   let vistos = 0;
 
   const r = await consultar(
@@ -81,7 +70,7 @@ test("consultar delega en las tools, enmascara nombres y deja traza", async () =
   );
 
   assert.equal(vistos, 7);
-  assert.equal(r.texto, "Persona_#%& pidió el deadline.");
+  assert.equal(r.texto, "Ana Gómez pidió el deadline.");
   assert.deepEqual(r.principal, { vista: "reuniones", id: null });
 
   const run = db.select().from(agentRun).where(eq(agentRun.id, r.runId)).get();
@@ -90,13 +79,13 @@ test("consultar delega en las tools, enmascara nombres y deja traza", async () =
 });
 
 test("consultar no inventa una vista si no hubo tool de detalle", async () => {
-  const db = dbConReunion();
+  const db = dbVacia();
   const r = await consultar(db, proveedores(agente({ text: "No lo sé.", pasos: [], steps: 1 })), "¿?");
   assert.equal(r.principal, null);
 });
 
 test("consultar devuelve fallback cuando corta por presupuesto sin texto", async () => {
-  const db = dbConReunion();
+  const db = dbVacia();
   const r = await consultar(
     db,
     proveedores(agente({ text: "", pasos: [], steps: 1, truncado: true })),
@@ -106,11 +95,11 @@ test("consultar devuelve fallback cuando corta por presupuesto sin texto", async
 });
 
 test("gastoDelDia arranca en cero sin llamadas", () => {
-  assert.equal(gastoDelDia(dbConReunion()), 0);
+  assert.equal(gastoDelDia(dbVacia()), 0);
 });
 
 test("el registro expone las 7 tools de lectura", () => {
-  assert.deepEqual(registro(dbConReunion()).map((t) => t.name).sort(), [
+  assert.deepEqual(registro(dbVacia()).map((t) => t.name).sort(), [
     "buscar_notas",
     "estado_diagnostico",
     "listar_items",

@@ -46,7 +46,7 @@ Regla de composición:
 
 | Tarea | Qué debe ser | Por qué |
 |---|---|---|
-| "¿Qué dijo Persona_#%& del deadline?" | **Agente** | No se sabe qué consultar de antemano |
+| "¿Qué dijo Ana Gómez del deadline?" | **Agente** | No se sabe qué consultar de antemano |
 | Desglosar un tema en ítems | **Workflow** | Pasos fijos: extraer → verificar cita → proponer. Ya existe |
 | Reporte semanal | **Workflow** | Drift, carry-over y capacidades movidas son código |
 | Despachar un ítem a OpenCode | **Workflow** | ítem → sesión → guardia git → evidencia → `ready_for_review` |
@@ -308,7 +308,7 @@ Ya existe para `broadcast` a nivel de tema; se generaliza por ítem.
 
 | Fase | Qué | Prueba de que sirvió |
 |---|---|---|
-| **F1** | Tools de lectura + loop. Borrar `foto()`, `CATALOGO` (`consulta.ts:50`), `SIIGO` (`:62`). `maxSteps` y tope USD desde el primer commit | Una pregunta que la foto no podía responder ("¿qué dijo Persona_#%& del deadline?") se responde con `buscar_notas` + `ver_reunion` |
+| **F1** | Tools de lectura + loop. Borrar `foto()`, `CATALOGO` (`consulta.ts:50`), `SIIGO` (`:62`). `maxSteps` y tope USD desde el primer commit | Una pregunta que la foto no podía responder ("¿qué dijo Ana Gómez del deadline?") se responde con `buscar_notas` + `ver_reunion` |
 | **F2** | Memoria de conversación (`conversation`, `conversation_message`) | "Y de ese proyecto, ¿qué falta?" funciona |
 | **F3** | Log de eventos (`itemEvent`) + `step_index`/`tool_name` en `llmCall` + `toolCall` | El gasto de un turno se desglosa por proveedor y por herramienta |
 | **F4** | Write-tools gated (emiten eventos) | El agente no puede cambiar estado sin aprobación |

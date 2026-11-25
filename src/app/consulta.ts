@@ -11,7 +11,6 @@ import { llmCall } from "../infra/db/schema.ts";
 import type { Providers } from "../infra/llm/providers.ts";
 import { finishRun, startRun } from "../infra/llm/trace.ts";
 import type { PasoAgente } from "../infra/llm/types.ts";
-import { anonimizar, nombresConocidos } from "./anonimizar.ts";
 import { maxSteps, topeTurno } from "./presupuesto.ts";
 import { promptAsistente } from "./prompts.ts";
 import { registro } from "./tools/index.ts";
@@ -75,7 +74,7 @@ export async function consultar(
         .map((p) => porNombre.get(p.tool)?.ref?.(p.input, p.output) ?? null)
         .find((x) => x !== null) ?? null;
 
-    const texto = anonimizar(r.text, nombresConocidos(db)).trim();
+    const texto = r.text.trim();
 
     return {
       texto: texto || (r.truncado ? FALLBACK_PRESUPUESTO : ""),

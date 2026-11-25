@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsc --noEmit",
-    "test": "node --env-file-if-exists=.env --import tsx --test tests/domain.test.ts tests/progreso.test.ts tests/precio.test.ts tests/presupuesto.test.ts tests/schema.test.ts tests/granola-parse.test.ts tests/granola-source.test.ts tests/meeting-repo.test.ts tests/citation.test.ts tests/contracts.test.ts tests/consulta.test.ts tests/anonimizar.test.ts tests/llm.test.ts tests/extract-topics.test.ts tests/triage.test.ts tests/rubric.test.ts tests/tools.test.ts tests/repos.test.ts tests/detect-repos.test.ts tests/opencode.test.ts tests/broadcast.test.ts tests/markdown.test.ts tests/orden-reuniones.test.ts",
+    "test": "node --env-file-if-exists=.env --import tsx --test tests/domain.test.ts tests/progreso.test.ts tests/precio.test.ts tests/presupuesto.test.ts tests/schema.test.ts tests/granola-parse.test.ts tests/granola-source.test.ts tests/meeting-repo.test.ts tests/citation.test.ts tests/contracts.test.ts tests/consulta.test.ts tests/llm.test.ts tests/extract-topics.test.ts tests/triage.test.ts tests/rubric.test.ts tests/tools.test.ts tests/repos.test.ts tests/detect-repos.test.ts tests/opencode.test.ts tests/broadcast.test.ts tests/markdown.test.ts tests/orden-reuniones.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file-if-exists=.env --import tsx scripts/migrate.ts",
     "auth:granola": "node --env-file-if-exists=.env --import tsx src/cli/auth-granola.ts",

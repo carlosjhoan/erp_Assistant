@@ -66,8 +66,8 @@ const buscarNotas: ToolDef = {
           id: "meet-1",
           titulo: "Landing page activation plan",
           fecha: "2026-11-20",
-          participantes: ["Persona_#%&", "Persona_%&#"],
-          extracto: `Persona_#%& pidió que el deadline de la landing quede antes del 15 de diciembre. (búsqueda: ${texto})`,
+          participantes: ["Ana Gómez", "Carlos Ruiz"],
+          extracto: `Ana Gómez pidió que el deadline de la landing quede antes del 15 de diciembre. (búsqueda: ${texto})`,
           campo: "summary",
         },
       ],
@@ -170,7 +170,7 @@ async function correr(nombre: string, pregunta: string, maxSteps: number, topeUs
   }
 }
 
-const PREGUNTA = "¿Qué pidió Persona_#%& sobre el deadline de la landing? Cita la reunión.";
+const PREGUNTA = "¿Qué pidió Ana Gómez sobre el deadline de la landing? Cita la reunión.";
 
 const resultados = [
   await correr("normal", PREGUNTA, 4, 0.05),
