@@ -17,12 +17,19 @@ const TARIFAS: Record<string, { entrada: number; salida: number }> = {
     entrada: num(process.env.DEEPSEEK_INPUT_USD_PER_M, 0.28),
     salida: num(process.env.DEEPSEEK_OUTPUT_USD_PER_M, 0.42),
   },
+  // Jev cobra por token de entrada ($42/Btok = $0.042/Mtok). Salida gratis.
+  "jev-latest": { entrada: 0.042, salida: 0 },
+  "jev-1.14.0": { entrada: 0.042, salida: 0 },
+  "jev-1.13.0": { entrada: 0.042, salida: 0 },
 };
 
-/** Jev cobra por llamada, no por token. */
-const POR_LLAMADA: Record<string, number> = {
-  jev: num(process.env.JEV_USD_PER_CALL, 0),
-};
+/**
+ * Tarifa plana opcional por llamada. Solo se usa si se configura con un valor
+ * positivo; si no, Jev cae a la tarifa por token.
+ */
+const POR_LLAMADA: Record<string, number> = {};
+const jevPlano = Number(process.env.JEV_USD_PER_CALL);
+if (Number.isFinite(jevPlano) && jevPlano > 0) POR_LLAMADA.jev = jevPlano;
 
 export function costoUsd(
   provider: string,

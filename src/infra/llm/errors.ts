@@ -61,6 +61,8 @@ export function clasificarError(e: unknown): Diagnostico {
   }
 
   if (status === 401 || status === 403) return { kind: "auth", retriable: false, ...(status ? { status } : {}) };
+  // 402 Payment Required: OpenRouter sin créditos. Reintentar no lo arregla.
+  if (status === 402) return { kind: "budget", retriable: false, status };
   if (status === 429) return { kind: "rate_limit", retriable: true, status };
   if (status === 400 && /context|token|too long|maximum/i.test(mensaje)) return { kind: "budget", retriable: false, status };
   if (status !== undefined && status >= 500) return { kind: "server", retriable: true, status };

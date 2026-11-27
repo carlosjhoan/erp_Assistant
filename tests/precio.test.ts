@@ -16,3 +16,10 @@ test("un modelo desconocido no inventa costo", () => {
 test("sin tokens no hay costo", () => {
   assert.equal(costoUsd("deepseek", "deepseek-flash", undefined, undefined), 0);
 });
+
+test("Jev se tarifa por token de entrada cuando no hay tarifa plana", () => {
+  const plano = Number(process.env.JEV_USD_PER_CALL);
+  if (Number.isFinite(plano) && plano > 0) return; // configurado a mano
+  const c = costoUsd("jev", "jev-1.14.0", 1_000_000, 50);
+  assert.ok(Math.abs(c - 0.042) < 1e-9);
+});

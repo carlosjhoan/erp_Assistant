@@ -68,7 +68,7 @@ export function finishRun(db: DB, runId: string, end: RunEnd): void {
 
 export interface CallRecord {
   runId: string;
-  provider: "deepseek" | "jev";
+  provider: "deepseek" | "jev" | "openrouter";
   model?: string;
   attempt: number;
   status: "ok" | "failed";
@@ -79,6 +79,8 @@ export interface CallRecord {
   durationMs?: number;
   prompt?: string;
   response?: string;
+  /** Costo real que informa el proveedor. Si falta, se calcula por tarifa. */
+  costUsd?: number;
 }
 
 export function recordCall(db: DB, call: CallRecord): void {
@@ -97,7 +99,7 @@ export function recordCall(db: DB, call: CallRecord): void {
       durationMs: call.durationMs ?? null,
       prompt: recortar(call.prompt),
       response: recortar(call.response),
-      costUsd: costoUsd(call.provider, call.model, call.inputTokens, call.outputTokens),
+      costUsd: call.costUsd ?? costoUsd(call.provider, call.model, call.inputTokens, call.outputTokens),
     })
     .run();
 }
@@ -142,6 +144,7 @@ export function resumenTrazas(db: DB) {
     porProveedor: {
       deepseek: calls.filter((c) => c.provider === "deepseek").length,
       jev: calls.filter((c) => c.provider === "jev").length,
+      openrouter: calls.filter((c) => c.provider === "openrouter").length,
     },
   };
 }

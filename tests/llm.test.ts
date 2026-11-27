@@ -88,6 +88,21 @@ test("un 429 sí se reintenta", async () => {
   assert.equal(r.fallos[0]?.kind, "rate_limit");
 });
 
+test("un 402 de OpenRouter se trata como budget y no se reintenta", async () => {
+  let llamadas = 0;
+  await assert.rejects(
+    () =>
+      conReintento("p", async () => {
+        llamadas++;
+        const e = new Error("Payment Required") as Error & { statusCode: number };
+        e.statusCode = 402;
+        throw e;
+      }),
+    /\[budget\]/
+  );
+  assert.equal(llamadas, 1);
+});
+
 test("sabe cuál de los tres intentos se agotó", async () => {
   let llamadas = 0;
   const r = await conReintento("p", async () => {

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "build": "tsc --noEmit",
@@ -27,12 +27,14 @@
     "diag:importar": "tsx src/app/importar-diagnostico.ts",
     "plan:importar": "tsx src/app/importar-plan.ts",
     "dev": "tsx src/web/server.ts",
+    "smoke:openrouter": "node --env-file-if-exists=.env --import tsx scripts/smoke-openrouter.ts",
     "free": "kill-port 4599 || echo libre"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^3.0.87",
     "@modelcontextprotocol/client": "^2.4.0",
     "@opencode-ai/sdk": "^1.19.6",
+    "@openrouter/ai-sdk-provider": "^3.1.0",
     "ai": "^7.0.173",
     "better-sqlite3": "12.4.1",
     "drizzle-orm": "0.44.6",

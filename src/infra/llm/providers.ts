@@ -1,10 +1,30 @@
 import { createDeepSeekProvider } from "./deepseek.ts";
 import { createJevProvider } from "./jev.ts";
+import { createOpenRouterProvider } from "./openrouter.ts";
 import { LlmError, type DecisionProvider, type LlmProvider } from "./types.ts";
 import { recordCall, type TraceFn } from "./trace.ts";
 import type { openDatabase } from "../db/client.ts";
 
 type DB = ReturnType<typeof openDatabase>["db"];
+type ProveedorLlm = "openrouter" | "deepseek";
+
+/** OpenRouter si hay key; se puede forzar con LLM_PROVIDER. */
+function proveedorElegido(): ProveedorLlm {
+  const v = process.env.LLM_PROVIDER?.trim().toLowerCase();
+  if (v === "deepseek") return "deepseek";
+  if (v === "openrouter") return "openrouter";
+  return process.env.OPENROUTER_API_KEY?.trim() ? "openrouter" : "deepseek";
+}
+
+function sortOpenRouter(): "price" | "throughput" | "latency" {
+  const v = process.env.OPENROUTER_SORT?.trim().toLowerCase();
+  return v === "throughput" || v === "latency" ? v : "price";
+}
+
+function reasoningOpenRouter(): "none" | "low" | "high" {
+  const v = process.env.OPENROUTER_REASONING?.trim().toLowerCase();
+  return v === "low" || v === "high" ? v : "none";
+}
 
 export interface Providers {
   llm: LlmProvider;
@@ -26,15 +46,32 @@ export function providersFromEnv(db?: DB): Providers {
       }
     : undefined;
 
+  const appName = process.env.OPENROUTER_APP_NAME?.trim();
+  const appUrl = process.env.OPENROUTER_SITE_URL?.trim();
+
+  const llm =
+    proveedorElegido() === "openrouter"
+      ? createOpenRouterProvider({
+          apiKey: requerido("OPENROUTER_API_KEY"),
+          model: process.env.OPENROUTER_MODEL?.trim() || "deepseek/deepseek-v4.1-flash",
+          sort: sortOpenRouter(),
+          reasoning: reasoningOpenRouter(),
+          ...(appName ? { appName } : {}),
+          ...(appUrl ? { appUrl } : {}),
+          maxAttempts: Number(process.env.LLM_MAX_ATTEMPTS ?? 3) || 3,
+          ...(trace ? { trace } : {}),
+        })
+      : createDeepSeekProvider({
+          apiKey: requerido("DEEPSEEK_API_KEY"),
+          model: process.env.DEEPSEEK_MODEL?.trim() || "deepseek-flash",
+          ...(process.env.DEEPSEEK_BASE_URL ? { baseURL: process.env.DEEPSEEK_BASE_URL } : {}),
+          thinking: process.env.DEEPSEEK_THINKING === "enabled" ? "enabled" : "disabled",
+          maxAttempts: Number(process.env.LLM_MAX_ATTEMPTS ?? 3) || 3,
+          ...(trace ? { trace } : {}),
+        });
+
   return {
-    llm: createDeepSeekProvider({
-      apiKey: requerido("DEEPSEEK_API_KEY"),
-      model: process.env.DEEPSEEK_MODEL?.trim() || "deepseek-flash",
-      ...(process.env.DEEPSEEK_BASE_URL ? { baseURL: process.env.DEEPSEEK_BASE_URL } : {}),
-      thinking: process.env.DEEPSEEK_THINKING === "enabled" ? "enabled" : "disabled",
-      maxAttempts: Number(process.env.LLM_MAX_ATTEMPTS ?? 3) || 3,
-      ...(trace ? { trace } : {}),
-    }),
+    llm,
     decision: createJevProvider({
       apiKey: requerido("TYPESAFE_API_KEY"),
       model: process.env.TYPESAFE_MODEL?.trim() || "jev-latest",

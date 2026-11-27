@@ -346,7 +346,7 @@ export const llmCall = sqliteTable(
     runId: text("run_id")
       .notNull()
       .references(() => agentRun.id),
-    provider: text("provider", { enum: ["deepseek", "jev"] }).notNull(),
+    provider: text("provider", { enum: ["deepseek", "jev", "openrouter"] }).notNull(),
     model: text("model"),
     attempt: integer("attempt").notNull().default(1),
     status: text("status", { enum: ["ok", "failed"] }).notNull(),
